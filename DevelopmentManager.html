@@ -1017,6 +1017,13 @@
             try { localStorage.setItem('tree-graph-statuses', JSON.stringify(STATUSES)); } catch { }
         }
 
+        let statusMap = new Map();
+        function rebuildStatusMap() {
+            statusMap.clear();
+            for (const s of STATUSES) statusMap.set(s.id, s);
+        }
+        rebuildStatusMap();
+
         // Each node: { id, name, status, parentIds:[], children:[] }
         let nodes = new Map();
         let selectedId = null;
@@ -1046,10 +1053,10 @@
             return [...nodes.values()].filter(n => n.parentIds.length === 0).map(n => n.id);
         }
 
+        const _escDiv = document.createElement('div');
         function esc(s) {
-            const d = document.createElement('div');
-            d.textContent = s;
-            return d.innerHTML;
+            _escDiv.textContent = s;
+            return _escDiv.innerHTML;
         }
 
         /* ═══════════════════════════════════════════
@@ -1240,14 +1247,25 @@
         function deleteSubtree(id) {
             // delete the node + all descendants that are EXCLUSIVELY reachable through it
             const toRemove = new Set([id]);
-            let changed = true;
-            while (changed) {
-                changed = false;
-                for (const [nid, node] of nodes) {
-                    if (toRemove.has(nid)) continue;
-                    if (node.parentIds.length > 0 && node.parentIds.every(pid => toRemove.has(pid))) {
-                        toRemove.add(nid);
-                        changed = true;
+            const _queue = [id];
+            const _remaining = new Map();
+            while (_queue.length > 0) {
+                const did = _queue.shift();
+                const dn = nodes.get(did);
+                if (!dn) continue;
+                for (const cid of dn.children) {
+                    if (toRemove.has(cid)) continue;
+                    if (!_remaining.has(cid)) {
+                        const child = nodes.get(cid);
+                        let cnt = 0;
+                        for (const pid of child.parentIds) if (!toRemove.has(pid)) cnt++;
+                        _remaining.set(cid, cnt);
+                    } else {
+                        _remaining.set(cid, _remaining.get(cid) - 1);
+                    }
+                    if (_remaining.get(cid) <= 0) {
+                        toRemove.add(cid);
+                        _queue.push(cid);
                     }
                 }
             }
@@ -1332,7 +1350,8 @@
                 for (const id of compSet) {
                     const node = nodes.get(id);
                     // Only count parents within this component
-                    const pCount = node.parentIds.filter(p => compSet.has(p)).length;
+                    let pCount = 0;
+                    for (const p of node.parentIds) if (compSet.has(p)) pCount++;
                     inDeg.set(id, pCount);
                     depth.set(id, 0);
                 }
@@ -1357,7 +1376,8 @@
                     if (!columns.has(d)) columns.set(d, []);
                     columns.get(d).push(id);
                 }
-                const maxDepth = columns.size > 0 ? Math.max(...columns.keys()) : 0;
+                let maxDepth = 0;
+                for (const k of columns.keys()) if (k > maxDepth) maxDepth = k;
 
                 // Initial positioning (secondary axis starts at 0 for each component)
                 const absPos = new Map();
@@ -1434,6 +1454,8 @@
                 for (let d = 1; d <= maxDepth; d++) {
                     const col = columns.get(d);
                     if (!col) continue;
+                    const colIdx = new Map();
+                    for (let ci = 0; ci < col.length; ci++) colIdx.set(col[ci], ci);
                     for (const id of col) {
                         const node = nodes.get(id);
                         if (node.parentIds.length <= 1) continue;
@@ -1449,7 +1471,7 @@
                         if (minPS === Infinity) continue;
                         const ideal = (minPS + maxPS) / 2 - SEC_SIZE / 2;
                         const pos = absPos.get(id);
-                        const idx = col.indexOf(id);
+                        const idx = colIdx.get(id);
                         const above = idx > 0 ? absPos.get(col[idx - 1]) : null;
                         const below = idx < col.length - 1 ? absPos.get(col[idx + 1]) : null;
                         const lo = above ? above.s + SEC_SIZE + SEC_GAP : -Infinity;
@@ -1484,7 +1506,7 @@
                 const target = pos._t ?? pos.s;
                 pos.s = Math.max(s, target);
                 s = pos.s + secSize + secGap;
-                delete pos._t;
+                pos._t = undefined;
             }
         }
 
@@ -1510,6 +1532,7 @@
 
         function renderNodes() {
             canvasEl.querySelectorAll('.node').forEach(el => el.remove());
+            const frag = document.createDocumentFragment();
 
             for (const [id, pos] of layoutCache) {
                 const node = nodes.get(id);
@@ -1519,7 +1542,7 @@
                 el.style.left = pos.x + 'px';
                 el.style.top = pos.y + 'px';
 
-                const st = STATUSES.find(s => s.id === node.status);
+                const st = statusMap.get(node.status);
                 const badge = node.parentIds.length > 1
                     ? `<span class="dep-badge" title="${node.parentIds.length} dependencies">${node.parentIds.length}</span>` : '';
                 el.innerHTML = `
@@ -1531,8 +1554,9 @@
       </div>
       <button class="node-status-btn" title="Change status">▾</button>
     `;
-                canvasEl.appendChild(el);
+                frag.appendChild(el);
             }
+            canvasEl.appendChild(frag);
         }
 
         function renderConnectors() {
@@ -1540,24 +1564,20 @@
             if (layoutCache.size === 0) return;
 
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-            for (const pos of layoutCache.values()) {
+            const PAD = 6;
+            const nodeRects = [];
+            const selectedOverlays = [];
+            for (const [id, pos] of layoutCache) {
                 if (pos.x < minX) minX = pos.x;
                 if (pos.y < minY) minY = pos.y;
                 if (pos.x + NODE_W > maxX) maxX = pos.x + NODE_W;
                 if (pos.y + NODE_H > maxY) maxY = pos.y + NODE_H;
+                nodeRects.push({ id, x: pos.x - PAD, y: pos.y - PAD, w: NODE_W + PAD * 2, h: NODE_H + PAD * 2 });
             }
             svgEl.setAttribute('width', maxX - minX + NODE_W + 200);
             svgEl.setAttribute('height', maxY - minY + NODE_H + 200);
             svgEl.style.left = '0px';
             svgEl.style.top = '0px';
-
-            // Build list of all node rects for obstacle detection
-            const PAD = 6; // clearance around nodes
-            const nodeRects = [];
-            const selectedOverlays = []; // highlighted clones appended last for z-order
-            for (const [id, pos] of layoutCache) {
-                nodeRects.push({ id, x: pos.x - PAD, y: pos.y - PAD, w: NODE_W + PAD * 2, h: NODE_H + PAD * 2 });
-            }
 
             // Collect edges
             const edges = [];
@@ -1588,20 +1608,35 @@
             // Build adjacency: edges that share a node or visually intersect should differ in colour
             const edgeNeighbours = edges.map(() => new Set());
 
+            // Fast shared-node detection via node → edge index
+            const _nodeEdgeIdx = new Map();
             for (let i = 0; i < edges.length; i++) {
+                for (const nid of [edges[i].parentId, edges[i].childId]) {
+                    let list = _nodeEdgeIdx.get(nid);
+                    if (!list) { list = []; _nodeEdgeIdx.set(nid, list); }
+                    list.push(i);
+                }
+            }
+            for (const eList of _nodeEdgeIdx.values()) {
+                for (let a = 0; a < eList.length; a++) {
+                    for (let b = a + 1; b < eList.length; b++) {
+                        edgeNeighbours[eList[a]].add(eList[b]);
+                        edgeNeighbours[eList[b]].add(eList[a]);
+                    }
+                }
+            }
+
+            // Bbox overlap for remaining non-neighbor pairs
+            for (let i = 0; i < edges.length; i++) {
+                const a = edges[i];
+                const aMinX = Math.min(a.pPos.x, a.cPos.x), aMaxX = Math.max(a.pPos.x + NODE_W, a.cPos.x + NODE_W);
+                const aMinY = Math.min(a.pPos.y, a.cPos.y), aMaxY = Math.max(a.pPos.y + NODE_H, a.cPos.y + NODE_H);
                 for (let j = i + 1; j < edges.length; j++) {
-                    const a = edges[i], b = edges[j];
-                    // Share a node?
-                    const sharesNode = a.parentId === b.parentId || a.parentId === b.childId ||
-                        a.childId === b.parentId || a.childId === b.childId;
-                    // Bounding boxes overlap? (rough intersection test)
-                    const aMinX = Math.min(a.pPos.x, a.cPos.x), aMaxX = Math.max(a.pPos.x + NODE_W, a.cPos.x + NODE_W);
-                    const aMinY = Math.min(a.pPos.y, a.cPos.y), aMaxY = Math.max(a.pPos.y + NODE_H, a.cPos.y + NODE_H);
+                    if (edgeNeighbours[i].has(j)) continue;
+                    const b = edges[j];
                     const bMinX = Math.min(b.pPos.x, b.cPos.x), bMaxX = Math.max(b.pPos.x + NODE_W, b.cPos.x + NODE_W);
                     const bMinY = Math.min(b.pPos.y, b.cPos.y), bMaxY = Math.max(b.pPos.y + NODE_H, b.cPos.y + NODE_H);
-                    const overlaps = aMinX <= bMaxX && aMaxX >= bMinX && aMinY <= bMaxY && aMaxY >= bMinY;
-
-                    if (sharesNode || overlaps) {
+                    if (aMinX <= bMaxX && aMaxX >= bMinX && aMinY <= bMaxY && aMaxY >= bMinY) {
                         edgeNeighbours[i].add(j);
                         edgeNeighbours[j].add(i);
                     }
@@ -1621,6 +1656,7 @@
             }
 
             // Route each edge with obstacle avoidance
+            const svgFrag = document.createDocumentFragment();
             for (let ei = 0; ei < edges.length; ei++) {
                 const e = edges[ei];
                 const d = routeEdge(e, nodeRects);
@@ -1674,11 +1710,12 @@
                     if (hl) hl.remove();
                 });
 
-                svgEl.appendChild(g);
+                svgFrag.appendChild(g);
             }
 
             // Append selected-node connector overlays last so they render on top
-            for (const hl of selectedOverlays) svgEl.appendChild(hl);
+            for (const hl of selectedOverlays) svgFrag.appendChild(hl);
+            svgEl.appendChild(svgFrag);
         }
 
         /* Darken a hex colour by a factor (0=black, 1=original) */
@@ -2030,10 +2067,11 @@
             const el = document.getElementById('completion-stats');
             const total = nodes.size;
             if (total === 0) { el.innerHTML = ''; return; }
-            const complete = [...nodes.values()].filter(n => {
-                const st = STATUSES.find(s => s.id === n.status);
-                return st && st.complete;
-            }).length;
+            let complete = 0;
+            for (const n of nodes.values()) {
+                const st = statusMap.get(n.status);
+                if (st && st.complete) complete++;
+            }
             const pct = Math.round((complete / total) * 100);
             el.innerHTML = `
     <div style="margin-bottom:12px">
@@ -2070,11 +2108,11 @@
             const legend = document.getElementById('legend');
             legend.classList.toggle('panel-open', !spMinimized);
             legend.classList.toggle('panel-minimized', spMinimized);
-            const st = STATUSES.find(s => s.id === node.status) || STATUSES[0];
+            const st = statusMap.get(node.status) || STATUSES[0];
             spTitle.textContent = node.name;
 
             function nodeItem(n) {
-                const s = STATUSES.find(s => s.id === n.status) || STATUSES[0];
+                const s = statusMap.get(n.status) || STATUSES[0];
                 return `<div class="sp-node-item" data-goto="${n.id}" title="${esc(n.name)}">
       <span class="sp-item-dot" style="background:${s.color}"></span>
       <span class="sp-item-name">${esc(n.name)}</span>
@@ -2302,6 +2340,7 @@
                     draft.forEach((s, i) => { if (!s.id) s.id = 'status-' + i; });
                     STATUSES = draft;
                     saveStatuses();
+                    rebuildStatusMap();
                     // Remap any node statuses that no longer exist
                     const validIds = new Set(STATUSES.map(s => s.id));
                     for (const [, node] of nodes) {
@@ -2438,11 +2477,16 @@
 
         /* ── Canvas click (select / deselect / link) ── */
         let clickTimer = null;
+        wrapEl.addEventListener('click', e => {
+            if (!e.target.closest('.node') && !e.target.closest('#ctx-menu') && selectedId && !linkMode) {
+                selectedId = null;
+                render();
+            }
+        });
         canvasEl.addEventListener('click', e => {
             const nodeEl = e.target.closest('.node');
 
             if (!nodeEl) {
-                if (!linkMode) { selectedId = null; render(); }
                 return;
             }
 
@@ -2550,7 +2594,7 @@
             }
 
             const listHtml = eligible.map(n => {
-                const st = STATUSES.find(s => s.id === n.status);
+                const st = statusMap.get(n.status);
                 return `<div class="item" data-pick="${n.id}" style="padding:8px 12px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s">
       <span class="node-status-dot ${n.status}" style="background:${st.color};width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:6px;color:#fff">${st.icon}</span>
       ${esc(n.name)}
@@ -2768,7 +2812,7 @@
                             delete node.parentId;
                             nodes.set(id, node);
                         }
-                        if (data.statuses) { STATUSES.length = 0; STATUSES.push(...data.statuses); saveStatuses(); }
+                        if (data.statuses) { STATUSES.length = 0; STATUSES.push(...data.statuses); saveStatuses(); rebuildStatusMap(); }
                         if (data.nextId) nextId = data.nextId;
                         selectedId = null;
                         saveState(); render(); fitViewIfNeeded();

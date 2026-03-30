@@ -892,6 +892,7 @@
             <span class="hint">Right-click for options · Double-click to rename</span>
             <div class="sep"></div>
             <button class="tb-btn" id="btn-fit">Fit View</button>
+            <button class="tb-btn" id="btn-orient" title="Toggle horizontal/vertical layout">↔ Horizontal</button>
             <button class="tb-btn" id="btn-clear">Clear All</button>
             <button class="tb-btn" id="btn-import">Import</button>
             <button class="tb-btn" id="btn-export">Export</button>
@@ -979,6 +980,9 @@
         let nextId = 1;
 
         const NODE_W = 200, NODE_H = 78, H_GAP = 110, V_GAP = 48;
+
+        /* orientation */
+        let isVertical = localStorage.getItem('tree-graph-orientation') === 'vertical';
 
         /* linking mode */
         let linkMode = false;
@@ -1180,6 +1184,13 @@
             layoutCache.clear();
             if (nodes.size === 0) return;
 
+            // Orientation-dependent dimensions
+            // Primary axis = depth direction, Secondary axis = within-layer spreading
+            const PRI_SIZE = isVertical ? NODE_H : NODE_W;  // node size along depth axis
+            const SEC_SIZE = isVertical ? NODE_W : NODE_H;  // node size along spread axis
+            const PRI_GAP = isVertical ? V_GAP + 30 : H_GAP; // gap between depth layers
+            const SEC_GAP = isVertical ? H_GAP - 60 : V_GAP; // gap between nodes in same layer
+
             // 1. Depth via topological sort (longest path from any root)
             const depth = new Map();
             const inDeg = new Map();
@@ -1201,7 +1212,7 @@
                 }
             }
 
-            // 2. Group by column
+            // 2. Group by layer (column in H mode, row in V mode)
             const columns = new Map();
             for (const [id, d] of depth) {
                 if (!columns.has(d)) columns.set(d, []);
@@ -1209,117 +1220,123 @@
             }
             const maxDepth = columns.size > 0 ? Math.max(...columns.keys()) : 0;
 
-            // 3. Initial positioning (spread out in each column)
+            // 3. Initial positioning — using abstract primary/secondary coordinates
+            // We store as {p (primary), s (secondary)} then convert to {x, y} at end
+            const absPos = new Map();
             for (const [d, col] of columns) {
-                const x = d * (NODE_W + H_GAP);
-                let y = 0;
+                const p = d * (PRI_SIZE + PRI_GAP);
+                let s = 0;
                 for (const id of col) {
-                    layoutCache.set(id, { x, y });
-                    y += NODE_H + V_GAP;
+                    absPos.set(id, { p, s });
+                    s += SEC_SIZE + SEC_GAP;
                 }
             }
 
             // 4. Iterative layout: children centered on parents, parents centered on children
             for (let iter = 0; iter < 20; iter++) {
-                // Forward pass: position each child at the vertical center of its parents
+                // Forward pass
                 for (let d = 1; d <= maxDepth; d++) {
                     const col = columns.get(d);
                     if (!col) continue;
                     for (const id of col) {
                         const node = nodes.get(id);
                         if (node.parentIds.length > 0) {
-                            let minPY = Infinity, maxPY = -Infinity;
+                            let minPS = Infinity, maxPS = -Infinity;
                             for (const pid of node.parentIds) {
-                                const pp = layoutCache.get(pid);
+                                const pp = absPos.get(pid);
                                 if (pp) {
-                                    const cy = pp.y + NODE_H / 2;
-                                    if (cy < minPY) minPY = cy;
-                                    if (cy > maxPY) maxPY = cy;
+                                    const cs = pp.s + SEC_SIZE / 2;
+                                    if (cs < minPS) minPS = cs;
+                                    if (cs > maxPS) maxPS = cs;
                                 }
                             }
-                            if (minPY !== Infinity) {
-                                layoutCache.get(id)._t = (minPY + maxPY) / 2 - NODE_H / 2;
+                            if (minPS !== Infinity) {
+                                absPos.get(id)._t = (minPS + maxPS) / 2 - SEC_SIZE / 2;
                             }
                         }
                     }
-                    // sort by target so relative order reflects parent positions
                     col.sort((a, b) => {
-                        const at = layoutCache.get(a)._t ?? layoutCache.get(a).y;
-                        const bt = layoutCache.get(b)._t ?? layoutCache.get(b).y;
+                        const at = absPos.get(a)._t ?? absPos.get(a).s;
+                        const bt = absPos.get(b)._t ?? absPos.get(b).s;
                         return at - bt;
                     });
-                    packColumn(col);
+                    packLayer(col, absPos, SEC_SIZE, SEC_GAP);
                 }
-                // Backward pass: center parents on their children
+                // Backward pass
                 for (let d = maxDepth - 1; d >= 0; d--) {
                     const col = columns.get(d);
                     if (!col) continue;
                     for (const id of col) {
                         const node = nodes.get(id);
                         if (node.children.length > 0) {
-                            let minCY = Infinity, maxCY = -Infinity;
+                            let minCS = Infinity, maxCS = -Infinity;
                             for (const cid of node.children) {
-                                const cp = layoutCache.get(cid);
+                                const cp = absPos.get(cid);
                                 if (cp) {
-                                    const cy = cp.y + NODE_H / 2;
-                                    if (cy < minCY) minCY = cy;
-                                    if (cy > maxCY) maxCY = cy;
+                                    const cs = cp.s + SEC_SIZE / 2;
+                                    if (cs < minCS) minCS = cs;
+                                    if (cs > maxCS) maxCS = cs;
                                 }
                             }
-                            if (minCY !== Infinity) {
-                                layoutCache.get(id)._t = (minCY + maxCY) / 2 - NODE_H / 2;
+                            if (minCS !== Infinity) {
+                                absPos.get(id)._t = (minCS + maxCS) / 2 - SEC_SIZE / 2;
                             }
                         }
                     }
                     col.sort((a, b) => {
-                        const at = layoutCache.get(a)._t ?? layoutCache.get(a).y;
-                        const bt = layoutCache.get(b)._t ?? layoutCache.get(b).y;
+                        const at = absPos.get(a)._t ?? absPos.get(a).s;
+                        const bt = absPos.get(b)._t ?? absPos.get(b).s;
                         return at - bt;
                     });
-                    packColumn(col);
+                    packLayer(col, absPos, SEC_SIZE, SEC_GAP);
                 }
             }
 
-            // 5. Final centering pass — nudge children to exact parent midpoint where possible
+            // 5. Final centering pass
             for (let d = 1; d <= maxDepth; d++) {
                 const col = columns.get(d);
                 if (!col) continue;
                 for (const id of col) {
                     const node = nodes.get(id);
                     if (node.parentIds.length <= 1) continue;
-                    let minPY = Infinity, maxPY = -Infinity;
+                    let minPS = Infinity, maxPS = -Infinity;
                     for (const pid of node.parentIds) {
-                        const pp = layoutCache.get(pid);
+                        const pp = absPos.get(pid);
                         if (pp) {
-                            const cy = pp.y + NODE_H / 2;
-                            if (cy < minPY) minPY = cy;
-                            if (cy > maxPY) maxPY = cy;
+                            const cs = pp.s + SEC_SIZE / 2;
+                            if (cs < minPS) minPS = cs;
+                            if (cs > maxPS) maxPS = cs;
                         }
                     }
-                    if (minPY === Infinity) continue;
-                    const ideal = (minPY + maxPY) / 2 - NODE_H / 2;
-                    const pos = layoutCache.get(id);
-                    // only nudge if it won't overlap neighbours
+                    if (minPS === Infinity) continue;
+                    const ideal = (minPS + maxPS) / 2 - SEC_SIZE / 2;
+                    const pos = absPos.get(id);
                     const idx = col.indexOf(id);
-                    const above = idx > 0 ? layoutCache.get(col[idx - 1]) : null;
-                    const below = idx < col.length - 1 ? layoutCache.get(col[idx + 1]) : null;
-                    const lo = above ? above.y + NODE_H + V_GAP : -Infinity;
-                    const hi = below ? below.y - NODE_H - V_GAP : Infinity;
-                    pos.y = Math.max(lo, Math.min(hi, ideal));
+                    const above = idx > 0 ? absPos.get(col[idx - 1]) : null;
+                    const below = idx < col.length - 1 ? absPos.get(col[idx + 1]) : null;
+                    const lo = above ? above.s + SEC_SIZE + SEC_GAP : -Infinity;
+                    const hi = below ? below.s - SEC_SIZE - SEC_GAP : Infinity;
+                    pos.s = Math.max(lo, Math.min(hi, ideal));
                 }
             }
 
-            // cleanup
-            for (const p of layoutCache.values()) delete p._t;
+            // Cleanup and convert to x/y
+            for (const [id, pos] of absPos) {
+                if (isVertical) {
+                    layoutCache.set(id, { x: pos.s, y: pos.p });
+                } else {
+                    layoutCache.set(id, { x: pos.p, y: pos.s });
+                }
+            }
         }
 
-        function packColumn(col) {
-            let y = 0;
+        function packLayer(col, absPos, secSize, secGap) {
+            let s = 0;
             for (const id of col) {
-                const pos = layoutCache.get(id);
-                const target = pos._t ?? pos.y;
-                pos.y = Math.max(y, target);
-                y = pos.y + NODE_H + V_GAP;
+                const pos = absPos.get(id);
+                const target = pos._t ?? pos.s;
+                pos.s = Math.max(s, target);
+                s = pos.s + secSize + secGap;
                 delete pos._t;
             }
         }
@@ -1382,7 +1399,7 @@
                 if (pos.x + NODE_W > maxX) maxX = pos.x + NODE_W;
                 if (pos.y + NODE_H > maxY) maxY = pos.y + NODE_H;
             }
-            svgEl.setAttribute('width', maxX - minX + H_GAP + 200);
+            svgEl.setAttribute('width', maxX - minX + NODE_W + 200);
             svgEl.setAttribute('height', maxY - minY + NODE_H + 200);
             svgEl.style.left = '0px';
             svgEl.style.top = '0px';
@@ -1529,12 +1546,16 @@
         }
 
         /* Route a single edge around node obstacles using 90-degree segments.
-           For multi-column spans, route through each inter-column gap individually,
-           adjusting the Y level at each gap to avoid nodes. */
+           Supports both horizontal (left→right) and vertical (top→bottom) orientations. */
         function routeEdge(e, nodeRects) {
-            const x1 = e.pPos.x + NODE_W; // right edge of parent
+            if (isVertical) return routeEdgeVertical(e, nodeRects);
+            return routeEdgeHorizontal(e, nodeRects);
+        }
+
+        function routeEdgeHorizontal(e, nodeRects) {
+            const x1 = e.pPos.x + NODE_W;
             const y1 = e.pPos.y + NODE_H / 2;
-            const x2 = e.cPos.x;          // left edge of child
+            const x2 = e.cPos.x;
             const y2 = e.cPos.y + NODE_H / 2;
 
             if (y1 === y2) return `M${x1},${y1} H${x2}`;
@@ -1543,7 +1564,6 @@
             const parentCol = Math.round(e.pPos.x / colStep);
             const childCol = Math.round(e.cPos.x / colStep);
 
-            // Build gap info: each gap between adjacent columns
             const gaps = [];
             for (let c = parentCol; c < childCol; c++) {
                 const gapLeft = c * colStep + NODE_W;
@@ -1551,10 +1571,8 @@
                 gaps.push({ left: gapLeft, right: gapRight, mid: (gapLeft + gapRight) / 2 });
             }
 
-            // Check if a vertical line segment at vx from yA to yB hits any node (excluding endpoints)
             function hitsNodeAt(vx, yA, yB) {
-                const lo = Math.min(yA, yB);
-                const hi = Math.max(yA, yB);
+                const lo = Math.min(yA, yB), hi = Math.max(yA, yB);
                 for (const r of nodeRects) {
                     if (r.id === e.parentId || r.id === e.childId) continue;
                     if (vx >= r.x && vx <= r.x + r.w && hi >= r.y && lo <= r.y + r.h) return true;
@@ -1562,74 +1580,35 @@
                 return false;
             }
 
-            // Check if a horizontal line segment at hy from xA to xB hits any node (excluding endpoints)
-            function hitsNodeH(hy, xA, xB) {
-                const lo = Math.min(xA, xB);
-                const hi = Math.max(xA, xB);
-                for (const r of nodeRects) {
-                    if (r.id === e.parentId || r.id === e.childId) continue;
-                    if (hy >= r.y && hy <= r.y + r.h && hi >= r.x && lo <= r.x + r.w) return true;
-                }
-                return false;
-            }
-
-            // Find a clear Y for a vertical segment in a given gap
             function findClearY(gapX, fromY, toY) {
-                if (!hitsNodeAt(gapX, fromY, toY)) return null; // no obstacle, go direct
-                // Try routing above or below blockers in this gap region
-                const lo = Math.min(fromY, toY);
-                const hi = Math.max(fromY, toY);
-                // Find blocking nodes whose X range overlaps this gap
+                if (!hitsNodeAt(gapX, fromY, toY)) return null;
+                const lo = Math.min(fromY, toY), hi = Math.max(fromY, toY);
                 const blockers = nodeRects.filter(r => {
                     if (r.id === e.parentId || r.id === e.childId) return false;
                     return gapX >= r.x && gapX <= r.x + r.w && r.y + r.h > lo && r.y < hi;
                 });
                 if (blockers.length === 0) return null;
-
-                // Find all node rects that could affect routing in nearby columns
-                const allNearby = nodeRects.filter(r => {
-                    if (r.id === e.parentId || r.id === e.childId) return false;
-                    return r.x < x2 && r.x + r.w > x1;
-                });
-
                 let blockTop = Infinity, blockBot = -Infinity;
                 for (const b of blockers) {
                     if (b.y < blockTop) blockTop = b.y;
                     if (b.y + b.h > blockBot) blockBot = b.y + b.h;
                 }
-
-                // Also consider all nearby nodes to find truly clear routes
-                let globalTop = Infinity, globalBot = -Infinity;
-                for (const r of allNearby) {
-                    if (r.y < globalTop) globalTop = r.y;
-                    if (r.y + r.h > globalBot) globalBot = r.y + r.h;
-                }
-
                 const aboveY = blockTop - NODE_H * 0.5;
                 const belowY = blockBot + NODE_H * 0.5;
-
-                // Prefer the route closer to the endpoints
                 const aboveCost = Math.abs(fromY - aboveY) + Math.abs(aboveY - toY);
                 const belowCost = Math.abs(fromY - belowY) + Math.abs(belowY - toY);
                 return aboveCost <= belowCost ? aboveY : belowY;
             }
 
-            // Single gap — simple case
             if (gaps.length === 1) {
                 const gx = gaps[0].mid;
                 const detourY = findClearY(gx, y1, y2);
-                if (detourY === null) {
-                    return `M${x1},${y1} H${gx} V${y2} H${x2}`;
-                }
-                // Route: H to gap near parent, V to detour, H across, V to target, H to child
+                if (detourY === null) return `M${x1},${y1} H${gx} V${y2} H${x2}`;
                 const seg1X = gaps[0].left + (gaps[0].right - gaps[0].left) * 0.25;
                 const seg2X = gaps[0].left + (gaps[0].right - gaps[0].left) * 0.75;
                 return `M${x1},${y1} H${seg1X} V${detourY} H${seg2X} V${y2} H${x2}`;
             }
 
-            // Multi-gap: staircase routing through each gap
-            // Strategy: go horizontal to first gap, step through each gap adjusting Y,
-            // arrive at last gap at the child Y level
             const points = [{ x: x1, y: y1 }];
             let curY = y1;
 
@@ -1637,19 +1616,12 @@
                 const gap = gaps[gi];
                 const gx = gap.mid;
                 const isLast = gi === gaps.length - 1;
-                const targetY = isLast ? y2 : curY; // Stay at current Y unless it's the last gap
-
-                // Check if we can do a vertical segment from curY toward targetY in this gap
-                // For intermediate gaps, test if curY passes through cleanly (horizontal line)
-                // For the last gap, we need to reach y2
 
                 if (isLast) {
-                    // Last gap: need to go from curY to y2
                     if (!hitsNodeAt(gx, curY, y2)) {
                         points.push({ x: gx, y: curY });
                         points.push({ x: gx, y: y2 });
                     } else {
-                        // Need detour
                         const detourY = findClearY(gx, curY, y2);
                         if (detourY !== null) {
                             const seg1X = gap.left + (gap.right - gap.left) * 0.25;
@@ -1664,18 +1636,13 @@
                         }
                     }
                 } else {
-                    // Intermediate gap: check if horizontal at curY will hit nodes in the next column
-                    // Look at nodes in the next column (column gi+1)
                     const nextColX = (parentCol + gi + 1) * colStep;
                     const colNodes = nodeRects.filter(r => {
                         if (r.id === e.parentId || r.id === e.childId) return false;
                         return r.x < nextColX + NODE_W && r.x + r.w > nextColX &&
                             curY >= r.y && curY <= r.y + r.h;
                     });
-
                     if (colNodes.length > 0) {
-                        // Our current Y level hits a node in the next column — adjust now
-                        // Find a clear Y by going above or below
                         let blockTop = Infinity, blockBot = -Infinity;
                         for (const r of colNodes) {
                             if (r.y < blockTop) blockTop = r.y;
@@ -1683,26 +1650,138 @@
                         }
                         const aboveY = blockTop - NODE_H * 0.5;
                         const belowY = blockBot + NODE_H * 0.5;
-                        // Pick direction closer to destination y2
                         const newY = Math.abs(aboveY - y2) <= Math.abs(belowY - y2) ? aboveY : belowY;
-
                         points.push({ x: gx, y: curY });
                         points.push({ x: gx, y: newY });
                         curY = newY;
                     }
-                    // else: stay at curY, no adjustment needed at this gap
                 }
             }
 
             points.push({ x: x2, y: y2 });
+            return buildPath(points);
+        }
 
-            // Build SVG path from points, only adding segments where x or y changes
+        function routeEdgeVertical(e, nodeRects) {
+            const PRI_GAP = V_GAP + 30;
+            const rowStep = NODE_H + PRI_GAP;
+
+            const x1 = e.pPos.x + NODE_W / 2; // bottom-center of parent
+            const y1 = e.pPos.y + NODE_H;
+            const x2 = e.cPos.x + NODE_W / 2; // top-center of child
+            const y2 = e.cPos.y;
+
+            if (x1 === x2) return `M${x1},${y1} V${y2}`;
+
+            const parentRow = Math.round(e.pPos.y / rowStep);
+            const childRow = Math.round(e.cPos.y / rowStep);
+
+            const gaps = [];
+            for (let r = parentRow; r < childRow; r++) {
+                const gapTop = r * rowStep + NODE_H;
+                const gapBot = (r + 1) * rowStep;
+                gaps.push({ top: gapTop, bot: gapBot, mid: (gapTop + gapBot) / 2 });
+            }
+
+            // Check if a horizontal segment at hy from xA to xB hits any node
+            function hitsNodeH(hy, xA, xB) {
+                const lo = Math.min(xA, xB), hi = Math.max(xA, xB);
+                for (const r of nodeRects) {
+                    if (r.id === e.parentId || r.id === e.childId) continue;
+                    if (hy >= r.y && hy <= r.y + r.h && hi >= r.x && lo <= r.x + r.w) return true;
+                }
+                return false;
+            }
+
+            function findClearX(gapY, fromX, toX) {
+                if (!hitsNodeH(gapY, fromX, toX)) return null;
+                const lo = Math.min(fromX, toX), hi = Math.max(fromX, toX);
+                const blockers = nodeRects.filter(r => {
+                    if (r.id === e.parentId || r.id === e.childId) return false;
+                    return gapY >= r.y && gapY <= r.y + r.h && r.x + r.w > lo && r.x < hi;
+                });
+                if (blockers.length === 0) return null;
+                let blockLeft = Infinity, blockRight = -Infinity;
+                for (const b of blockers) {
+                    if (b.x < blockLeft) blockLeft = b.x;
+                    if (b.x + b.w > blockRight) blockRight = b.x + b.w;
+                }
+                const leftX = blockLeft - NODE_W * 0.5;
+                const rightX = blockRight + NODE_W * 0.5;
+                const leftCost = Math.abs(fromX - leftX) + Math.abs(leftX - toX);
+                const rightCost = Math.abs(fromX - rightX) + Math.abs(rightX - toX);
+                return leftCost <= rightCost ? leftX : rightX;
+            }
+
+            if (gaps.length === 1) {
+                const gy = gaps[0].mid;
+                const detourX = findClearX(gy, x1, x2);
+                if (detourX === null) return `M${x1},${y1} V${gy} H${x2} V${y2}`;
+                const seg1Y = gaps[0].top + (gaps[0].bot - gaps[0].top) * 0.25;
+                const seg2Y = gaps[0].top + (gaps[0].bot - gaps[0].top) * 0.75;
+                return `M${x1},${y1} V${seg1Y} H${detourX} V${seg2Y} H${x2} V${y2}`;
+            }
+
+            const points = [{ x: x1, y: y1 }];
+            let curX = x1;
+
+            for (let gi = 0; gi < gaps.length; gi++) {
+                const gap = gaps[gi];
+                const gy = gap.mid;
+                const isLast = gi === gaps.length - 1;
+
+                if (isLast) {
+                    if (!hitsNodeH(gy, curX, x2)) {
+                        points.push({ x: curX, y: gy });
+                        points.push({ x: x2, y: gy });
+                    } else {
+                        const detourX = findClearX(gy, curX, x2);
+                        if (detourX !== null) {
+                            const seg1Y = gap.top + (gap.bot - gap.top) * 0.25;
+                            const seg2Y = gap.top + (gap.bot - gap.top) * 0.75;
+                            points.push({ x: curX, y: seg1Y });
+                            points.push({ x: detourX, y: seg1Y });
+                            points.push({ x: detourX, y: seg2Y });
+                            points.push({ x: x2, y: seg2Y });
+                        } else {
+                            points.push({ x: curX, y: gy });
+                            points.push({ x: x2, y: gy });
+                        }
+                    }
+                } else {
+                    const SEC_GAP = H_GAP - 60;
+                    const nextRowY = (parentRow + gi + 1) * rowStep;
+                    const rowNodes = nodeRects.filter(r => {
+                        if (r.id === e.parentId || r.id === e.childId) return false;
+                        return r.y < nextRowY + NODE_H && r.y + r.h > nextRowY &&
+                            curX >= r.x && curX <= r.x + r.w;
+                    });
+                    if (rowNodes.length > 0) {
+                        let blockLeft = Infinity, blockRight = -Infinity;
+                        for (const r of rowNodes) {
+                            if (r.x < blockLeft) blockLeft = r.x;
+                            if (r.x + r.w > blockRight) blockRight = r.x + r.w;
+                        }
+                        const leftX = blockLeft - NODE_W * 0.5;
+                        const rightX = blockRight + NODE_W * 0.5;
+                        const newX = Math.abs(leftX - x2) <= Math.abs(rightX - x2) ? leftX : rightX;
+                        points.push({ x: curX, y: gy });
+                        points.push({ x: newX, y: gy });
+                        curX = newX;
+                    }
+                }
+            }
+
+            points.push({ x: x2, y: y2 });
+            return buildPath(points);
+        }
+
+        function buildPath(points) {
             let d = `M${points[0].x},${points[0].y}`;
             for (let i = 1; i < points.length; i++) {
                 const prev = points[i - 1];
                 const cur = points[i];
                 if (cur.y !== prev.y && cur.x !== prev.x) {
-                    // need two segments (H then V or V then H)
                     d += ` H${cur.x} V${cur.y}`;
                 } else if (cur.x !== prev.x) {
                     d += ` H${cur.x}`;
@@ -2462,6 +2541,19 @@
         });
 
         document.getElementById('btn-fit').addEventListener('click', fitView);
+
+        function updateOrientBtn() {
+            document.getElementById('btn-orient').textContent = isVertical ? '↕ Vertical' : '↔ Horizontal';
+        }
+        updateOrientBtn();
+
+        document.getElementById('btn-orient').addEventListener('click', () => {
+            isVertical = !isVertical;
+            localStorage.setItem('tree-graph-orientation', isVertical ? 'vertical' : 'horizontal');
+            updateOrientBtn();
+            render();
+            fitView();
+        });
 
         document.getElementById('btn-clear').addEventListener('click', () => {
             if (nodes.size === 0) return;

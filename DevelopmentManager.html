@@ -1297,148 +1297,183 @@
             if (nodes.size === 0) return;
 
             // Orientation-dependent dimensions
-            // Primary axis = depth direction, Secondary axis = within-layer spreading
-            const PRI_SIZE = isVertical ? NODE_H : NODE_W;  // node size along depth axis
-            const SEC_SIZE = isVertical ? NODE_W : NODE_H;  // node size along spread axis
-            const PRI_GAP = isVertical ? V_GAP + 30 : H_GAP; // gap between depth layers
-            const SEC_GAP = isVertical ? H_GAP - 60 : V_GAP; // gap between nodes in same layer
+            const PRI_SIZE = isVertical ? NODE_H : NODE_W;
+            const SEC_SIZE = isVertical ? NODE_W : NODE_H;
+            const PRI_GAP = isVertical ? V_GAP + 30 : H_GAP;
+            const SEC_GAP = isVertical ? H_GAP - 60 : V_GAP;
 
-            // 1. Depth via topological sort (longest path from any root)
-            const depth = new Map();
-            const inDeg = new Map();
-            for (const [id, node] of nodes) {
-                inDeg.set(id, node.parentIds.length);
-                depth.set(id, 0);
-            }
-            const queue = [];
-            for (const [id, deg] of inDeg) {
-                if (deg === 0) queue.push(id);
-            }
-            while (queue.length > 0) {
-                const id = queue.shift();
-                const node = nodes.get(id);
-                for (const cid of node.children) {
-                    depth.set(cid, Math.max(depth.get(cid), depth.get(id) + 1));
-                    inDeg.set(cid, inDeg.get(cid) - 1);
-                    if (inDeg.get(cid) === 0) queue.push(cid);
+            // 1. Discover connected components (treat edges as undirected)
+            const compVis = new Set();
+            const components = [];
+            for (const [id] of nodes) {
+                if (compVis.has(id)) continue;
+                const comp = new Set();
+                const stk = [id];
+                while (stk.length > 0) {
+                    const cur = stk.pop();
+                    if (compVis.has(cur)) continue;
+                    compVis.add(cur);
+                    comp.add(cur);
+                    const nd = nodes.get(cur);
+                    for (const cid of nd.children) if (!compVis.has(cid)) stk.push(cid);
+                    for (const pid of nd.parentIds) if (!compVis.has(pid)) stk.push(pid);
                 }
+                components.push(comp);
             }
 
-            // 2. Group by layer (column in H mode, row in V mode)
-            const columns = new Map();
-            for (const [id, d] of depth) {
-                if (!columns.has(d)) columns.set(d, []);
-                columns.get(d).push(id);
-            }
-            const maxDepth = columns.size > 0 ? Math.max(...columns.keys()) : 0;
+            // 2. Lay out each component independently, then pack together
+            const COMP_GAP = SEC_GAP * 2;
+            let compOffset = 0;
 
-            // 3. Initial positioning — using abstract primary/secondary coordinates
-            // We store as {p (primary), s (secondary)} then convert to {x, y} at end
-            const absPos = new Map();
-            for (const [d, col] of columns) {
-                const p = d * (PRI_SIZE + PRI_GAP);
-                let s = 0;
-                for (const id of col) {
-                    absPos.set(id, { p, s });
-                    s += SEC_SIZE + SEC_GAP;
+            for (const compSet of components) {
+                // Depth via topological sort within this component
+                const depth = new Map();
+                const inDeg = new Map();
+                for (const id of compSet) {
+                    const node = nodes.get(id);
+                    // Only count parents within this component
+                    const pCount = node.parentIds.filter(p => compSet.has(p)).length;
+                    inDeg.set(id, pCount);
+                    depth.set(id, 0);
                 }
-            }
+                const queue = [];
+                for (const [id, deg] of inDeg) {
+                    if (deg === 0) queue.push(id);
+                }
+                while (queue.length > 0) {
+                    const id = queue.shift();
+                    const node = nodes.get(id);
+                    for (const cid of node.children) {
+                        if (!compSet.has(cid)) continue;
+                        depth.set(cid, Math.max(depth.get(cid), depth.get(id) + 1));
+                        inDeg.set(cid, inDeg.get(cid) - 1);
+                        if (inDeg.get(cid) === 0) queue.push(cid);
+                    }
+                }
 
-            // 4. Iterative layout: children centered on parents, parents centered on children
-            for (let iter = 0; iter < 20; iter++) {
-                // Forward pass
+                // Group by layer
+                const columns = new Map();
+                for (const [id, d] of depth) {
+                    if (!columns.has(d)) columns.set(d, []);
+                    columns.get(d).push(id);
+                }
+                const maxDepth = columns.size > 0 ? Math.max(...columns.keys()) : 0;
+
+                // Initial positioning (secondary axis starts at 0 for each component)
+                const absPos = new Map();
+                for (const [d, col] of columns) {
+                    const p = d * (PRI_SIZE + PRI_GAP);
+                    let s = 0;
+                    for (const id of col) {
+                        absPos.set(id, { p, s });
+                        s += SEC_SIZE + SEC_GAP;
+                    }
+                }
+
+                // Barycenter iterations (only within this component)
+                for (let iter = 0; iter < 20; iter++) {
+                    // Forward pass
+                    for (let d = 1; d <= maxDepth; d++) {
+                        const col = columns.get(d);
+                        if (!col) continue;
+                        for (const id of col) {
+                            const node = nodes.get(id);
+                            if (node.parentIds.length > 0) {
+                                let minPS = Infinity, maxPS = -Infinity;
+                                for (const pid of node.parentIds) {
+                                    const pp = absPos.get(pid);
+                                    if (pp) {
+                                        const cs = pp.s + SEC_SIZE / 2;
+                                        if (cs < minPS) minPS = cs;
+                                        if (cs > maxPS) maxPS = cs;
+                                    }
+                                }
+                                if (minPS !== Infinity) {
+                                    absPos.get(id)._t = (minPS + maxPS) / 2 - SEC_SIZE / 2;
+                                }
+                            }
+                        }
+                        col.sort((a, b) => {
+                            const at = absPos.get(a)._t ?? absPos.get(a).s;
+                            const bt = absPos.get(b)._t ?? absPos.get(b).s;
+                            return at - bt;
+                        });
+                        packLayer(col, absPos, SEC_SIZE, SEC_GAP);
+                    }
+                    // Backward pass
+                    for (let d = maxDepth - 1; d >= 0; d--) {
+                        const col = columns.get(d);
+                        if (!col) continue;
+                        for (const id of col) {
+                            const node = nodes.get(id);
+                            if (node.children.length > 0) {
+                                let minCS = Infinity, maxCS = -Infinity;
+                                for (const cid of node.children) {
+                                    const cp = absPos.get(cid);
+                                    if (cp) {
+                                        const cs = cp.s + SEC_SIZE / 2;
+                                        if (cs < minCS) minCS = cs;
+                                        if (cs > maxCS) maxCS = cs;
+                                    }
+                                }
+                                if (minCS !== Infinity) {
+                                    absPos.get(id)._t = (minCS + maxCS) / 2 - SEC_SIZE / 2;
+                                }
+                            }
+                        }
+                        col.sort((a, b) => {
+                            const at = absPos.get(a)._t ?? absPos.get(a).s;
+                            const bt = absPos.get(b)._t ?? absPos.get(b).s;
+                            return at - bt;
+                        });
+                        packLayer(col, absPos, SEC_SIZE, SEC_GAP);
+                    }
+                }
+
+                // Final centering pass for multi-parent nodes
                 for (let d = 1; d <= maxDepth; d++) {
                     const col = columns.get(d);
                     if (!col) continue;
                     for (const id of col) {
                         const node = nodes.get(id);
-                        if (node.parentIds.length > 0) {
-                            let minPS = Infinity, maxPS = -Infinity;
-                            for (const pid of node.parentIds) {
-                                const pp = absPos.get(pid);
-                                if (pp) {
-                                    const cs = pp.s + SEC_SIZE / 2;
-                                    if (cs < minPS) minPS = cs;
-                                    if (cs > maxPS) maxPS = cs;
-                                }
-                            }
-                            if (minPS !== Infinity) {
-                                absPos.get(id)._t = (minPS + maxPS) / 2 - SEC_SIZE / 2;
+                        if (node.parentIds.length <= 1) continue;
+                        let minPS = Infinity, maxPS = -Infinity;
+                        for (const pid of node.parentIds) {
+                            const pp = absPos.get(pid);
+                            if (pp) {
+                                const cs = pp.s + SEC_SIZE / 2;
+                                if (cs < minPS) minPS = cs;
+                                if (cs > maxPS) maxPS = cs;
                             }
                         }
+                        if (minPS === Infinity) continue;
+                        const ideal = (minPS + maxPS) / 2 - SEC_SIZE / 2;
+                        const pos = absPos.get(id);
+                        const idx = col.indexOf(id);
+                        const above = idx > 0 ? absPos.get(col[idx - 1]) : null;
+                        const below = idx < col.length - 1 ? absPos.get(col[idx + 1]) : null;
+                        const lo = above ? above.s + SEC_SIZE + SEC_GAP : -Infinity;
+                        const hi = below ? below.s - SEC_SIZE - SEC_GAP : Infinity;
+                        pos.s = Math.max(lo, Math.min(hi, ideal));
                     }
-                    col.sort((a, b) => {
-                        const at = absPos.get(a)._t ?? absPos.get(a).s;
-                        const bt = absPos.get(b)._t ?? absPos.get(b).s;
-                        return at - bt;
-                    });
-                    packLayer(col, absPos, SEC_SIZE, SEC_GAP);
                 }
-                // Backward pass
-                for (let d = maxDepth - 1; d >= 0; d--) {
-                    const col = columns.get(d);
-                    if (!col) continue;
-                    for (const id of col) {
-                        const node = nodes.get(id);
-                        if (node.children.length > 0) {
-                            let minCS = Infinity, maxCS = -Infinity;
-                            for (const cid of node.children) {
-                                const cp = absPos.get(cid);
-                                if (cp) {
-                                    const cs = cp.s + SEC_SIZE / 2;
-                                    if (cs < minCS) minCS = cs;
-                                    if (cs > maxCS) maxCS = cs;
-                                }
-                            }
-                            if (minCS !== Infinity) {
-                                absPos.get(id)._t = (minCS + maxCS) / 2 - SEC_SIZE / 2;
-                            }
-                        }
-                    }
-                    col.sort((a, b) => {
-                        const at = absPos.get(a)._t ?? absPos.get(a).s;
-                        const bt = absPos.get(b)._t ?? absPos.get(b).s;
-                        return at - bt;
-                    });
-                    packLayer(col, absPos, SEC_SIZE, SEC_GAP);
-                }
-            }
 
-            // 5. Final centering pass
-            for (let d = 1; d <= maxDepth; d++) {
-                const col = columns.get(d);
-                if (!col) continue;
-                for (const id of col) {
-                    const node = nodes.get(id);
-                    if (node.parentIds.length <= 1) continue;
-                    let minPS = Infinity, maxPS = -Infinity;
-                    for (const pid of node.parentIds) {
-                        const pp = absPos.get(pid);
-                        if (pp) {
-                            const cs = pp.s + SEC_SIZE / 2;
-                            if (cs < minPS) minPS = cs;
-                            if (cs > maxPS) maxPS = cs;
-                        }
+                // Shift this component so it packs after the previous one
+                let minS = Infinity, maxS = -Infinity;
+                for (const [, pos] of absPos) {
+                    minS = Math.min(minS, pos.s);
+                    maxS = Math.max(maxS, pos.s + SEC_SIZE);
+                }
+                const shift = compOffset - minS;
+                for (const [id, pos] of absPos) {
+                    pos.s += shift;
+                    if (isVertical) {
+                        layoutCache.set(id, { x: pos.s, y: pos.p });
+                    } else {
+                        layoutCache.set(id, { x: pos.p, y: pos.s });
                     }
-                    if (minPS === Infinity) continue;
-                    const ideal = (minPS + maxPS) / 2 - SEC_SIZE / 2;
-                    const pos = absPos.get(id);
-                    const idx = col.indexOf(id);
-                    const above = idx > 0 ? absPos.get(col[idx - 1]) : null;
-                    const below = idx < col.length - 1 ? absPos.get(col[idx + 1]) : null;
-                    const lo = above ? above.s + SEC_SIZE + SEC_GAP : -Infinity;
-                    const hi = below ? below.s - SEC_SIZE - SEC_GAP : Infinity;
-                    pos.s = Math.max(lo, Math.min(hi, ideal));
                 }
-            }
-
-            // Cleanup and convert to x/y
-            for (const [id, pos] of absPos) {
-                if (isVertical) {
-                    layoutCache.set(id, { x: pos.s, y: pos.p });
-                } else {
-                    layoutCache.set(id, { x: pos.p, y: pos.s });
-                }
+                compOffset = maxS + shift + COMP_GAP;
             }
         }
 

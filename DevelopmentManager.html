@@ -1045,6 +1045,7 @@
         /* pan / zoom */
         let panX = 60, panY = 0, scale = 1;
         let isPanning = false, panStartX = 0, panStartY = 0;
+        let didPan = false;
 
         /* ═══════════════════════════════════════════
            HELPERS
@@ -2478,6 +2479,7 @@
         /* ── Canvas click (select / deselect / link) ── */
         let clickTimer = null;
         wrapEl.addEventListener('click', e => {
+            if (didPan) { didPan = false; return; }
             if (!e.target.closest('.node') && !e.target.closest('#ctx-menu') && selectedId && !linkMode) {
                 selectedId = null;
                 render();
@@ -2670,6 +2672,7 @@
         });
         window.addEventListener('mousemove', e => {
             if (!isPanning) return;
+            didPan = true;
             panX = e.clientX - panStartX;
             panY = e.clientY - panStartY;
             applyTransform();

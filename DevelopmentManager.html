@@ -2148,6 +2148,7 @@
                 const rows = draft.map((s, i) => `
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px" data-idx="${i}">
         <input type="color" value="${s.color}" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer" data-field="color">
+        <input type="text" value="${esc(s.icon || '')}" style="width:36px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0;font-size:14px;text-align:center;background:var(--bg);color:var(--text)" data-field="icon" placeholder="🔵" title="Icon (emoji)">
         <input type="text" value="${esc(s.label)}" style="flex:1;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;background:var(--bg);color:var(--text)" data-field="label" placeholder="Status name">
         <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer" title="Counts toward completion">
           <input type="checkbox" ${s.complete ? 'checked' : ''} data-field="complete"> Done
@@ -2171,6 +2172,7 @@
                 modalEl.querySelectorAll('[data-idx]').forEach(row => {
                     const idx = parseInt(row.dataset.idx);
                     row.querySelector('[data-field="color"]').addEventListener('input', e => { draft[idx].color = e.target.value; });
+                    row.querySelector('[data-field="icon"]').addEventListener('input', e => { draft[idx].icon = e.target.value.trim(); });
                     row.querySelector('[data-field="label"]').addEventListener('input', e => { draft[idx].label = e.target.value.trim(); });
                     row.querySelector('[data-field="complete"]').addEventListener('change', e => { draft[idx].complete = e.target.checked; });
                     row.querySelector('[data-action="remove"]')?.addEventListener('click', () => {

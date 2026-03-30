@@ -1,0 +1,2456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Development Manager</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        :root {
+            --bg: #f4f5f7;
+            --surface: #fff;
+            --border: #e2e5ea;
+            --text: #1a1c20;
+            --text-secondary: #5f6570;
+            --accent: #3b82f6;
+            --accent-light: #dbeafe;
+            --status-gray: #94a3b8;
+            --status-amber: #f59e0b;
+            --status-green: #22c55e;
+            --connector: #b0b8c4;
+            --shadow: 0 1px 3px rgba(0, 0, 0, .08), 0 1px 2px rgba(0, 0, 0, .06);
+            --shadow-lg: 0 4px 12px rgba(0, 0, 0, .1);
+            --radius: 10px;
+            --node-w: 200px;
+            --node-h: 78px;
+            --h-gap: 110px;
+            --v-gap: 48px;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            user-select: none
+        }
+
+        /* ─── TOOLBAR ─── */
+        #toolbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 52px;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 12px;
+            z-index: 100
+        }
+
+        #toolbar h1 {
+            font-size: 15px;
+            font-weight: 600;
+            letter-spacing: -.3px;
+            color: var(--text)
+        }
+
+        #toolbar .sep {
+            width: 1px;
+            height: 24px;
+            background: var(--border)
+        }
+
+        .tb-btn {
+            height: 34px;
+            padding: 0 14px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all .15s
+        }
+
+        .tb-btn:hover {
+            background: #f0f1f3;
+            border-color: #ccd0d5
+        }
+
+        .tb-btn:active {
+            transform: scale(.97)
+        }
+
+        .tb-btn.primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        .tb-btn.primary:hover {
+            background: #2563eb
+        }
+
+        .tb-btn:disabled {
+            opacity: .4;
+            pointer-events: none
+        }
+
+        #toolbar .right {
+            margin-left: auto;
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        #toolbar .hint {
+            font-size: 12px;
+            color: var(--text-secondary)
+        }
+
+        /* ─── LEGEND ─── */
+        #legend {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 18px;
+            z-index: 90;
+            box-shadow: var(--shadow);
+            transition: right .2s ease
+        }
+
+        #legend.panel-open {
+            right: 316px
+        }
+
+        #legend.panel-minimized {
+            right: 52px
+        }
+
+        #legend h3 {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-secondary);
+            margin-bottom: 8px
+        }
+
+        .legend-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            margin-bottom: 5px
+        }
+
+        .legend-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            color: #fff
+        }
+
+        /* ─── CANVAS ─── */
+        #canvas-wrap {
+            position: fixed;
+            top: 52px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            cursor: grab
+        }
+
+        #canvas-wrap.grabbing {
+            cursor: grabbing
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform-origin: 0 0
+        }
+
+        #connectors {
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow: visible;
+            pointer-events: none
+        }
+
+        /* ─── EMPTY STATE ─── */
+        #empty-state {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 10
+        }
+
+        #empty-state p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 16px
+        }
+
+        /* ─── NODE ─── */
+        .node {
+            position: absolute;
+            width: var(--node-w);
+            height: var(--node-h);
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 0 14px;
+            cursor: pointer;
+            transition: box-shadow .15s, border-color .15s, transform .15s
+        }
+
+        .node:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: #c0c5cc
+        }
+
+        .node.selected {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light), var(--shadow-lg)
+        }
+
+        .node-name {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 155px
+        }
+
+        .node-status-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            margin-top: 5px
+        }
+
+        .node-status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7px;
+            color: #fff;
+            transition: background .2s
+        }
+
+        .node-status-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px
+        }
+
+        .node-status-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: background .15s
+        }
+
+        .node-status-btn:hover {
+            background: #f0f1f3
+        }
+
+        /* ─── DEP BADGE ─── */
+        .dep-badge {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            min-width: 16px;
+            height: 16px;
+            background: var(--border);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            font-size: 9px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 4px
+        }
+
+        /* ─── CONTEXT MENU ─── */
+        #ctx-menu {
+            position: fixed;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            min-width: 200px;
+            padding: 4px;
+            z-index: 200;
+            display: none
+        }
+
+        #ctx-menu .item {
+            padding: 8px 12px;
+            font-size: 13px;
+            border-radius: 7px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background .1s
+        }
+
+        #ctx-menu .item:hover {
+            background: #f0f1f3
+        }
+
+        #ctx-menu .item.danger {
+            color: #ef4444
+        }
+
+        #ctx-menu .item.danger:hover {
+            background: #fef2f2
+        }
+
+        #ctx-menu .item.disabled {
+            color: var(--text-secondary);
+            opacity: .5;
+            pointer-events: none
+        }
+
+        #ctx-menu .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0
+        }
+
+        /* ─── MODAL ─── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .25);
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .15s
+        }
+
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: 14px;
+            box-shadow: var(--shadow-lg);
+            width: 380px;
+            max-width: 92vw;
+            padding: 24px;
+            transform: scale(.95);
+            transition: transform .15s
+        }
+
+        .modal-overlay.open .modal {
+            transform: scale(1)
+        }
+
+        .modal h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px
+        }
+
+        .modal label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 5px
+        }
+
+        .modal input[type=text] {
+            width: 100%;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .15s
+        }
+
+        .modal input[type=text]:focus {
+            border-color: var(--accent)
+        }
+
+        .modal .field {
+            margin-bottom: 14px
+        }
+
+        .modal .status-picker {
+            display: flex;
+            gap: 8px
+        }
+
+        .modal .status-option {
+            flex: 1;
+            padding: 10px 8px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all .15s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px
+        }
+
+        .modal .status-option:hover {
+            border-color: #b0b8c4
+        }
+
+        .modal .status-option.active {
+            border-color: var(--accent);
+            background: var(--accent-light)
+        }
+
+        .modal .status-option .dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #fff
+        }
+
+        .modal .actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 20px
+        }
+
+        .modal .actions button {
+            height: 36px;
+            padding: 0 18px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            transition: all .15s
+        }
+
+        .modal .actions button:hover {
+            background: #f0f1f3
+        }
+
+        .modal .actions button.primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        .modal .actions button.primary:hover {
+            background: #2563eb
+        }
+
+        .modal .actions button.danger {
+            background: #ef4444;
+            color: #fff;
+            border-color: #ef4444
+        }
+
+        .modal .actions button.danger:hover {
+            background: #dc2626
+        }
+
+        /* ─── LINK BANNER ─── */
+        #link-banner {
+            position: fixed;
+            top: 58px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--accent);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 0 0 10px 10px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 95;
+            display: none;
+            gap: 12px;
+            align-items: center
+        }
+
+        #link-banner.show {
+            display: flex
+        }
+
+        #link-banner button {
+            background: rgba(255, 255, 255, .2);
+            border: none;
+            color: #fff;
+            padding: 4px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px
+        }
+
+        #link-banner button:hover {
+            background: rgba(255, 255, 255, .35)
+        }
+
+        /* ─── LINK MODE ─── */
+        #canvas-wrap.link-mode {
+            cursor: crosshair
+        }
+
+        #canvas-wrap.link-mode .node {
+            cursor: crosshair
+        }
+
+        #canvas-wrap.link-mode .node:hover {
+            border-color: var(--accent);
+            border-style: dashed
+        }
+
+        /* ─── TOAST ─── */
+        #toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1a1c20;
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            opacity: 0;
+            transition: all .25s;
+            z-index: 400;
+            pointer-events: none
+        }
+
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0)
+        }
+
+        /* ─── SIDE PANEL ─── */
+        #side-panel {
+            position: fixed;
+            top: 52px;
+            right: 0;
+            bottom: 0;
+            width: 300px;
+            background: var(--surface);
+            border-left: 1px solid var(--border);
+            box-shadow: -2px 0 8px rgba(0, 0, 0, .05);
+            z-index: 90;
+            transform: translateX(100%);
+            transition: transform .2s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        #side-panel.open {
+            transform: translateX(0)
+        }
+
+        #side-panel.minimized {
+            width: 36px;
+            min-width: 36px
+        }
+
+        #side-panel.minimized .sp-body {
+            display: none
+        }
+
+        #side-panel.minimized .sp-header h3 {
+            display: none
+        }
+
+        #side-panel.minimized .sp-header {
+            justify-content: center;
+            padding: 4px 0;
+            flex-direction: column;
+            border-bottom: none
+        }
+
+        #side-panel.minimized .sp-header-btns {
+            flex-direction: column
+        }
+
+        #side-panel.minimized #sp-close {
+            display: none
+        }
+
+        .sp-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0
+        }
+
+        .sp-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0
+        }
+
+        .sp-header-btns {
+            display: flex;
+            gap: 4px
+        }
+
+        .sp-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: background .15s
+        }
+
+        .sp-btn:hover {
+            background: #f0f1f3
+        }
+
+        .sp-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px
+        }
+
+        .sp-section {
+            margin-bottom: 16px
+        }
+
+        .sp-section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--text-secondary);
+            margin-bottom: 6px
+        }
+
+        .sp-status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px
+        }
+
+        .sp-status-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: #fff
+        }
+
+        .sp-node-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background .1s;
+            border: 1px solid var(--border);
+            margin-bottom: 4px
+        }
+
+        .sp-node-item:hover {
+            background: #f0f1f3
+        }
+
+        .sp-node-item .sp-item-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+
+        .sp-node-item .sp-item-name {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .sp-node-item .sp-item-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+            white-space: nowrap
+        }
+
+        .sp-empty {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-style: italic
+        }
+
+        /* ─── STATUS DROPDOWN ─── */
+        .status-dropdown {
+            position: absolute;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            padding: 4px;
+            z-index: 250;
+            min-width: 180px;
+            display: none
+        }
+
+        .status-dropdown.open {
+            display: block
+        }
+
+        .status-dropdown .sd-item {
+            padding: 7px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background .1s
+        }
+
+        .status-dropdown .sd-item:hover {
+            background: #f0f1f3
+        }
+
+        .status-dropdown .sd-item.active {
+            background: var(--accent-light)
+        }
+
+        .status-dropdown .sd-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7px;
+            color: #fff
+        }
+
+        /* connector-specific hover */
+        .connector-hit {
+            stroke: transparent;
+            stroke-width: 14;
+            fill: none;
+            cursor: pointer;
+            pointer-events: stroke
+        }
+
+        .connector-hit:hover+.connector-line {
+            stroke-width: 3.5
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- TOOLBAR -->
+    <div id="toolbar">
+        <h1>Development Manager</h1>
+        <div class="sep"></div>
+        <button class="tb-btn primary" id="btn-add-node">+ Node</button>
+        <button class="tb-btn" id="btn-add-child" disabled>+ Child</button>
+        <button class="tb-btn" id="btn-link" disabled title="Add an additional child to the selected node">+ Additional
+            Child</button>
+        <button class="tb-btn" id="btn-insert-before" disabled>+ Parent</button>
+        <button class="tb-btn" id="btn-edit" disabled>Edit</button>
+        <button class="tb-btn" id="btn-delete" disabled>Delete</button>
+        <div class="right">
+            <span class="hint">Right-click for options · Double-click to rename</span>
+            <div class="sep"></div>
+            <button class="tb-btn" id="btn-fit">Fit View</button>
+            <button class="tb-btn" id="btn-clear">Clear All</button>
+            <button class="tb-btn" id="btn-import">Import</button>
+            <button class="tb-btn" id="btn-export">Export</button>
+        </div>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div id="empty-state">
+        <p>No nodes yet — add a node to begin.</p>
+        <button class="tb-btn primary" id="btn-add-node-empty">+ Create Node</button>
+    </div>
+
+    <!-- LINK MODE BANNER -->
+    <div id="link-banner">
+        <span id="link-banner-text">Click a node to add as additional child</span>
+        <button id="link-cancel">Cancel (Esc)</button>
+    </div>
+
+    <!-- CANVAS -->
+    <div id="canvas-wrap">
+        <div id="canvas">
+            <svg id="connectors"></svg>
+        </div>
+    </div>
+
+    <!-- LEGEND + STATS -->
+    <div id="legend">
+        <div id="completion-stats"></div>
+        <h3>Status</h3>
+        <div id="legend-rows"></div>
+        <button class="tb-btn" id="btn-customize"
+            style="width:100%;margin-top:10px;justify-content:center;font-size:11px">⚙ Customize Statuses</button>
+    </div>
+
+    <!-- SIDE PANEL -->
+    <div id="side-panel">
+        <div class="sp-header">
+            <h3 id="sp-title">Node Details</h3>
+            <div class="sp-header-btns">
+                <button class="sp-btn" id="sp-minimize" title="Minimize">▶</button>
+                <button class="sp-btn" id="sp-close" title="Close">✕</button>
+            </div>
+        </div>
+        <div class="sp-body" id="sp-body"></div>
+    </div>
+
+    <!-- CONTEXT MENU -->
+    <div id="ctx-menu"></div>
+
+    <!-- MODAL OVERLAY -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal"></div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast"></div>
+
+    <script>
+        /* ═══════════════════════════════════════════
+           DATA MODEL  (DAG — nodes can have multiple parents)
+           ═══════════════════════════════════════════ */
+        const DEFAULT_STATUSES = [
+            { id: 'not-started', label: 'Dev Not Started', color: '#94a3b8', icon: '', complete: false },
+            { id: 'in-flight', label: 'Dev In-flight', color: '#f59e0b', icon: '', complete: false },
+            { id: 'qa', label: 'Dev Complete / QA', color: '#22c55e', icon: '✓', complete: true }
+        ];
+
+        let STATUSES = loadStatuses();
+
+        function loadStatuses() {
+            try {
+                const raw = localStorage.getItem('tree-graph-statuses');
+                if (raw) return JSON.parse(raw);
+            } catch { }
+            return JSON.parse(JSON.stringify(DEFAULT_STATUSES));
+        }
+
+        function saveStatuses() {
+            try { localStorage.setItem('tree-graph-statuses', JSON.stringify(STATUSES)); } catch { }
+        }
+
+        // Each node: { id, name, status, parentIds:[], children:[] }
+        let nodes = new Map();
+        let selectedId = null;
+        let nextId = 1;
+
+        const NODE_W = 200, NODE_H = 78, H_GAP = 110, V_GAP = 48;
+
+        /* linking mode */
+        let linkMode = false;
+        let linkSourceId = null;
+
+        /* pan / zoom */
+        let panX = 60, panY = 0, scale = 1;
+        let isPanning = false, panStartX = 0, panStartY = 0;
+
+        /* ═══════════════════════════════════════════
+           HELPERS
+           ═══════════════════════════════════════════ */
+        function getRoots() {
+            return [...nodes.values()].filter(n => n.parentIds.length === 0).map(n => n.id);
+        }
+
+        function esc(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        /* ═══════════════════════════════════════════
+           PERSISTENCE (localStorage)
+           ═══════════════════════════════════════════ */
+        const STORAGE_KEY = 'tree-graph-manager-data-v2';
+
+        function saveState() {
+            const data = { nodes: [...nodes.entries()], nextId };
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { }
+        }
+
+        function loadState() {
+            try {
+                let raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) {
+                    // migrate from v1 (single-parent tree format)
+                    raw = localStorage.getItem('tree-graph-manager-data');
+                    if (!raw) return;
+                }
+                const data = JSON.parse(raw);
+                nodes = new Map(data.nodes);
+                nextId = data.nextId || nodes.size + 1;
+                // migrate old single-parent format → parentIds array
+                for (const [, node] of nodes) {
+                    if (!Array.isArray(node.parentIds)) {
+                        node.parentIds = node.parentId ? [node.parentId] : [];
+                        delete node.parentId;
+                    }
+                }
+                saveState();
+            } catch { }
+        }
+
+        /* ═══════════════════════════════════════════
+           CYCLE DETECTION
+           ═══════════════════════════════════════════ */
+        function wouldCycle(fromId, toId) {
+            // Would adding edge fromId → toId create a cycle?
+            // Check if fromId is reachable from toId via existing children
+            const visited = new Set();
+            const stack = [toId];
+            while (stack.length > 0) {
+                const cur = stack.pop();
+                if (cur === fromId) return true;
+                if (visited.has(cur)) continue;
+                visited.add(cur);
+                const node = nodes.get(cur);
+                if (node) for (const cid of node.children) stack.push(cid);
+            }
+            return false;
+        }
+
+        /* ═══════════════════════════════════════════
+           CRUD
+           ═══════════════════════════════════════════ */
+        function createNode(name, status = 'not-started') {
+            const id = 'node-' + (nextId++);
+            nodes.set(id, { id, name, status, parentIds: [], children: [] });
+            saveState();
+            return id;
+        }
+
+        function addChild(parentId, name, status = 'not-started') {
+            const id = createNode(name, status);
+            addLink(parentId, id);
+            return id;
+        }
+
+        function addLink(parentId, childId) {
+            if (parentId === childId) { toast('Cannot link a node to itself'); return false; }
+            const parent = nodes.get(parentId);
+            const child = nodes.get(childId);
+            if (!parent || !child) return false;
+            if (child.parentIds.includes(parentId)) { toast('Link already exists'); return false; }
+            if (wouldCycle(parentId, childId)) { toast('Cannot link — would create a cycle'); return false; }
+            child.parentIds.push(parentId);
+            parent.children.push(childId);
+            saveState();
+            return true;
+        }
+
+        function removeLink(parentId, childId) {
+            const parent = nodes.get(parentId);
+            const child = nodes.get(childId);
+            if (!parent || !child) return;
+            const pi = child.parentIds.indexOf(parentId);
+            if (pi !== -1) child.parentIds.splice(pi, 1);
+            const ci = parent.children.indexOf(childId);
+            if (ci !== -1) parent.children.splice(ci, 1);
+            saveState();
+        }
+
+        function insertBefore(childId, name, status = 'not-started') {
+            const child = nodes.get(childId);
+            if (!child) return;
+            const newId = createNode(name, status);
+            // take all parents of child → parent the new node instead
+            for (const pid of [...child.parentIds]) {
+                removeLink(pid, childId);
+                addLink(pid, newId);
+            }
+            addLink(newId, childId);
+            return newId;
+        }
+
+        function deleteNode(id) {
+            const node = nodes.get(id);
+            if (!node) return;
+            // reconnect: for each parent × each child, add link (skip if cycle)
+            for (const pid of [...node.parentIds]) {
+                removeLink(pid, id);
+                for (const cid of node.children) {
+                    if (!nodes.get(cid).parentIds.includes(pid)) addLink(pid, cid);
+                }
+            }
+            for (const cid of [...node.children]) removeLink(id, cid);
+            nodes.delete(id);
+            if (selectedId === id) selectedId = null;
+            saveState();
+        }
+
+        function deleteSubtree(id) {
+            // delete the node + all descendants that are EXCLUSIVELY reachable through it
+            const toRemove = new Set([id]);
+            let changed = true;
+            while (changed) {
+                changed = false;
+                for (const [nid, node] of nodes) {
+                    if (toRemove.has(nid)) continue;
+                    if (node.parentIds.length > 0 && node.parentIds.every(pid => toRemove.has(pid))) {
+                        toRemove.add(nid);
+                        changed = true;
+                    }
+                }
+            }
+            // clean up external links
+            for (const did of toRemove) {
+                const n = nodes.get(did);
+                if (!n) continue;
+                for (const pid of [...n.parentIds]) {
+                    if (!toRemove.has(pid)) {
+                        const p = nodes.get(pid);
+                        const ci = p.children.indexOf(did);
+                        if (ci !== -1) p.children.splice(ci, 1);
+                    }
+                }
+                for (const cid of [...n.children]) {
+                    if (!toRemove.has(cid)) {
+                        const c = nodes.get(cid);
+                        const pi = c.parentIds.indexOf(did);
+                        if (pi !== -1) c.parentIds.splice(pi, 1);
+                    }
+                }
+            }
+            for (const did of toRemove) {
+                nodes.delete(did);
+                if (selectedId === did) selectedId = null;
+            }
+            saveState();
+        }
+
+        function renameNode(id, name) {
+            const n = nodes.get(id);
+            if (n) { n.name = name; saveState(); }
+        }
+
+        function setNodeStatus(id, status) {
+            const n = nodes.get(id);
+            if (n) { n.status = status; saveState(); }
+        }
+
+        /* ═══════════════════════════════════════════
+           LAYOUT ENGINE  (Sugiyama-style DAG layout)
+           ═══════════════════════════════════════════ */
+        const layoutCache = new Map(); // id → {x, y}
+
+        function computeLayout() {
+            layoutCache.clear();
+            if (nodes.size === 0) return;
+
+            // 1. Depth via topological sort (longest path from any root)
+            const depth = new Map();
+            const inDeg = new Map();
+            for (const [id, node] of nodes) {
+                inDeg.set(id, node.parentIds.length);
+                depth.set(id, 0);
+            }
+            const queue = [];
+            for (const [id, deg] of inDeg) {
+                if (deg === 0) queue.push(id);
+            }
+            while (queue.length > 0) {
+                const id = queue.shift();
+                const node = nodes.get(id);
+                for (const cid of node.children) {
+                    depth.set(cid, Math.max(depth.get(cid), depth.get(id) + 1));
+                    inDeg.set(cid, inDeg.get(cid) - 1);
+                    if (inDeg.get(cid) === 0) queue.push(cid);
+                }
+            }
+
+            // 2. Group by column
+            const columns = new Map();
+            for (const [id, d] of depth) {
+                if (!columns.has(d)) columns.set(d, []);
+                columns.get(d).push(id);
+            }
+            const maxDepth = columns.size > 0 ? Math.max(...columns.keys()) : 0;
+
+            // 3. Initial positioning (spread out in each column)
+            for (const [d, col] of columns) {
+                const x = d * (NODE_W + H_GAP);
+                let y = 0;
+                for (const id of col) {
+                    layoutCache.set(id, { x, y });
+                    y += NODE_H + V_GAP;
+                }
+            }
+
+            // 4. Iterative layout: children centered on parents, parents centered on children
+            for (let iter = 0; iter < 20; iter++) {
+                // Forward pass: position each child at the vertical center of its parents
+                for (let d = 1; d <= maxDepth; d++) {
+                    const col = columns.get(d);
+                    if (!col) continue;
+                    for (const id of col) {
+                        const node = nodes.get(id);
+                        if (node.parentIds.length > 0) {
+                            let minPY = Infinity, maxPY = -Infinity;
+                            for (const pid of node.parentIds) {
+                                const pp = layoutCache.get(pid);
+                                if (pp) {
+                                    const cy = pp.y + NODE_H / 2;
+                                    if (cy < minPY) minPY = cy;
+                                    if (cy > maxPY) maxPY = cy;
+                                }
+                            }
+                            if (minPY !== Infinity) {
+                                layoutCache.get(id)._t = (minPY + maxPY) / 2 - NODE_H / 2;
+                            }
+                        }
+                    }
+                    // sort by target so relative order reflects parent positions
+                    col.sort((a, b) => {
+                        const at = layoutCache.get(a)._t ?? layoutCache.get(a).y;
+                        const bt = layoutCache.get(b)._t ?? layoutCache.get(b).y;
+                        return at - bt;
+                    });
+                    packColumn(col);
+                }
+                // Backward pass: center parents on their children
+                for (let d = maxDepth - 1; d >= 0; d--) {
+                    const col = columns.get(d);
+                    if (!col) continue;
+                    for (const id of col) {
+                        const node = nodes.get(id);
+                        if (node.children.length > 0) {
+                            let minCY = Infinity, maxCY = -Infinity;
+                            for (const cid of node.children) {
+                                const cp = layoutCache.get(cid);
+                                if (cp) {
+                                    const cy = cp.y + NODE_H / 2;
+                                    if (cy < minCY) minCY = cy;
+                                    if (cy > maxCY) maxCY = cy;
+                                }
+                            }
+                            if (minCY !== Infinity) {
+                                layoutCache.get(id)._t = (minCY + maxCY) / 2 - NODE_H / 2;
+                            }
+                        }
+                    }
+                    col.sort((a, b) => {
+                        const at = layoutCache.get(a)._t ?? layoutCache.get(a).y;
+                        const bt = layoutCache.get(b)._t ?? layoutCache.get(b).y;
+                        return at - bt;
+                    });
+                    packColumn(col);
+                }
+            }
+
+            // 5. Final centering pass — nudge children to exact parent midpoint where possible
+            for (let d = 1; d <= maxDepth; d++) {
+                const col = columns.get(d);
+                if (!col) continue;
+                for (const id of col) {
+                    const node = nodes.get(id);
+                    if (node.parentIds.length <= 1) continue;
+                    let minPY = Infinity, maxPY = -Infinity;
+                    for (const pid of node.parentIds) {
+                        const pp = layoutCache.get(pid);
+                        if (pp) {
+                            const cy = pp.y + NODE_H / 2;
+                            if (cy < minPY) minPY = cy;
+                            if (cy > maxPY) maxPY = cy;
+                        }
+                    }
+                    if (minPY === Infinity) continue;
+                    const ideal = (minPY + maxPY) / 2 - NODE_H / 2;
+                    const pos = layoutCache.get(id);
+                    // only nudge if it won't overlap neighbours
+                    const idx = col.indexOf(id);
+                    const above = idx > 0 ? layoutCache.get(col[idx - 1]) : null;
+                    const below = idx < col.length - 1 ? layoutCache.get(col[idx + 1]) : null;
+                    const lo = above ? above.y + NODE_H + V_GAP : -Infinity;
+                    const hi = below ? below.y - NODE_H - V_GAP : Infinity;
+                    pos.y = Math.max(lo, Math.min(hi, ideal));
+                }
+            }
+
+            // cleanup
+            for (const p of layoutCache.values()) delete p._t;
+        }
+
+        function packColumn(col) {
+            let y = 0;
+            for (const id of col) {
+                const pos = layoutCache.get(id);
+                const target = pos._t ?? pos.y;
+                pos.y = Math.max(y, target);
+                y = pos.y + NODE_H + V_GAP;
+                delete pos._t;
+            }
+        }
+
+        /* ═══════════════════════════════════════════
+           RENDERING
+           ═══════════════════════════════════════════ */
+        const canvasEl = document.getElementById('canvas');
+        const svgEl = document.getElementById('connectors');
+        const wrapEl = document.getElementById('canvas-wrap');
+
+        function render() {
+            computeLayout();
+            renderNodes();
+            renderConnectors();
+            renderLegend();
+            renderCompletionStats();
+            renderSidePanel();
+            updateToolbar();
+            updateEmptyState();
+            applyTransform();
+        }
+
+        function renderNodes() {
+            canvasEl.querySelectorAll('.node').forEach(el => el.remove());
+
+            for (const [id, pos] of layoutCache) {
+                const node = nodes.get(id);
+                const el = document.createElement('div');
+                el.className = 'node' + (id === selectedId ? ' selected' : '');
+                el.dataset.id = id;
+                el.style.left = pos.x + 'px';
+                el.style.top = pos.y + 'px';
+
+                const st = STATUSES.find(s => s.id === node.status);
+                const badge = node.parentIds.length > 1
+                    ? `<span class="dep-badge" title="${node.parentIds.length} dependencies">${node.parentIds.length}</span>` : '';
+                el.innerHTML = `
+      ${badge}
+      <div class="node-name" title="${esc(node.name)}">${esc(node.name)}</div>
+      <div class="node-status-row">
+        <span class="node-status-dot ${node.status}" style="background:${st.color}">${st.icon}</span>
+        <span class="node-status-label">${st.label}</span>
+      </div>
+      <button class="node-status-btn" title="Change status">▾</button>
+    `;
+                canvasEl.appendChild(el);
+            }
+        }
+
+        function renderConnectors() {
+            svgEl.innerHTML = '';
+            if (layoutCache.size === 0) return;
+
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const pos of layoutCache.values()) {
+                if (pos.x < minX) minX = pos.x;
+                if (pos.y < minY) minY = pos.y;
+                if (pos.x + NODE_W > maxX) maxX = pos.x + NODE_W;
+                if (pos.y + NODE_H > maxY) maxY = pos.y + NODE_H;
+            }
+            svgEl.setAttribute('width', maxX - minX + H_GAP + 200);
+            svgEl.setAttribute('height', maxY - minY + NODE_H + 200);
+            svgEl.style.left = '0px';
+            svgEl.style.top = '0px';
+
+            // Build list of all node rects for obstacle detection
+            const PAD = 6; // clearance around nodes
+            const nodeRects = [];
+            const selectedOverlays = []; // highlighted clones appended last for z-order
+            for (const [id, pos] of layoutCache) {
+                nodeRects.push({ id, x: pos.x - PAD, y: pos.y - PAD, w: NODE_W + PAD * 2, h: NODE_H + PAD * 2 });
+            }
+
+            // Collect edges
+            const edges = [];
+            for (const [id, node] of nodes) {
+                const pPos = layoutCache.get(id);
+                if (!pPos) continue;
+                for (const cid of node.children) {
+                    const cPos = layoutCache.get(cid);
+                    if (!cPos) continue;
+                    edges.push({ parentId: id, childId: cid, pPos, cPos });
+                }
+            }
+
+            // Subtle colour palette for connectors — distinct enough to tell apart
+            const CONN_COLORS = [
+                '#8da4bf', // steel blue
+                '#b5a089', // warm tan
+                '#8fad8f', // sage green
+                '#a893b5', // soft purple
+                '#b09090', // dusty rose
+                '#7fb5b0', // teal
+                '#bf9f7f', // camel
+                '#9095ad', // blue gray
+                '#a5b57f', // olive
+                '#b08fa5', // mauve
+            ];
+
+            // Build adjacency: edges that share a node or visually intersect should differ in colour
+            const edgeNeighbours = edges.map(() => new Set());
+
+            for (let i = 0; i < edges.length; i++) {
+                for (let j = i + 1; j < edges.length; j++) {
+                    const a = edges[i], b = edges[j];
+                    // Share a node?
+                    const sharesNode = a.parentId === b.parentId || a.parentId === b.childId ||
+                        a.childId === b.parentId || a.childId === b.childId;
+                    // Bounding boxes overlap? (rough intersection test)
+                    const aMinX = Math.min(a.pPos.x, a.cPos.x), aMaxX = Math.max(a.pPos.x + NODE_W, a.cPos.x + NODE_W);
+                    const aMinY = Math.min(a.pPos.y, a.cPos.y), aMaxY = Math.max(a.pPos.y + NODE_H, a.cPos.y + NODE_H);
+                    const bMinX = Math.min(b.pPos.x, b.cPos.x), bMaxX = Math.max(b.pPos.x + NODE_W, b.cPos.x + NODE_W);
+                    const bMinY = Math.min(b.pPos.y, b.cPos.y), bMaxY = Math.max(b.pPos.y + NODE_H, b.cPos.y + NODE_H);
+                    const overlaps = aMinX <= bMaxX && aMaxX >= bMinX && aMinY <= bMaxY && aMaxY >= bMinY;
+
+                    if (sharesNode || overlaps) {
+                        edgeNeighbours[i].add(j);
+                        edgeNeighbours[j].add(i);
+                    }
+                }
+            }
+
+            // Greedy graph colouring: assign each edge the lowest colour index not used by its neighbours
+            const edgeColorIdx = new Array(edges.length).fill(-1);
+            for (let i = 0; i < edges.length; i++) {
+                const usedColors = new Set();
+                for (const ni of edgeNeighbours[i]) {
+                    if (edgeColorIdx[ni] >= 0) usedColors.add(edgeColorIdx[ni]);
+                }
+                let c = 0;
+                while (usedColors.has(c)) c++;
+                edgeColorIdx[i] = c;
+            }
+
+            // Route each edge with obstacle avoidance
+            for (let ei = 0; ei < edges.length; ei++) {
+                const e = edges[ei];
+                const d = routeEdge(e, nodeRects);
+                const color = CONN_COLORS[edgeColorIdx[ei] % CONN_COLORS.length];
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.dataset.parent = e.parentId;
+                g.dataset.child = e.childId;
+                g.dataset.color = color;
+
+                const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                hit.setAttribute('d', d);
+                hit.setAttribute('class', 'connector-hit');
+                hit.dataset.parent = e.parentId;
+                hit.dataset.child = e.childId;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                line.setAttribute('d', d);
+                line.setAttribute('class', 'connector-line');
+                line.setAttribute('stroke', color);
+                line.setAttribute('stroke-width', '2');
+                line.setAttribute('fill', 'none');
+
+                g.appendChild(hit);
+                g.appendChild(line);
+
+                // If this edge connects to the selected node, queue a highlight overlay
+                if (selectedId && (e.parentId === selectedId || e.childId === selectedId)) {
+                    const hl = line.cloneNode();
+                    hl.setAttribute('class', 'connector-selected');
+                    hl.setAttribute('stroke', darkenColor(color, 0.6));
+                    hl.setAttribute('stroke-width', '3');
+                    hl.setAttribute('pointer-events', 'none');
+                    selectedOverlays.push(hl);
+                }
+
+                // On hover: overlay a highlighted clone on top, remove on leave
+                g.addEventListener('mouseenter', () => {
+                    const old = svgEl.querySelector('.connector-highlight');
+                    if (old) old.remove();
+                    const hl = line.cloneNode();
+                    hl.setAttribute('class', 'connector-highlight');
+                    hl.setAttribute('stroke', darkenColor(color, 0.6));
+                    hl.setAttribute('stroke-width', '3.5');
+                    hl.setAttribute('pointer-events', 'none');
+                    svgEl.appendChild(hl);
+                });
+                g.addEventListener('mouseleave', () => {
+                    const hl = svgEl.querySelector('.connector-highlight');
+                    if (hl) hl.remove();
+                });
+
+                svgEl.appendChild(g);
+            }
+
+            // Append selected-node connector overlays last so they render on top
+            for (const hl of selectedOverlays) svgEl.appendChild(hl);
+        }
+
+        /* Darken a hex colour by a factor (0=black, 1=original) */
+        function darkenColor(hex, factor) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            const dr = Math.round(r * factor);
+            const dg = Math.round(g * factor);
+            const db = Math.round(b * factor);
+            return '#' + [dr, dg, db].map(c => c.toString(16).padStart(2, '0')).join('');
+        }
+
+        /* Route a single edge around node obstacles using 90-degree segments.
+           For multi-column spans, route through each inter-column gap individually,
+           adjusting the Y level at each gap to avoid nodes. */
+        function routeEdge(e, nodeRects) {
+            const x1 = e.pPos.x + NODE_W; // right edge of parent
+            const y1 = e.pPos.y + NODE_H / 2;
+            const x2 = e.cPos.x;          // left edge of child
+            const y2 = e.cPos.y + NODE_H / 2;
+
+            if (y1 === y2) return `M${x1},${y1} H${x2}`;
+
+            const colStep = NODE_W + H_GAP;
+            const parentCol = Math.round(e.pPos.x / colStep);
+            const childCol = Math.round(e.cPos.x / colStep);
+
+            // Build gap info: each gap between adjacent columns
+            const gaps = [];
+            for (let c = parentCol; c < childCol; c++) {
+                const gapLeft = c * colStep + NODE_W;
+                const gapRight = (c + 1) * colStep;
+                gaps.push({ left: gapLeft, right: gapRight, mid: (gapLeft + gapRight) / 2 });
+            }
+
+            // Check if a vertical line segment at vx from yA to yB hits any node (excluding endpoints)
+            function hitsNodeAt(vx, yA, yB) {
+                const lo = Math.min(yA, yB);
+                const hi = Math.max(yA, yB);
+                for (const r of nodeRects) {
+                    if (r.id === e.parentId || r.id === e.childId) continue;
+                    if (vx >= r.x && vx <= r.x + r.w && hi >= r.y && lo <= r.y + r.h) return true;
+                }
+                return false;
+            }
+
+            // Check if a horizontal line segment at hy from xA to xB hits any node (excluding endpoints)
+            function hitsNodeH(hy, xA, xB) {
+                const lo = Math.min(xA, xB);
+                const hi = Math.max(xA, xB);
+                for (const r of nodeRects) {
+                    if (r.id === e.parentId || r.id === e.childId) continue;
+                    if (hy >= r.y && hy <= r.y + r.h && hi >= r.x && lo <= r.x + r.w) return true;
+                }
+                return false;
+            }
+
+            // Find a clear Y for a vertical segment in a given gap
+            function findClearY(gapX, fromY, toY) {
+                if (!hitsNodeAt(gapX, fromY, toY)) return null; // no obstacle, go direct
+                // Try routing above or below blockers in this gap region
+                const lo = Math.min(fromY, toY);
+                const hi = Math.max(fromY, toY);
+                // Find blocking nodes whose X range overlaps this gap
+                const blockers = nodeRects.filter(r => {
+                    if (r.id === e.parentId || r.id === e.childId) return false;
+                    return gapX >= r.x && gapX <= r.x + r.w && r.y + r.h > lo && r.y < hi;
+                });
+                if (blockers.length === 0) return null;
+
+                // Find all node rects that could affect routing in nearby columns
+                const allNearby = nodeRects.filter(r => {
+                    if (r.id === e.parentId || r.id === e.childId) return false;
+                    return r.x < x2 && r.x + r.w > x1;
+                });
+
+                let blockTop = Infinity, blockBot = -Infinity;
+                for (const b of blockers) {
+                    if (b.y < blockTop) blockTop = b.y;
+                    if (b.y + b.h > blockBot) blockBot = b.y + b.h;
+                }
+
+                // Also consider all nearby nodes to find truly clear routes
+                let globalTop = Infinity, globalBot = -Infinity;
+                for (const r of allNearby) {
+                    if (r.y < globalTop) globalTop = r.y;
+                    if (r.y + r.h > globalBot) globalBot = r.y + r.h;
+                }
+
+                const aboveY = blockTop - NODE_H * 0.5;
+                const belowY = blockBot + NODE_H * 0.5;
+
+                // Prefer the route closer to the endpoints
+                const aboveCost = Math.abs(fromY - aboveY) + Math.abs(aboveY - toY);
+                const belowCost = Math.abs(fromY - belowY) + Math.abs(belowY - toY);
+                return aboveCost <= belowCost ? aboveY : belowY;
+            }
+
+            // Single gap — simple case
+            if (gaps.length === 1) {
+                const gx = gaps[0].mid;
+                const detourY = findClearY(gx, y1, y2);
+                if (detourY === null) {
+                    return `M${x1},${y1} H${gx} V${y2} H${x2}`;
+                }
+                // Route: H to gap near parent, V to detour, H across, V to target, H to child
+                const seg1X = gaps[0].left + (gaps[0].right - gaps[0].left) * 0.25;
+                const seg2X = gaps[0].left + (gaps[0].right - gaps[0].left) * 0.75;
+                return `M${x1},${y1} H${seg1X} V${detourY} H${seg2X} V${y2} H${x2}`;
+            }
+
+            // Multi-gap: staircase routing through each gap
+            // Strategy: go horizontal to first gap, step through each gap adjusting Y,
+            // arrive at last gap at the child Y level
+            const points = [{ x: x1, y: y1 }];
+            let curY = y1;
+
+            for (let gi = 0; gi < gaps.length; gi++) {
+                const gap = gaps[gi];
+                const gx = gap.mid;
+                const isLast = gi === gaps.length - 1;
+                const targetY = isLast ? y2 : curY; // Stay at current Y unless it's the last gap
+
+                // Check if we can do a vertical segment from curY toward targetY in this gap
+                // For intermediate gaps, test if curY passes through cleanly (horizontal line)
+                // For the last gap, we need to reach y2
+
+                if (isLast) {
+                    // Last gap: need to go from curY to y2
+                    if (!hitsNodeAt(gx, curY, y2)) {
+                        points.push({ x: gx, y: curY });
+                        points.push({ x: gx, y: y2 });
+                    } else {
+                        // Need detour
+                        const detourY = findClearY(gx, curY, y2);
+                        if (detourY !== null) {
+                            const seg1X = gap.left + (gap.right - gap.left) * 0.25;
+                            const seg2X = gap.left + (gap.right - gap.left) * 0.75;
+                            points.push({ x: seg1X, y: curY });
+                            points.push({ x: seg1X, y: detourY });
+                            points.push({ x: seg2X, y: detourY });
+                            points.push({ x: seg2X, y: y2 });
+                        } else {
+                            points.push({ x: gx, y: curY });
+                            points.push({ x: gx, y: y2 });
+                        }
+                    }
+                } else {
+                    // Intermediate gap: check if horizontal at curY will hit nodes in the next column
+                    // Look at nodes in the next column (column gi+1)
+                    const nextColX = (parentCol + gi + 1) * colStep;
+                    const colNodes = nodeRects.filter(r => {
+                        if (r.id === e.parentId || r.id === e.childId) return false;
+                        return r.x < nextColX + NODE_W && r.x + r.w > nextColX &&
+                            curY >= r.y && curY <= r.y + r.h;
+                    });
+
+                    if (colNodes.length > 0) {
+                        // Our current Y level hits a node in the next column — adjust now
+                        // Find a clear Y by going above or below
+                        let blockTop = Infinity, blockBot = -Infinity;
+                        for (const r of colNodes) {
+                            if (r.y < blockTop) blockTop = r.y;
+                            if (r.y + r.h > blockBot) blockBot = r.y + r.h;
+                        }
+                        const aboveY = blockTop - NODE_H * 0.5;
+                        const belowY = blockBot + NODE_H * 0.5;
+                        // Pick direction closer to destination y2
+                        const newY = Math.abs(aboveY - y2) <= Math.abs(belowY - y2) ? aboveY : belowY;
+
+                        points.push({ x: gx, y: curY });
+                        points.push({ x: gx, y: newY });
+                        curY = newY;
+                    }
+                    // else: stay at curY, no adjustment needed at this gap
+                }
+            }
+
+            points.push({ x: x2, y: y2 });
+
+            // Build SVG path from points, only adding segments where x or y changes
+            let d = `M${points[0].x},${points[0].y}`;
+            for (let i = 1; i < points.length; i++) {
+                const prev = points[i - 1];
+                const cur = points[i];
+                if (cur.y !== prev.y && cur.x !== prev.x) {
+                    // need two segments (H then V or V then H)
+                    d += ` H${cur.x} V${cur.y}`;
+                } else if (cur.x !== prev.x) {
+                    d += ` H${cur.x}`;
+                } else if (cur.y !== prev.y) {
+                    d += ` V${cur.y}`;
+                }
+            }
+            return d;
+        }
+
+        function applyTransform() {
+            canvasEl.style.transform = `translate(${panX}px,${panY}px) scale(${scale})`;
+        }
+
+        function updateEmptyState() {
+            document.getElementById('empty-state').style.display = nodes.size === 0 ? 'block' : 'none';
+        }
+
+        function updateToolbar() {
+            const hasSel = !!selectedId;
+            document.getElementById('btn-add-child').disabled = !hasSel;
+            document.getElementById('btn-link').disabled = !hasSel;
+            document.getElementById('btn-insert-before').disabled = !hasSel;
+            document.getElementById('btn-edit').disabled = !hasSel;
+            document.getElementById('btn-delete').disabled = !hasSel;
+        }
+
+        /* ── Legend (dynamic from STATUSES) ── */
+        function renderLegend() {
+            const container = document.getElementById('legend-rows');
+            container.innerHTML = STATUSES.map(s =>
+                `<div class="legend-row"><span class="legend-dot" style="background:${s.color}">${s.icon || ''}</span> ${esc(s.label)}</div>`
+            ).join('');
+        }
+
+        /* ── Completion Stats ── */
+        function renderCompletionStats() {
+            const el = document.getElementById('completion-stats');
+            const total = nodes.size;
+            if (total === 0) { el.innerHTML = ''; return; }
+            const complete = [...nodes.values()].filter(n => {
+                const st = STATUSES.find(s => s.id === n.status);
+                return st && st.complete;
+            }).length;
+            const pct = Math.round((complete / total) * 100);
+            el.innerHTML = `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px">
+        <span>${complete}/${total} complete</span>
+        <span>${pct}%</span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:#22c55e;border-radius:3px;transition:width .3s"></div>
+      </div>
+    </div>
+  `;
+        }
+
+        /* ═══════════════════════════════════════════
+           SIDE PANEL
+           ═══════════════════════════════════════════ */
+        const sidePanel = document.getElementById('side-panel');
+        const spBody = document.getElementById('sp-body');
+        const spTitle = document.getElementById('sp-title');
+        let spMinimized = false;
+
+        function renderSidePanel() {
+            if (!selectedId) {
+                sidePanel.classList.remove('open');
+                document.getElementById('legend').classList.remove('panel-open', 'panel-minimized');
+                return;
+            }
+
+            const node = nodes.get(selectedId);
+            if (!node) { sidePanel.classList.remove('open'); document.getElementById('legend').classList.remove('panel-open', 'panel-minimized'); return; }
+
+            sidePanel.classList.add('open');
+            const legend = document.getElementById('legend');
+            legend.classList.toggle('panel-open', !spMinimized);
+            legend.classList.toggle('panel-minimized', spMinimized);
+            const st = STATUSES.find(s => s.id === node.status) || STATUSES[0];
+            spTitle.textContent = node.name;
+
+            function nodeItem(n) {
+                const s = STATUSES.find(s => s.id === n.status) || STATUSES[0];
+                return `<div class="sp-node-item" data-goto="${n.id}" title="${esc(n.name)}">
+      <span class="sp-item-dot" style="background:${s.color}"></span>
+      <span class="sp-item-name">${esc(n.name)}</span>
+      <span class="sp-item-label">${esc(s.label)}</span>
+    </div>`;
+            }
+
+            const parents = node.parentIds.map(pid => nodes.get(pid)).filter(Boolean);
+            const children = node.children.map(cid => nodes.get(cid)).filter(Boolean);
+
+            spBody.innerHTML = `
+    <div class="sp-section">
+      <div class="sp-section-title">Status</div>
+      <div class="sp-status-row">
+        <span class="sp-status-dot" style="background:${st.color}">${st.icon || ''}</span>
+        <span style="font-size:13px">${esc(st.label)}</span>
+      </div>
+    </div>
+
+    <div class="sp-section">
+      <div class="sp-section-title">Blockers / Dependencies (${parents.length})</div>
+      ${parents.length > 0
+                    ? parents.map(nodeItem).join('')
+                    : '<div class="sp-empty">No dependencies — this work can start immediately</div>'
+                }
+    </div>
+
+    <div class="sp-section">
+      <div class="sp-section-title">Dependents / Children (${children.length})</div>
+      ${children.length > 0
+                    ? children.map(nodeItem).join('')
+                    : '<div class="sp-empty">No dependent work items</div>'
+                }
+    </div>
+  `;
+
+            // Click to navigate to a node
+            spBody.querySelectorAll('[data-goto]').forEach(el => {
+                el.addEventListener('click', () => {
+                    selectedId = el.dataset.goto;
+                    render();
+                });
+            });
+        }
+
+        document.getElementById('sp-close').addEventListener('click', () => {
+            selectedId = null;
+            sidePanel.classList.remove('open');
+            document.getElementById('legend').classList.remove('panel-open', 'panel-minimized');
+            render();
+        });
+
+        document.getElementById('sp-minimize').addEventListener('click', () => {
+            spMinimized = !spMinimized;
+            sidePanel.classList.toggle('minimized', spMinimized);
+            document.getElementById('sp-minimize').textContent = spMinimized ? '◀' : '▶';
+            const legend = document.getElementById('legend');
+            legend.classList.toggle('panel-open', !spMinimized);
+            legend.classList.toggle('panel-minimized', spMinimized);
+        });
+
+        /* ═══════════════════════════════════════════
+           MODAL SYSTEM
+           ═══════════════════════════════════════════ */
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalEl = document.getElementById('modal');
+
+        function openModal(html) {
+            modalEl.innerHTML = html;
+            modalOverlay.classList.add('open');
+            const inp = modalEl.querySelector('input[type=text]');
+            if (inp) { inp.focus(); inp.select(); }
+        }
+
+        function closeModal() { modalOverlay.classList.remove('open'); }
+
+        modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') { closeModal(); hideCtxMenu(); exitLinkMode(); }
+        });
+
+        /* ── Node Create / Edit Modal ── */
+        function showNodeModal(opts) {
+            const { title, name = '', onSave } = opts;
+            const status = opts.status || STATUSES[0].id;
+            const statusHtml = STATUSES.map(s => `
+    <div class="status-option${s.id === status ? ' active' : ''}" data-status="${s.id}">
+      <span class="dot" style="background:${s.color}">${s.icon}</span>
+      ${s.label}
+    </div>`).join('');
+
+            openModal(`
+    <h2>${title}</h2>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="m-name" value="${esc(name)}" maxlength="60" placeholder="e.g. MVP-1">
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <div class="status-picker" id="m-status">${statusHtml}</div>
+    </div>
+    <div class="actions">
+      <button onclick="closeModal()">Cancel</button>
+      <button class="primary" id="m-save">Save</button>
+    </div>
+  `);
+
+            let selStatus = status;
+            modalEl.querySelectorAll('.status-option').forEach(el => {
+                el.addEventListener('click', () => {
+                    modalEl.querySelectorAll('.status-option').forEach(o => o.classList.remove('active'));
+                    el.classList.add('active');
+                    selStatus = el.dataset.status;
+                });
+            });
+
+            const saveBtn = document.getElementById('m-save');
+            const nameInp = document.getElementById('m-name');
+
+            function doSave() {
+                const n = nameInp.value.trim();
+                if (!n) { nameInp.style.borderColor = '#ef4444'; toast('Name is required'); return; }
+                onSave(n, selStatus);
+                closeModal();
+            }
+
+            saveBtn.addEventListener('click', doSave);
+            nameInp.addEventListener('keydown', e => { if (e.key === 'Enter') doSave(); });
+        }
+
+        /* ── Confirm Modal ── */
+        function showConfirm(message, onConfirm, btnLabel = 'Confirm', btnClass = 'danger') {
+            openModal(`
+    <h2>Confirm</h2>
+    <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px">${message}</p>
+    <div class="actions">
+      <button onclick="closeModal()">Cancel</button>
+      <button class="${btnClass}" id="m-confirm">${btnLabel}</button>
+    </div>
+  `);
+            document.getElementById('m-confirm').addEventListener('click', () => { onConfirm(); closeModal(); });
+        }
+
+        /* ── Delete Modal ── */
+        function showDeleteModal(id) {
+            const node = nodes.get(id);
+            if (!node) return;
+
+            if (node.children.length === 0) {
+                showConfirm(`Delete <strong>${esc(node.name)}</strong>?`, () => { deleteNode(id); render(); });
+                return;
+            }
+
+            openModal(`
+    <h2>Delete ${esc(node.name)}</h2>
+    <p style="font-size:14px;color:var(--text-secondary);margin-bottom:16px">This node has ${node.children.length} dependent(s). How do you want to proceed?</p>
+    <div class="actions" style="flex-direction:column;gap:8px">
+      <button class="primary" id="m-recon" style="width:100%;justify-content:center">Remove node &amp; reconnect dependents</button>
+      <button class="danger" id="m-subtree" style="width:100%;justify-content:center">Delete node &amp; exclusive descendants</button>
+      <button onclick="closeModal()" style="width:100%;justify-content:center">Cancel</button>
+    </div>
+  `);
+            document.getElementById('m-recon').addEventListener('click', () => { deleteNode(id); closeModal(); render(); });
+            document.getElementById('m-subtree').addEventListener('click', () => { deleteSubtree(id); closeModal(); render(); });
+        }
+
+        /* ═══════════════════════════════════════════
+           CONTEXT MENU
+        /* ═══════════════════════════════════════════
+           STATUS CUSTOMIZATION
+           ═══════════════════════════════════════════ */
+        function showStatusCustomizer() {
+            let draft = JSON.parse(JSON.stringify(STATUSES));
+
+            function renderEditor() {
+                const rows = draft.map((s, i) => `
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px" data-idx="${i}">
+        <input type="color" value="${s.color}" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer" data-field="color">
+        <input type="text" value="${esc(s.label)}" style="flex:1;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" data-field="label" placeholder="Status name">
+        <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer" title="Counts toward completion">
+          <input type="checkbox" ${s.complete ? 'checked' : ''} data-field="complete"> Done
+        </label>
+        <button style="width:28px;height:28px;border:1px solid var(--border);background:transparent;border-radius:6px;cursor:pointer;font-size:14px;color:#ef4444;display:flex;align-items:center;justify-content:center" data-action="remove" ${draft.length <= 1 ? 'disabled' : ''} title="Remove">✕</button>
+      </div>
+    `).join('');
+
+                openModal(`
+      <h2>Customize Statuses</h2>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px">Define your workflow statuses. Mark "Done" for statuses that count toward completion.</p>
+      <div id="status-editor">${rows}</div>
+      <button class="tb-btn" id="sc-add" style="width:100%;justify-content:center;margin-top:4px;font-size:12px">+ Add Status</button>
+      <div class="actions" style="margin-top:16px">
+        <button onclick="closeModal()">Cancel</button>
+        <button class="primary" id="sc-save">Save</button>
+      </div>
+    `);
+
+                // Bind events
+                modalEl.querySelectorAll('[data-idx]').forEach(row => {
+                    const idx = parseInt(row.dataset.idx);
+                    row.querySelector('[data-field="color"]').addEventListener('input', e => { draft[idx].color = e.target.value; });
+                    row.querySelector('[data-field="label"]').addEventListener('input', e => { draft[idx].label = e.target.value.trim(); });
+                    row.querySelector('[data-field="complete"]').addEventListener('change', e => { draft[idx].complete = e.target.checked; });
+                    row.querySelector('[data-action="remove"]')?.addEventListener('click', () => {
+                        if (draft.length <= 1) return;
+                        draft.splice(idx, 1);
+                        renderEditor();
+                    });
+                });
+
+                document.getElementById('sc-add').addEventListener('click', () => {
+                    draft.push({ id: 'status-' + Date.now(), label: 'New Status', color: '#94a3b8', icon: '', complete: false });
+                    renderEditor();
+                });
+
+                document.getElementById('sc-save').addEventListener('click', () => {
+                    // Validate
+                    for (const s of draft) {
+                        if (!s.label) { toast('All statuses need a name'); return; }
+                    }
+                    // Assign stable IDs
+                    draft.forEach((s, i) => { if (!s.id) s.id = 'status-' + i; });
+                    STATUSES = draft;
+                    saveStatuses();
+                    // Remap any node statuses that no longer exist
+                    const validIds = new Set(STATUSES.map(s => s.id));
+                    for (const [, node] of nodes) {
+                        if (!validIds.has(node.status)) node.status = STATUSES[0].id;
+                    }
+                    saveState();
+                    closeModal();
+                    render();
+                });
+            }
+
+            renderEditor();
+        }
+
+        /* ═══════════════════════════════════════════
+           STATUS DROPDOWN
+           ═══════════════════════════════════════════ */
+        let activeDropdown = null;
+
+        function showStatusDropdown(nodeId, btnEl) {
+            closeStatusDropdown();
+            const node = nodes.get(nodeId);
+            if (!node) return;
+
+            const dd = document.createElement('div');
+            dd.className = 'status-dropdown open';
+            dd.innerHTML = STATUSES.map(s => `
+    <div class="sd-item${s.id === node.status ? ' active' : ''}" data-status="${s.id}">
+      <span class="sd-dot" style="background:${s.color}">${s.icon}</span>
+      ${s.label}
+    </div>
+  `).join('');
+
+            // Position relative to the button
+            const rect = btnEl.getBoundingClientRect();
+            dd.style.position = 'fixed';
+            dd.style.left = Math.min(rect.right + 4, window.innerWidth - 200) + 'px';
+            dd.style.top = rect.top + 'px';
+
+            dd.querySelectorAll('.sd-item').forEach(el => {
+                el.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    setNodeStatus(nodeId, el.dataset.status);
+                    closeStatusDropdown();
+                    render();
+                });
+            });
+
+            document.body.appendChild(dd);
+            activeDropdown = dd;
+
+            // Close on next outside click
+            setTimeout(() => {
+                document.addEventListener('click', closeDropdownOnOutside);
+            }, 0);
+        }
+
+        function closeStatusDropdown() {
+            if (activeDropdown) { activeDropdown.remove(); activeDropdown = null; }
+            document.removeEventListener('click', closeDropdownOnOutside);
+        }
+
+        function closeDropdownOnOutside(e) {
+            if (activeDropdown && !activeDropdown.contains(e.target)) closeStatusDropdown();
+        }
+
+        /* ═══════════════════════════════════════════
+           CONTEXT MENU
+           ═══════════════════════════════════════════ */
+        const ctxMenu = document.getElementById('ctx-menu');
+
+        function showCtxMenu(x, y, items) {
+            ctxMenu.innerHTML = items.map(i => {
+                if (i.divider) return '<div class="divider"></div>';
+                const cls = [i.danger ? 'danger' : '', i.disabled ? 'disabled' : ''].filter(Boolean).join(' ');
+                return `<div class="item ${cls}" data-action="${i.action}">${i.icon || ''} ${i.label}</div>`;
+            }).join('');
+            ctxMenu.style.display = 'block';
+            ctxMenu.style.left = Math.min(x, window.innerWidth - 220) + 'px';
+            ctxMenu.style.top = Math.min(y, window.innerHeight - (items.length * 38 + 20)) + 'px';
+
+            ctxMenu.querySelectorAll('.item:not(.disabled)').forEach(el => {
+                el.addEventListener('click', () => {
+                    hideCtxMenu();
+                    const act = el.dataset.action;
+                    items.find(i => i.action === act)?.handler?.();
+                });
+            });
+        }
+
+        function hideCtxMenu() { ctxMenu.style.display = 'none'; }
+
+        /* ═══════════════════════════════════════════
+           TOAST
+           ═══════════════════════════════════════════ */
+        let toastTimer;
+        function toast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+        }
+
+        /* ═══════════════════════════════════════════
+           LINK MODE
+           ═══════════════════════════════════════════ */
+        const linkBanner = document.getElementById('link-banner');
+        const linkBannerText = document.getElementById('link-banner-text');
+
+        function enterLinkMode(sourceId) {
+            const node = nodes.get(sourceId);
+            if (!node) return;
+            linkMode = true;
+            linkSourceId = sourceId;
+            linkBannerText.textContent = `Click a node to make it a child of "${node.name}"`;
+            linkBanner.classList.add('show');
+            wrapEl.classList.add('link-mode');
+        }
+
+        function exitLinkMode() {
+            linkMode = false;
+            linkSourceId = null;
+            linkBanner.classList.remove('show');
+            wrapEl.classList.remove('link-mode');
+        }
+
+        document.getElementById('link-cancel').addEventListener('click', exitLinkMode);
+
+        /* ═══════════════════════════════════════════
+           EVENT HANDLERS
+           ═══════════════════════════════════════════ */
+
+        /* ── Canvas click (select / deselect / link) ── */
+        let clickTimer = null;
+        canvasEl.addEventListener('click', e => {
+            const nodeEl = e.target.closest('.node');
+
+            if (!nodeEl) {
+                if (!linkMode) { selectedId = null; render(); }
+                return;
+            }
+
+            const id = nodeEl.dataset.id;
+
+            // link mode: create edge source → clicked
+            if (linkMode) {
+                if (id === linkSourceId) { toast('Cannot link a node to itself'); return; }
+                const ok = addLink(linkSourceId, id);
+                if (ok) toast('Link created');
+                exitLinkMode();
+                render();
+                fitViewIfNeeded();
+                return;
+            }
+
+            // status dropdown button
+            if (e.target.closest('.node-status-btn')) {
+                e.stopPropagation();
+                showStatusDropdown(id, e.target.closest('.node-status-btn'));
+                return;
+            }
+
+            clearTimeout(clickTimer);
+            clickTimer = setTimeout(() => {
+                selectedId = (selectedId === id) ? null : id;
+                render();
+            }, 250);
+        });
+
+        /* ── Double-click to edit ── */
+        canvasEl.addEventListener('dblclick', e => {
+            clearTimeout(clickTimer);
+            if (linkMode) return;
+            const nodeEl = e.target.closest('.node');
+            if (!nodeEl) return;
+            const id = nodeEl.dataset.id;
+            const node = nodes.get(id);
+            showNodeModal({
+                title: 'Edit Node',
+                name: node.name,
+                status: node.status,
+                onSave(name, status) { renameNode(id, name); setNodeStatus(id, status); render(); }
+            });
+        });
+
+        /* ── Right-click context menu ── */
+        canvasEl.addEventListener('contextmenu', e => {
+            e.preventDefault();
+            if (linkMode) { exitLinkMode(); return; }
+            const nodeEl = e.target.closest('.node');
+            if (!nodeEl) { hideCtxMenu(); return; }
+            const id = nodeEl.dataset.id;
+            selectedId = id;
+            render();
+
+            const node = nodes.get(id);
+            const items = [
+                {
+                    label: 'Add Child', icon: '＋', action: 'add-child', handler() {
+                        showNodeModal({ title: 'Add Child Node', onSave(n, s) { addChild(id, n, s); render(); fitViewIfNeeded(); } });
+                    }
+                },
+                {
+                    label: '+ Additional Child…', icon: '', action: 'link', handler() {
+                        enterLinkMode(id);
+                    }
+                },
+                {
+                    label: 'Add Parent', icon: '↑', action: 'insert', handler() {
+                        showNodeModal({ title: 'Add Parent Node', onSave(n, s) { insertBefore(id, n, s); render(); fitViewIfNeeded(); } });
+                    }
+                },
+                { divider: true },
+                {
+                    label: 'Edit', icon: '✎', action: 'edit', handler() {
+                        showNodeModal({
+                            title: 'Edit Node', name: node.name, status: node.status,
+                            onSave(n, s) { renameNode(id, n); setNodeStatus(id, s); render(); }
+                        });
+                    }
+                },
+                { divider: true },
+                { label: 'Delete', icon: '✕', action: 'delete', danger: true, handler() { showDeleteModal(id); } }
+            ];
+            showCtxMenu(e.clientX, e.clientY, items);
+        });
+
+        /* ── Pick-node modal (for Add Dependency) ── */
+        function showPickNodeModal(title, description, excludeId, onPick) {
+            const eligible = [...nodes.values()].filter(n => {
+                if (n.id === excludeId) return false;
+                // already a parent
+                if (nodes.get(excludeId).parentIds.includes(n.id)) return false;
+                // would create a cycle
+                if (wouldCycle(n.id, excludeId)) return false;
+                return true;
+            });
+
+            if (eligible.length === 0) {
+                toast('No eligible nodes to link');
+                return;
+            }
+
+            const listHtml = eligible.map(n => {
+                const st = STATUSES.find(s => s.id === n.status);
+                return `<div class="item" data-pick="${n.id}" style="padding:8px 12px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s">
+      <span class="node-status-dot ${n.status}" style="background:${st.color};width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:6px;color:#fff">${st.icon}</span>
+      ${esc(n.name)}
+    </div>`;
+            }).join('');
+
+            openModal(`
+    <h2>${title}</h2>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${description}</p>
+    <div style="max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px" id="m-pick-list">${listHtml}</div>
+    <div class="actions"><button onclick="closeModal()">Cancel</button></div>
+  `);
+
+            modalEl.querySelectorAll('#m-pick-list .item').forEach(el => {
+                el.addEventListener('mouseenter', () => el.style.background = '#f0f1f3');
+                el.addEventListener('mouseleave', () => el.style.background = '');
+                el.addEventListener('click', () => {
+                    closeModal();
+                    onPick(el.dataset.pick);
+                });
+            });
+        }
+
+        /* ── Connector context menu (remove link / insert node on edge) ── */
+        svgEl.addEventListener('contextmenu', e => {
+            const hit = e.target.closest('.connector-hit');
+            if (!hit) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const parentId = hit.dataset.parent;
+            const childId = hit.dataset.child;
+            const parentNode = nodes.get(parentId);
+            const childNode = nodes.get(childId);
+
+            showCtxMenu(e.clientX, e.clientY, [
+                {
+                    label: 'Insert Node Here', icon: '↓', action: 'insert-edge', handler() {
+                        showNodeModal({
+                            title: 'Insert Node on Edge', onSave(n, s) {
+                                const newId = createNode(n, s);
+                                removeLink(parentId, childId);
+                                addLink(parentId, newId);
+                                addLink(newId, childId);
+                                render();
+                                fitViewIfNeeded();
+                            }
+                        });
+                    }
+                },
+                {
+                    label: `Remove Link (${esc(parentNode.name)} → ${esc(childNode.name)})`, icon: '✕', action: 'rm-link', danger: true, handler() {
+                        removeLink(parentId, childId);
+                        toast('Link removed');
+                        render();
+                    }
+                }
+            ]);
+        });
+
+        /* ── Close menus on outside click ── */
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#ctx-menu')) hideCtxMenu();
+        });
+
+        /* ── Pan ── */
+        wrapEl.addEventListener('mousedown', e => {
+            if (e.target.closest('.node') || e.target.closest('#ctx-menu') || e.button !== 0) return;
+            if (linkMode) return;
+            isPanning = true;
+            panStartX = e.clientX - panX;
+            panStartY = e.clientY - panY;
+            wrapEl.classList.add('grabbing');
+        });
+        window.addEventListener('mousemove', e => {
+            if (!isPanning) return;
+            panX = e.clientX - panStartX;
+            panY = e.clientY - panStartY;
+            applyTransform();
+        });
+        window.addEventListener('mouseup', () => { isPanning = false; wrapEl.classList.remove('grabbing'); });
+
+        /* ── Zoom ── */
+        wrapEl.addEventListener('wheel', e => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.08 : 0.08;
+            const newScale = Math.min(2, Math.max(0.25, scale + delta));
+            const rect = wrapEl.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            panX = mx - (mx - panX) * (newScale / scale);
+            panY = my - (my - panY) * (newScale / scale);
+            scale = newScale;
+            applyTransform();
+        }, { passive: false });
+
+        /* ── Fit View ── */
+        function fitView() {
+            if (layoutCache.size === 0) return;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            for (const pos of layoutCache.values()) {
+                if (pos.x < minX) minX = pos.x;
+                if (pos.y < minY) minY = pos.y;
+                if (pos.x + NODE_W > maxX) maxX = pos.x + NODE_W;
+                if (pos.y + NODE_H > maxY) maxY = pos.y + NODE_H;
+            }
+            const treeW = maxX - minX, treeH = maxY - minY;
+            const viewW = wrapEl.clientWidth - 80, viewH = wrapEl.clientHeight - 80;
+            scale = Math.min(1.2, Math.min(viewW / Math.max(treeW, 1), viewH / Math.max(treeH, 1)));
+            panX = (wrapEl.clientWidth - treeW * scale) / 2 - minX * scale;
+            panY = (wrapEl.clientHeight - treeH * scale) / 2 - minY * scale;
+            applyTransform();
+        }
+
+        function fitViewIfNeeded() {
+            setTimeout(fitView, 50);
+        }
+
+        /* ── Toolbar Buttons ── */
+        function addNodeHandler() {
+            showNodeModal({
+                title: 'Create Node', onSave(n, s) {
+                    createNode(n, s);
+                    render();
+                    fitView();
+                }
+            });
+        }
+
+        document.getElementById('btn-add-node').addEventListener('click', addNodeHandler);
+        document.getElementById('btn-add-node-empty').addEventListener('click', addNodeHandler);
+
+        document.getElementById('btn-add-child').addEventListener('click', () => {
+            if (!selectedId) return;
+            showNodeModal({ title: 'Add Child Node', onSave(n, s) { addChild(selectedId, n, s); render(); fitViewIfNeeded(); } });
+        });
+
+        document.getElementById('btn-link').addEventListener('click', () => {
+            if (!selectedId) return;
+            enterLinkMode(selectedId);
+        });
+
+        document.getElementById('btn-insert-before').addEventListener('click', () => {
+            if (!selectedId) return;
+            showNodeModal({ title: 'Add Parent Node', onSave(n, s) { insertBefore(selectedId, n, s); render(); fitViewIfNeeded(); } });
+        });
+
+        document.getElementById('btn-edit').addEventListener('click', () => {
+            if (!selectedId) return;
+            const node = nodes.get(selectedId);
+            showNodeModal({
+                title: 'Edit Node', name: node.name, status: node.status,
+                onSave(n, s) { renameNode(selectedId, n); setNodeStatus(selectedId, s); render(); }
+            });
+        });
+
+        document.getElementById('btn-delete').addEventListener('click', () => {
+            if (!selectedId) return;
+            showDeleteModal(selectedId);
+        });
+
+        document.getElementById('btn-fit').addEventListener('click', fitView);
+
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            if (nodes.size === 0) return;
+            showConfirm('This will delete all nodes and links. Are you sure?', () => {
+                nodes.clear(); selectedId = null; nextId = 1; saveState(); render();
+            }, 'Clear All');
+        });
+
+        document.getElementById('btn-customize').addEventListener('click', showStatusCustomizer);
+
+        document.getElementById('btn-import').addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.addEventListener('change', () => {
+                const file = input.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => {
+                    try {
+                        const data = JSON.parse(reader.result);
+                        if (!data.nodes || !Array.isArray(data.nodes)) throw new Error('Invalid format');
+                        nodes.clear();
+                        for (const [id, node] of data.nodes) {
+                            if (!node.parentIds) node.parentIds = node.parentId != null ? [node.parentId] : [];
+                            delete node.parentId;
+                            nodes.set(id, node);
+                        }
+                        if (data.statuses) { STATUSES.length = 0; STATUSES.push(...data.statuses); saveStatuses(); }
+                        if (data.nextId) nextId = data.nextId;
+                        selectedId = null;
+                        saveState(); render(); fitViewIfNeeded();
+                        toast('Imported successfully');
+                    } catch (err) {
+                        toast('Import failed: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            });
+            input.click();
+        });
+
+        document.getElementById('btn-export').addEventListener('click', () => {
+            const data = { nodes: [...nodes.entries()], statuses: STATUSES, nextId };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'dev-manager-export.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            toast('Exported');
+        });
+
+        /* ── Keyboard Shortcuts ── */
+        document.addEventListener('keydown', e => {
+            if (modalOverlay.classList.contains('open')) return;
+            if (e.key === 'Delete' && selectedId) showDeleteModal(selectedId);
+            if (e.key === 'F2' && selectedId) {
+                const node = nodes.get(selectedId);
+                showNodeModal({
+                    title: 'Edit Node', name: node.name, status: node.status,
+                    onSave(n, s) { renameNode(selectedId, n); setNodeStatus(selectedId, s); render(); }
+                });
+            }
+        });
+
+        /* ═══════════════════════════════════════════
+           INIT
+           ═══════════════════════════════════════════ */
+        loadState();
+        render();
+        if (nodes.size > 0) setTimeout(fitView, 100);
+    </script>
+</body>
+
+</html>

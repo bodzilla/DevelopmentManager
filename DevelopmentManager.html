@@ -927,6 +927,9 @@
         <button class="tb-btn" id="btn-insert-before" disabled>+ Parent</button>
         <button class="tb-btn" id="btn-edit" disabled>Edit</button>
         <button class="tb-btn" id="btn-delete" disabled>Delete</button>
+        <div class="sep"></div>
+        <button class="tb-btn" id="btn-undo" disabled title="Undo (Ctrl+Z)">↩ Undo</button>
+        <button class="tb-btn" id="btn-redo" disabled title="Redo (Ctrl+Y)">↪ Redo</button>
         <div class="right">
             <span class="hint">Right-click for options · Double-click to rename</span>
             <div class="sep"></div>
@@ -1053,10 +1056,62 @@
            PERSISTENCE (localStorage)
            ═══════════════════════════════════════════ */
         const STORAGE_KEY = 'tree-graph-manager-data-v2';
+        const MAX_HISTORY = 50;
+        const undoStack = [];
+        const redoStack = [];
+
+        function getSnapshot() {
+            return JSON.stringify({ nodes: [...nodes.entries()], nextId });
+        }
+
+        function restoreSnapshot(json) {
+            const data = JSON.parse(json);
+            nodes.clear();
+            for (const [id, node] of data.nodes) {
+                if (!node.parentIds) { node.parentIds = node.parentId != null ? [node.parentId] : []; delete node.parentId; }
+                nodes.set(id, node);
+            }
+            nextId = data.nextId || nodes.size + 1;
+        }
+
+        let _batch = false;
 
         function saveState() {
-            const data = { nodes: [...nodes.entries()], nextId };
-            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch { }
+            if (_batch) return;
+            const snap = getSnapshot();
+            if (undoStack._last !== undefined) {
+                undoStack.push(undoStack._last);
+                if (undoStack.length > MAX_HISTORY) undoStack.shift();
+            }
+            undoStack._last = snap;
+            redoStack.length = 0;
+            try { localStorage.setItem(STORAGE_KEY, snap); } catch { }
+        }
+
+        function undo() {
+            if (undoStack.length === 0) return;
+            redoStack.push(undoStack._last);
+            if (redoStack.length > MAX_HISTORY) redoStack.shift();
+            const prev = undoStack.pop();
+            undoStack._last = prev;
+            restoreSnapshot(prev);
+            try { localStorage.setItem(STORAGE_KEY, prev); } catch { }
+            selectedId = null;
+            render();
+            fitViewIfNeeded();
+        }
+
+        function redo() {
+            if (redoStack.length === 0) return;
+            undoStack.push(undoStack._last);
+            if (undoStack.length > MAX_HISTORY) undoStack.shift();
+            const next = redoStack.pop();
+            undoStack._last = next;
+            restoreSnapshot(next);
+            try { localStorage.setItem(STORAGE_KEY, next); } catch { }
+            selectedId = null;
+            render();
+            fitViewIfNeeded();
         }
 
         function loadState() {
@@ -1103,6 +1158,13 @@
         /* ═══════════════════════════════════════════
            CRUD
            ═══════════════════════════════════════════ */
+        function isNameTaken(name, excludeId) {
+            for (const [id, node] of nodes) {
+                if (id !== excludeId && node.name.toLowerCase() === name.toLowerCase()) return true;
+            }
+            return false;
+        }
+
         function createNode(name, status = 'not-started') {
             const id = 'node-' + (nextId++);
             nodes.set(id, { id, name, status, parentIds: [], children: [] });
@@ -1111,8 +1173,11 @@
         }
 
         function addChild(parentId, name, status = 'not-started') {
+            _batch = true;
             const id = createNode(name, status);
             addLink(parentId, id);
+            _batch = false;
+            saveState();
             return id;
         }
 
@@ -1143,20 +1208,22 @@
         function insertBefore(childId, name, status = 'not-started') {
             const child = nodes.get(childId);
             if (!child) return;
+            _batch = true;
             const newId = createNode(name, status);
-            // take all parents of child → parent the new node instead
             for (const pid of [...child.parentIds]) {
                 removeLink(pid, childId);
                 addLink(pid, newId);
             }
             addLink(newId, childId);
+            _batch = false;
+            saveState();
             return newId;
         }
 
         function deleteNode(id) {
             const node = nodes.get(id);
             if (!node) return;
-            // reconnect: for each parent × each child, add link (skip if cycle)
+            _batch = true;
             for (const pid of [...node.parentIds]) {
                 removeLink(pid, id);
                 for (const cid of node.children) {
@@ -1166,6 +1233,7 @@
             for (const cid of [...node.children]) removeLink(id, cid);
             nodes.delete(id);
             if (selectedId === id) selectedId = null;
+            _batch = false;
             saveState();
         }
 
@@ -1211,12 +1279,12 @@
 
         function renameNode(id, name) {
             const n = nodes.get(id);
-            if (n) { n.name = name; saveState(); }
+            if (n) { n.name = name; }
         }
 
         function setNodeStatus(id, status) {
             const n = nodes.get(id);
-            if (n) { n.status = status; saveState(); }
+            if (n) { n.status = status; }
         }
 
         /* ═══════════════════════════════════════════
@@ -1867,6 +1935,8 @@
             document.getElementById('btn-insert-before').disabled = !hasSel;
             document.getElementById('btn-edit').disabled = !hasSel;
             document.getElementById('btn-delete').disabled = !hasSel;
+            document.getElementById('btn-undo').disabled = undoStack.length === 0;
+            document.getElementById('btn-redo').disabled = redoStack.length === 0;
         }
 
         /* ── Legend (dynamic from STATUSES) ── */
@@ -2053,7 +2123,7 @@
 
         /* ── Node Create / Edit Modal ── */
         function showNodeModal(opts) {
-            const { title, name = '', onSave } = opts;
+            const { title, name = '', onSave, editId = null } = opts;
             const status = opts.status || STATUSES[0].id;
             const statusHtml = STATUSES.map(s => `
     <div class="status-option${s.id === status ? ' active' : ''}" data-status="${s.id}">
@@ -2092,6 +2162,7 @@
             function doSave() {
                 const n = nameInp.value.trim();
                 if (!n) { nameInp.style.borderColor = '#ef4444'; toast('Name is required'); return; }
+                if (isNameTaken(n, editId)) { nameInp.style.borderColor = '#ef4444'; toast('A node with that name already exists'); return; }
                 onSave(n, selStatus);
                 closeModal();
             }
@@ -2119,7 +2190,7 @@
             if (!node) return;
 
             if (node.children.length === 0) {
-                showConfirm(`Delete <strong>${esc(node.name)}</strong>?`, () => { deleteNode(id); render(); });
+                showConfirm(`Delete <strong>${esc(node.name)}</strong>?`, () => { deleteNode(id); render(); fitViewIfNeeded(); });
                 return;
             }
 
@@ -2132,8 +2203,8 @@
       <button onclick="closeModal()" style="width:100%;justify-content:center">Cancel</button>
     </div>
   `);
-            document.getElementById('m-recon').addEventListener('click', () => { deleteNode(id); closeModal(); render(); });
-            document.getElementById('m-subtree').addEventListener('click', () => { deleteSubtree(id); closeModal(); render(); });
+            document.getElementById('m-recon').addEventListener('click', () => { deleteNode(id); closeModal(); render(); fitViewIfNeeded(); });
+            document.getElementById('m-subtree').addEventListener('click', () => { deleteSubtree(id); closeModal(); render(); fitViewIfNeeded(); });
         }
 
         /* ═══════════════════════════════════════════
@@ -2239,6 +2310,7 @@
                 el.addEventListener('click', (ev) => {
                     ev.stopPropagation();
                     setNodeStatus(nodeId, el.dataset.status);
+                    saveState();
                     closeStatusDropdown();
                     render();
                 });
@@ -2378,7 +2450,8 @@
                 title: 'Edit Node',
                 name: node.name,
                 status: node.status,
-                onSave(name, status) { renameNode(id, name); setNodeStatus(id, status); render(); }
+                editId: id,
+                onSave(name, status) { renameNode(id, name); setNodeStatus(id, status); saveState(); render(); }
             });
         });
 
@@ -2414,7 +2487,8 @@
                     label: 'Edit', icon: '✎', action: 'edit', handler() {
                         showNodeModal({
                             title: 'Edit Node', name: node.name, status: node.status,
-                            onSave(n, s) { renameNode(id, n); setNodeStatus(id, s); render(); }
+                            editId: id,
+                            onSave(n, s) { renameNode(id, n); setNodeStatus(id, s); saveState(); render(); }
                         });
                     }
                 },
@@ -2593,7 +2667,8 @@
             const node = nodes.get(selectedId);
             showNodeModal({
                 title: 'Edit Node', name: node.name, status: node.status,
-                onSave(n, s) { renameNode(selectedId, n); setNodeStatus(selectedId, s); render(); }
+                editId: selectedId,
+                onSave(n, s) { renameNode(selectedId, n); setNodeStatus(selectedId, s); saveState(); render(); }
             });
         });
 
@@ -2603,6 +2678,8 @@
         });
 
         document.getElementById('btn-fit').addEventListener('click', fitView);
+        document.getElementById('btn-undo').addEventListener('click', undo);
+        document.getElementById('btn-redo').addEventListener('click', redo);
 
         function updateOrientBtn() {
             document.getElementById('btn-orient').textContent = isVertical ? '↕ Vertical' : '↔ Horizontal';
@@ -2632,7 +2709,7 @@
         document.getElementById('btn-clear').addEventListener('click', () => {
             if (nodes.size === 0) return;
             showConfirm('This will delete all nodes and links. Are you sure?', () => {
-                nodes.clear(); selectedId = null; nextId = 1; saveState(); render();
+                nodes.clear(); selectedId = null; nextId = 1; saveState(); render(); fitViewIfNeeded();
             }, 'Clear All');
         });
 
@@ -2689,15 +2766,19 @@
                 const node = nodes.get(selectedId);
                 showNodeModal({
                     title: 'Edit Node', name: node.name, status: node.status,
-                    onSave(n, s) { renameNode(selectedId, n); setNodeStatus(selectedId, s); render(); }
+                    editId: selectedId,
+                    onSave(n, s) { renameNode(selectedId, n); setNodeStatus(selectedId, s); saveState(); render(); }
                 });
             }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
         });
 
         /* ═══════════════════════════════════════════
            INIT
            ═══════════════════════════════════════════ */
         loadState();
+        undoStack._last = getSnapshot();
         render();
         if (nodes.size > 0) setTimeout(fitView, 100);
     </script>

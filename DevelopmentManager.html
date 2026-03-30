@@ -33,6 +33,43 @@
             --node-h: 78px;
             --h-gap: 110px;
             --v-gap: 48px;
+            --hover-bg: #f0f1f3;
+            --hover-border: #ccd0d5;
+            --accent-hover: #2563eb;
+            --danger: #ef4444;
+            --danger-hover: #dc2626;
+            --danger-bg: #fef2f2;
+            --node-hover-border: #c0c5cc;
+            --overlay-bg: rgba(0, 0, 0, .25);
+            --toast-bg: #1a1c20;
+            --toast-color: #fff;
+            --filter-hover: rgba(0, 0, 0, .05);
+            --filter-active: rgba(0, 0, 0, .08);
+        }
+
+        [data-theme="dark"] {
+            --bg: #181a1e;
+            --surface: #23262b;
+            --border: #353840;
+            --text: #e4e6ea;
+            --text-secondary: #9ca3af;
+            --accent: #60a5fa;
+            --accent-light: #1e3a5f;
+            --connector: #5a6270;
+            --shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 1px 2px rgba(0, 0, 0, .2);
+            --shadow-lg: 0 4px 12px rgba(0, 0, 0, .4);
+            --hover-bg: #2c3038;
+            --hover-border: #4a4e58;
+            --accent-hover: #3b82f6;
+            --danger: #f87171;
+            --danger-hover: #ef4444;
+            --danger-bg: #3b1c1c;
+            --node-hover-border: #555a64;
+            --overlay-bg: rgba(0, 0, 0, .5);
+            --toast-bg: #e4e6ea;
+            --toast-color: #181a1e;
+            --filter-hover: rgba(255, 255, 255, .06);
+            --filter-active: rgba(255, 255, 255, .1);
         }
 
         html,
@@ -91,8 +128,8 @@
         }
 
         .tb-btn:hover {
-            background: #f0f1f3;
-            border-color: #ccd0d5
+            background: var(--hover-bg);
+            border-color: var(--hover-border)
         }
 
         .tb-btn:active {
@@ -106,7 +143,7 @@
         }
 
         .tb-btn.primary:hover {
-            background: #2563eb
+            background: var(--accent-hover)
         }
 
         .tb-btn:disabled {
@@ -242,7 +279,7 @@
 
         .node:hover {
             box-shadow: var(--shadow-lg);
-            border-color: #c0c5cc
+            border-color: var(--node-hover-border)
         }
 
         .node.selected {
@@ -307,7 +344,7 @@
         }
 
         .node-status-btn:hover {
-            background: #f0f1f3
+            background: var(--hover-bg)
         }
 
         /* ─── DEP BADGE ─── */
@@ -353,15 +390,15 @@
         }
 
         #ctx-menu .item:hover {
-            background: #f0f1f3
+            background: var(--hover-bg)
         }
 
         #ctx-menu .item.danger {
-            color: #ef4444
+            color: var(--danger)
         }
 
         #ctx-menu .item.danger:hover {
-            background: #fef2f2
+            background: var(--danger-bg)
         }
 
         #ctx-menu .item.disabled {
@@ -380,7 +417,7 @@
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, .25);
+            background: var(--overlay-bg);
             z-index: 300;
             display: flex;
             align-items: center;
@@ -432,7 +469,9 @@
             padding: 0 12px;
             font-size: 14px;
             outline: none;
-            transition: border-color .15s
+            transition: border-color .15s;
+            background: var(--bg);
+            color: var(--text)
         }
 
         .modal input[type=text]:focus {
@@ -505,7 +544,7 @@
         }
 
         .modal .actions button:hover {
-            background: #f0f1f3
+            background: var(--hover-bg)
         }
 
         .modal .actions button.primary {
@@ -515,17 +554,17 @@
         }
 
         .modal .actions button.primary:hover {
-            background: #2563eb
+            background: var(--accent-hover)
         }
 
         .modal .actions button.danger {
-            background: #ef4444;
+            background: var(--danger);
             color: #fff;
-            border-color: #ef4444
+            border-color: var(--danger)
         }
 
         .modal .actions button.danger:hover {
-            background: #dc2626
+            background: var(--danger-hover)
         }
 
         /* ─── LINK BANNER ─── */
@@ -595,11 +634,11 @@
         }
 
         .legend-row:hover {
-            background: rgba(0, 0, 0, .05)
+            background: var(--filter-hover)
         }
 
         .legend-row.active-filter {
-            background: rgba(0, 0, 0, .08);
+            background: var(--filter-active);
             font-weight: 600
         }
 
@@ -623,8 +662,8 @@
             bottom: 24px;
             left: 50%;
             transform: translateX(-50%) translateY(20px);
-            background: #1a1c20;
-            color: #fff;
+            background: var(--toast-bg);
+            color: var(--toast-color);
             padding: 10px 20px;
             border-radius: 10px;
             font-size: 13px;
@@ -648,7 +687,7 @@
             width: 300px;
             background: var(--surface);
             border-left: 1px solid var(--border);
-            box-shadow: -2px 0 8px rgba(0, 0, 0, .05);
+            box-shadow: var(--shadow);
             z-index: 90;
             transform: translateX(100%);
             transition: transform .2s ease;
@@ -728,7 +767,7 @@
         }
 
         .sp-btn:hover {
-            background: #f0f1f3
+            background: var(--hover-bg)
         }
 
         .sp-body {
@@ -783,7 +822,7 @@
         }
 
         .sp-node-item:hover {
-            background: #f0f1f3
+            background: var(--hover-bg)
         }
 
         .sp-node-item .sp-item-dot {
@@ -841,7 +880,7 @@
         }
 
         .status-dropdown .sd-item:hover {
-            background: #f0f1f3
+            background: var(--hover-bg)
         }
 
         .status-dropdown .sd-item.active {
@@ -893,6 +932,7 @@
             <div class="sep"></div>
             <button class="tb-btn" id="btn-fit">Fit View</button>
             <button class="tb-btn" id="btn-orient" title="Toggle horizontal/vertical layout">↔ Horizontal</button>
+            <button class="tb-btn" id="btn-theme" title="Toggle light/dark mode">☀ Light</button>
             <button class="tb-btn" id="btn-clear">Clear All</button>
             <button class="tb-btn" id="btn-import">Import</button>
             <button class="tb-btn" id="btn-export">Export</button>
@@ -983,6 +1023,10 @@
 
         /* orientation */
         let isVertical = localStorage.getItem('tree-graph-orientation') === 'vertical';
+
+        /* theme */
+        let isDark = localStorage.getItem('tree-graph-theme') === 'dark';
+        if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
 
         /* linking mode */
         let linkMode = false;
@@ -2088,7 +2132,7 @@
                 const rows = draft.map((s, i) => `
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px" data-idx="${i}">
         <input type="color" value="${s.color}" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer" data-field="color">
-        <input type="text" value="${esc(s.label)}" style="flex:1;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" data-field="label" placeholder="Status name">
+        <input type="text" value="${esc(s.label)}" style="flex:1;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;background:var(--bg);color:var(--text)" data-field="label" placeholder="Status name">
         <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer" title="Counts toward completion">
           <input type="checkbox" ${s.complete ? 'checked' : ''} data-field="complete"> Done
         </label>
@@ -2553,6 +2597,18 @@
             updateOrientBtn();
             render();
             fitView();
+        });
+
+        function updateThemeBtn() {
+            document.getElementById('btn-theme').textContent = isDark ? '🌙 Dark' : '☀ Light';
+        }
+        updateThemeBtn();
+
+        document.getElementById('btn-theme').addEventListener('click', () => {
+            isDark = !isDark;
+            document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('tree-graph-theme', isDark ? 'dark' : 'light');
+            updateThemeBtn();
         });
 
         document.getElementById('btn-clear').addEventListener('click', () => {

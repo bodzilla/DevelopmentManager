@@ -564,6 +564,45 @@
             background: rgba(255, 255, 255, .35)
         }
 
+        /* ─── STATUS FILTER ─── */
+        .node.dimmed {
+            opacity: .15;
+            pointer-events: none;
+            transition: opacity .25s
+        }
+
+        .node.filter-match {
+            opacity: 1;
+            transition: opacity .25s
+        }
+
+        #connectors.has-filter .edge-group {
+            opacity: .08;
+            transition: opacity .25s
+        }
+
+        #connectors.has-filter .edge-group.filter-edge {
+            opacity: 1;
+            transition: opacity .25s
+        }
+
+        .legend-row {
+            cursor: pointer;
+            border-radius: 6px;
+            padding: 2px 6px;
+            margin-left: -6px;
+            transition: background .15s
+        }
+
+        .legend-row:hover {
+            background: rgba(0, 0, 0, .05)
+        }
+
+        .legend-row.active-filter {
+            background: rgba(0, 0, 0, .08);
+            font-weight: 600
+        }
+
         /* ─── LINK MODE ─── */
         #canvas-wrap.link-mode {
             cursor: crosshair
@@ -1302,6 +1341,7 @@
             updateToolbar();
             updateEmptyState();
             applyTransform();
+            applyStatusFilter();
         }
 
         function renderNodes() {
@@ -1423,6 +1463,7 @@
                 const color = CONN_COLORS[edgeColorIdx[ei] % CONN_COLORS.length];
 
                 const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('class', 'edge-group');
                 g.dataset.parent = e.parentId;
                 g.dataset.child = e.childId;
                 g.dataset.color = color;
@@ -1690,11 +1731,54 @@
         }
 
         /* ── Legend (dynamic from STATUSES) ── */
+        let filterStatus = null;
+
         function renderLegend() {
             const container = document.getElementById('legend-rows');
             container.innerHTML = STATUSES.map(s =>
-                `<div class="legend-row"><span class="legend-dot" style="background:${s.color}">${s.icon || ''}</span> ${esc(s.label)}</div>`
+                `<div class="legend-row${filterStatus === s.id ? ' active-filter' : ''}" data-filter-status="${s.id}"><span class="legend-dot" style="background:${s.color}">${s.icon || ''}</span> ${esc(s.label)}</div>`
             ).join('');
+            container.querySelectorAll('[data-filter-status]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const sid = el.dataset.filterStatus;
+                    filterStatus = (filterStatus === sid) ? null : sid;
+                    applyStatusFilter();
+                    renderLegend();
+                });
+            });
+        }
+
+        function applyStatusFilter() {
+            // Dim/undim nodes
+            canvasEl.querySelectorAll('.node').forEach(el => {
+                const node = nodes.get(el.dataset.id);
+                if (!filterStatus || !node) {
+                    el.classList.remove('dimmed', 'filter-match');
+                } else if (node.status === filterStatus) {
+                    el.classList.remove('dimmed');
+                    el.classList.add('filter-match');
+                } else {
+                    el.classList.remove('filter-match');
+                    el.classList.add('dimmed');
+                }
+            });
+            // Dim/undim connectors
+            const matchIds = new Set();
+            if (filterStatus) {
+                for (const [id, node] of nodes) {
+                    if (node.status === filterStatus) matchIds.add(id);
+                }
+            }
+            svgEl.classList.toggle('has-filter', !!filterStatus);
+            svgEl.querySelectorAll('.edge-group').forEach(g => {
+                if (!filterStatus) {
+                    g.classList.remove('filter-edge');
+                } else {
+                    const pid = g.dataset.parent;
+                    const cid = g.dataset.child;
+                    g.classList.toggle('filter-edge', matchIds.has(pid) || matchIds.has(cid));
+                }
+            });
         }
 
         /* ── Completion Stats ── */

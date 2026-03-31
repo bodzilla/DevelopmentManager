@@ -1671,7 +1671,11 @@
            HELPERS
            ═══════════════════════════════════════════ */
         function getRoots() {
-            return [...nodes.values()].filter(n => n.parentIds.length === 0).map(n => n.id);
+            const roots = [];
+            for (const [id, n] of nodes) {
+                if (n.parentIds.length === 0) roots.push(id);
+            }
+            return roots;
         }
 
         const _escDiv = document.createElement('div');
@@ -1683,7 +1687,7 @@
         /* ═══════════════════════════════════════════
            PERSISTENCE (localStorage)
            ═══════════════════════════════════════════ */
-        const STORAGE_KEY = 'tree-graph-manager-data-v2';
+        const STORAGE_KEY = 'tree-graph-manager-data';
         const MAX_HISTORY = 50;
         const undoStack = [];
         const redoStack = [];
@@ -1744,26 +1748,11 @@
 
         function loadState() {
             try {
-                let raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) {
-                    // migrate from v1 (single-parent tree format)
-                    raw = localStorage.getItem('tree-graph-manager-data');
-                    if (!raw) return;
-                }
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return;
                 const data = JSON.parse(raw);
                 nodes = new Map(data.nodes);
                 nextId = data.nextId || nodes.size + 1;
-                // migrate old single-parent format → parentIds array + add new fields
-                for (const [, node] of nodes) {
-                    if (!Array.isArray(node.parentIds)) {
-                        node.parentIds = node.parentId ? [node.parentId] : [];
-                        delete node.parentId;
-                    }
-                    if (node.notes === undefined) node.notes = '';
-                    if (node.startDate === undefined) node.startDate = null;
-                    if (node.endDate === undefined) node.endDate = null;
-                    if (node.estimatedHours === undefined) node.estimatedHours = null;
-                }
                 saveState();
             } catch { }
         }
@@ -2368,19 +2357,21 @@
                 }
             }
 
-            // Bbox overlap for remaining non-neighbor pairs
-            for (let i = 0; i < edges.length; i++) {
-                const a = edges[i];
-                const aMinX = Math.min(a.pPos.x, a.cPos.x), aMaxX = Math.max(a.pPos.x + NODE_W, a.cPos.x + NODE_W);
-                const aMinY = Math.min(a.pPos.y, a.cPos.y), aMaxY = Math.max(a.pPos.y + NODE_H, a.cPos.y + NODE_H);
-                for (let j = i + 1; j < edges.length; j++) {
-                    if (edgeNeighbours[i].has(j)) continue;
-                    const b = edges[j];
-                    const bMinX = Math.min(b.pPos.x, b.cPos.x), bMaxX = Math.max(b.pPos.x + NODE_W, b.cPos.x + NODE_W);
-                    const bMinY = Math.min(b.pPos.y, b.cPos.y), bMaxY = Math.max(b.pPos.y + NODE_H, b.cPos.y + NODE_H);
-                    if (aMinX <= bMaxX && aMaxX >= bMinX && aMinY <= bMaxY && aMaxY >= bMinY) {
-                        edgeNeighbours[i].add(j);
-                        edgeNeighbours[j].add(i);
+            // Bbox overlap for remaining non-neighbor pairs (skip if few edges)
+            if (edges.length > 2) {
+                for (let i = 0; i < edges.length; i++) {
+                    const a = edges[i];
+                    const aMinX = Math.min(a.pPos.x, a.cPos.x), aMaxX = Math.max(a.pPos.x + NODE_W, a.cPos.x + NODE_W);
+                    const aMinY = Math.min(a.pPos.y, a.cPos.y), aMaxY = Math.max(a.pPos.y + NODE_H, a.cPos.y + NODE_H);
+                    for (let j = i + 1; j < edges.length; j++) {
+                        if (edgeNeighbours[i].has(j)) continue;
+                        const b = edges[j];
+                        const bMinX = Math.min(b.pPos.x, b.cPos.x), bMaxX = Math.max(b.pPos.x + NODE_W, b.cPos.x + NODE_W);
+                        const bMinY = Math.min(b.pPos.y, b.cPos.y), bMaxY = Math.max(b.pPos.y + NODE_H, b.cPos.y + NODE_H);
+                        if (aMinX <= bMaxX && aMaxX >= bMinX && aMinY <= bMaxY && aMaxY >= bMinY) {
+                            edgeNeighbours[i].add(j);
+                            edgeNeighbours[j].add(i);
+                        }
                     }
                 }
             }
@@ -2436,22 +2427,6 @@
                     selectedOverlays.push(hl);
                 }
 
-                // On hover: overlay a highlighted clone on top, remove on leave
-                g.addEventListener('mouseenter', () => {
-                    const old = svgEl.querySelector('.connector-highlight');
-                    if (old) old.remove();
-                    const hl = line.cloneNode();
-                    hl.setAttribute('class', 'connector-highlight');
-                    hl.setAttribute('stroke', highlightColor(color));
-                    hl.setAttribute('stroke-width', '3.5');
-                    hl.setAttribute('pointer-events', 'none');
-                    svgEl.appendChild(hl);
-                });
-                g.addEventListener('mouseleave', () => {
-                    const hl = svgEl.querySelector('.connector-highlight');
-                    if (hl) hl.remove();
-                });
-
                 svgFrag.appendChild(g);
             }
 
@@ -2459,6 +2434,28 @@
             for (const hl of selectedOverlays) svgFrag.appendChild(hl);
             svgEl.appendChild(svgFrag);
         }
+
+        // Delegated edge hover — single listener pair on SVG instead of per-edge closures
+        svgEl.addEventListener('mouseenter', e => {
+            const g = e.target.closest('.edge-group');
+            if (!g) return;
+            const old = svgEl.querySelector('.connector-highlight');
+            if (old) old.remove();
+            const line = g.querySelector('.connector-line');
+            if (!line) return;
+            const hl = line.cloneNode();
+            hl.setAttribute('class', 'connector-highlight');
+            hl.setAttribute('stroke', highlightColor(g.dataset.color));
+            hl.setAttribute('stroke-width', '3.5');
+            hl.setAttribute('pointer-events', 'none');
+            svgEl.appendChild(hl);
+        }, true);
+        svgEl.addEventListener('mouseleave', e => {
+            const g = e.target.closest('.edge-group');
+            if (!g) return;
+            const hl = svgEl.querySelector('.connector-highlight');
+            if (hl) hl.remove();
+        }, true);
 
         /* Parse hex colour to [r,g,b] — cached to avoid repeated parseInt calls */
         const _hexCache = new Map();
@@ -2760,8 +2757,9 @@
             canvasEl.style.transform = `translate(${panX}px,${panY}px) scale(${scale})`;
         }
 
+        const _emptyStateEl = document.getElementById('empty-state');
         function updateEmptyState() {
-            document.getElementById('empty-state').style.display = nodes.size === 0 ? 'block' : 'none';
+            _emptyStateEl.style.display = nodes.size === 0 ? 'block' : 'none';
         }
 
         // Cached toolbar button references (menu entries + quick buttons)
@@ -2854,17 +2852,17 @@
         }
 
         /* ── Completion Stats ── */
+        const _completionEl = document.getElementById('completion-stats');
         function renderCompletionStats() {
-            const el = document.getElementById('completion-stats');
             const total = nodes.size;
-            if (total === 0) { el.innerHTML = ''; return; }
+            if (total === 0) { _completionEl.innerHTML = ''; return; }
             let complete = 0;
             for (const n of nodes.values()) {
                 const st = statusMap.get(n.status);
                 if (st && st.complete) complete++;
             }
             const pct = Math.round((complete / total) * 100);
-            el.innerHTML = `
+            _completionEl.innerHTML = `
     <div style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;margin-bottom:4px">
         <span>${complete}/${total} complete</span>
@@ -2883,40 +2881,36 @@
         const sidePanel = document.getElementById('side-panel');
         const spBody = document.getElementById('sp-body');
         const spTitle = document.getElementById('sp-title');
+        const _legendEl = document.getElementById('legend');
+        const _ganttPanelEl = document.getElementById('gantt-panel');
         let spMinimized = false;
 
         function _syncGanttRight() {
-            const gp = document.getElementById('gantt-panel');
-            if (!gp) return;
             const isOpen = sidePanel.classList.contains('open');
-            if (!isOpen) { gp.style.right = '0'; return; }
-            gp.style.right = spMinimized ? '36px' : '300px';
+            if (!isOpen) { _ganttPanelEl.style.right = '0'; return; }
+            _ganttPanelEl.style.right = spMinimized ? '36px' : '300px';
         }
 
         function _syncLegendBottom() {
-            const legend = document.getElementById('legend');
-            if (!legend) return;
-            if (!showGantt) { legend.style.bottom = '16px'; return; }
-            const gp = document.getElementById('gantt-panel');
-            const gpH = gp ? gp.offsetHeight : ganttHeight;
-            legend.style.bottom = (gpH + 16) + 'px';
+            if (!showGantt) { _legendEl.style.bottom = '16px'; return; }
+            const gpH = _ganttPanelEl.offsetHeight || ganttHeight;
+            _legendEl.style.bottom = (gpH + 16) + 'px';
         }
 
         function renderSidePanel() {
             if (!selectedId) {
                 sidePanel.classList.remove('open');
-                document.getElementById('legend').classList.remove('panel-open', 'panel-minimized');
+                _legendEl.classList.remove('panel-open', 'panel-minimized');
                 _syncGanttRight();
                 return;
             }
 
             const node = nodes.get(selectedId);
-            if (!node) { sidePanel.classList.remove('open'); document.getElementById('legend').classList.remove('panel-open', 'panel-minimized'); _syncGanttRight(); return; }
+            if (!node) { sidePanel.classList.remove('open'); _legendEl.classList.remove('panel-open', 'panel-minimized'); _syncGanttRight(); return; }
 
             sidePanel.classList.add('open');
-            const legend = document.getElementById('legend');
-            legend.classList.toggle('panel-open', !spMinimized);
-            legend.classList.toggle('panel-minimized', spMinimized);
+            _legendEl.classList.toggle('panel-open', !spMinimized);
+            _legendEl.classList.toggle('panel-minimized', spMinimized);
             _syncGanttRight();
             const st = statusMap.get(node.status) || STATUSES[0];
             spTitle.textContent = node.name;
@@ -3002,7 +2996,7 @@
         document.getElementById('sp-close').addEventListener('click', () => {
             selectedId = null;
             sidePanel.classList.remove('open');
-            document.getElementById('legend').classList.remove('panel-open', 'panel-minimized');
+            _legendEl.classList.remove('panel-open', 'panel-minimized');
             _syncGanttRight();
             render();
         });
@@ -3012,9 +3006,8 @@
             sidePanel.classList.toggle('minimized', spMinimized);
             document.getElementById('sp-minimize').textContent = spMinimized ? '◀' : '▶';
             _syncGanttRight();
-            const legend = document.getElementById('legend');
-            legend.classList.toggle('panel-open', !spMinimized);
-            legend.classList.toggle('panel-minimized', spMinimized);
+            _legendEl.classList.toggle('panel-open', !spMinimized);
+            _legendEl.classList.toggle('panel-minimized', spMinimized);
         });
 
         /* ═══════════════════════════════════════════
@@ -3364,12 +3357,12 @@
            TOAST
            ═══════════════════════════════════════════ */
         let toastTimer;
+        const _toastEl = document.getElementById('toast');
         function toast(msg) {
-            const el = document.getElementById('toast');
-            el.textContent = msg;
-            el.classList.add('show');
+            _toastEl.textContent = msg;
+            _toastEl.classList.add('show');
             clearTimeout(toastTimer);
-            toastTimer = setTimeout(() => el.classList.remove('show'), 2500);
+            toastTimer = setTimeout(() => _toastEl.classList.remove('show'), 2500);
         }
 
         /* ═══════════════════════════════════════════
@@ -3797,7 +3790,7 @@
         let legendCollapsed = false;
         document.getElementById('legend-toggle').addEventListener('click', () => {
             legendCollapsed = !legendCollapsed;
-            document.getElementById('legend').classList.toggle('legend-collapsed', legendCollapsed);
+            _legendEl.classList.toggle('legend-collapsed', legendCollapsed);
             document.getElementById('legend-toggle').textContent = legendCollapsed ? '▲' : '▼';
         });
 
@@ -4069,6 +4062,7 @@
         });
 
         function _isWeekend(d) { const day = d.getDay(); return day === 0 || day === 6; }
+        const _gMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         function renderGantt() {
             if (!showGantt) return;
@@ -4092,7 +4086,6 @@
             maxD += 86400000; // include the end date's full day
 
             // Count weekdays in the range to set column count
-            const _gMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             const startDay = new Date(minD - 86400000);
             startDay.setHours(0, 0, 0, 0);
             while (_isWeekend(startDay)) startDay.setDate(startDay.getDate() - 1);
@@ -4100,24 +4093,31 @@
             const walker = new Date(startDay);
             while (walker.getTime() <= maxD) {
                 if (!_isWeekend(walker)) {
-                    weekdayCols.push({ time: walker.getTime(), date: new Date(walker) });
+                    weekdayCols.push({ time: walker.getTime(), day: walker.getDate(), month: walker.getMonth() });
                 }
                 walker.setDate(walker.getDate() + 1);
             }
             const colCount = weekdayCols.length;
             const colW = 36;
 
-            // Helper: map a timestamp to a fractional weekday-column position
+            // Build sorted time array for binary search
+            const _colTimes = new Array(colCount);
+            for (let i = 0; i < colCount; i++) _colTimes[i] = weekdayCols[i].time;
+
+            // Helper: map a timestamp to a fractional weekday-column position (binary search)
             function timeToCol(ts) {
-                if (ts <= weekdayCols[0].time) return 0;
-                if (ts >= weekdayCols[colCount - 1].time) {
-                    // Extrapolate beyond last column using colW spacing
-                    const lastTime = weekdayCols[colCount - 1].time;
-                    return (colCount - 1) + (ts - lastTime) / 86400000;
+                if (ts <= _colTimes[0]) return 0;
+                if (ts >= _colTimes[colCount - 1]) {
+                    return (colCount - 1) + (ts - _colTimes[colCount - 1]) / 86400000;
                 }
-                for (let j = 0; j < colCount - 1; j++) {
-                    if (ts >= weekdayCols[j].time && ts < weekdayCols[j + 1].time) {
-                        return j + (ts - weekdayCols[j].time) / (weekdayCols[j + 1].time - weekdayCols[j].time);
+                // Binary search for the interval containing ts
+                let lo = 0, hi = colCount - 2;
+                while (lo <= hi) {
+                    const mid = (lo + hi) >>> 1;
+                    if (ts < _colTimes[mid]) hi = mid - 1;
+                    else if (ts >= _colTimes[mid + 1]) lo = mid + 1;
+                    else {
+                        return mid + (ts - _colTimes[mid]) / (_colTimes[mid + 1] - _colTimes[mid]);
                     }
                 }
                 return colCount - 1;
@@ -4130,12 +4130,12 @@
                 return d.toISOString().slice(0, 10);
             }
 
-            let html = '<div class="gantt-timeline" style="position:relative;min-width:' + (colCount * colW) + 'px">';
+            const parts = ['<div class="gantt-timeline" style="position:relative;min-width:' + (colCount * colW) + 'px">'];
             // Day column headers (weekdays only)
             for (let i = 0; i < colCount; i++) {
-                const d = weekdayCols[i].date;
-                const label = d.getDate() + ' ' + _gMonths[d.getMonth()];
-                html += `<div style="position:absolute;left:${i * colW}px;top:0;width:${colW}px;text-align:center;font-size:9px;color:var(--text-secondary);border-left:1px solid var(--border);height:100%">${label}</div>`;
+                const c = weekdayCols[i];
+                const label = c.day + ' ' + _gMonths[c.month];
+                parts.push(`<div style="position:absolute;left:${i * colW}px;top:0;width:${colW}px;text-align:center;font-size:9px;color:var(--text-secondary);border-left:1px solid var(--border);height:100%">${label}</div>`);
             }
 
             let row = 0;
@@ -4147,124 +4147,136 @@
                 const rightCol = Math.ceil(timeToCol(e));
                 const left = leftCol * colW;
                 const width = Math.max((rightCol - leftCol) * colW, colW);
-                html += `<div class="gantt-row" data-gantt-id="${id}" style="position:absolute;top:${20 + row * 28}px;left:${left}px;width:${width}px;height:22px;background:${st.color};border-radius:4px;cursor:pointer;display:flex;align-items:center;padding:0 6px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden" title="${esc(node.name)}"><div class="gantt-handle-l" style="position:absolute;left:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:4px 0 0 4px"></div><span style="pointer-events:none;overflow:hidden;text-overflow:ellipsis;flex:1">${esc(node.name)}</span><div class="gantt-handle-r" style="position:absolute;right:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:0 4px 4px 0"></div></div>`;
+                parts.push(`<div class="gantt-row" data-gantt-id="${id}" style="position:absolute;top:${20 + row * 28}px;left:${left}px;width:${width}px;height:22px;background:${st.color};border-radius:4px;cursor:pointer;display:flex;align-items:center;padding:0 6px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden" title="${esc(node.name)}"><div class="gantt-handle-l" style="position:absolute;left:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:4px 0 0 4px"></div><span style="pointer-events:none;overflow:hidden;text-overflow:ellipsis;flex:1">${esc(node.name)}</span><div class="gantt-handle-r" style="position:absolute;right:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:0 4px 4px 0"></div></div>`);
                 row++;
             }
-            html += '</div>';
-            ganttBody.innerHTML = html;
+            parts.push('</div>');
+            ganttBody.innerHTML = parts.join('');
             const tl = ganttBody.querySelector('.gantt-timeline');
             if (tl) tl.style.height = (20 + row * 28 + 10) + 'px';
 
-            let ganttClickTimer = null;
-            ganttBody.querySelectorAll('[data-gantt-id]').forEach(el => {
-                el.addEventListener('click', () => {
-                    clearTimeout(ganttClickTimer);
-                    ganttClickTimer = setTimeout(() => {
-                        selectedId = el.dataset.ganttId;
-                        render();
-                        focusNode(selectedId);
-                    }, 500);
-                });
-                el.addEventListener('dblclick', () => {
-                    clearTimeout(ganttClickTimer);
-                    const id = el.dataset.ganttId;
-                    const node = nodes.get(id);
-                    if (!node) return;
-                    selectedId = id;
-                    showNodeModal({
-                        title: 'Edit Node',
-                        name: node.name,
-                        status: node.status,
-                        editId: id,
-                        onSave(name, status, extras) { renameNode(id, name); setNodeStatus(id, status); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; saveState(); render(); }
-                    });
-                });
-                el.addEventListener('contextmenu', e => {
-                    e.preventDefault();
-                    const id = el.dataset.ganttId;
-                    const node = nodes.get(id);
-                    if (!node) return;
-                    const menu = document.createElement('div');
-                    menu.style.cssText = 'position:fixed;z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);padding:4px 0;min-width:140px';
-                    menu.innerHTML = '<button style="display:block;width:100%;text-align:left;padding:6px 14px;border:none;background:transparent;font-size:12px;color:var(--text);cursor:pointer">Clear dates</button>';
-                    menu.style.left = e.clientX + 'px';
-                    menu.style.top = e.clientY + 'px';
-                    document.body.appendChild(menu);
-                    menu.querySelector('button').addEventListener('click', () => {
-                        node.startDate = null;
-                        node.endDate = null;
-                        saveState();
-                        render();
-                        document.body.removeChild(menu);
-                    });
-                    const dismiss = ev => { if (!menu.contains(ev.target)) { if (document.body.contains(menu)) document.body.removeChild(menu); document.removeEventListener('mousedown', dismiss); } };
-                    setTimeout(() => document.addEventListener('mousedown', dismiss), 0);
-                });
-
-                // Drag resize handles
-                const handleL = el.querySelector('.gantt-handle-l');
-                const handleR = el.querySelector('.gantt-handle-r');
-                function setupDrag(handle, side) {
-                    handle.addEventListener('mousedown', de => {
-                        de.preventDefault();
-                        de.stopPropagation();
-                        clearTimeout(ganttClickTimer);
-                        const id = el.dataset.ganttId;
-                        const node = nodes.get(id);
-                        if (!node) return;
-                        const initLeft = parseFloat(el.style.left);
-                        const initWidth = parseFloat(el.style.width);
-                        const startX = de.clientX;
-
-                        function onMove(me) {
-                            const dx = me.clientX - startX;
-                            if (side === 'left') {
-                                const rawLeft = initLeft + dx;
-                                const snappedLeft = Math.round(rawLeft / colW) * colW;
-                                const snappedWidth = (initLeft + initWidth) - snappedLeft;
-                                if (snappedWidth < colW) return;
-                                el.style.left = snappedLeft + 'px';
-                                el.style.width = snappedWidth + 'px';
-                            } else {
-                                const rawWidth = initWidth + dx;
-                                const snappedWidth = Math.max(colW, Math.round(rawWidth / colW) * colW);
-                                el.style.width = snappedWidth + 'px';
-                            }
-                        }
-                        function onUp() {
-                            document.removeEventListener('mousemove', onMove);
-                            document.removeEventListener('mouseup', onUp);
-                            // Convert final pixel position back to dates
-                            const finalLeft = parseFloat(el.style.left);
-                            const finalWidth = parseFloat(el.style.width);
-                            const startCol = Math.round(finalLeft / colW);
-                            const endCol = Math.round((finalLeft + finalWidth) / colW) - 1;
-                            node.startDate = colToDate(startCol);
-                            node.endDate = colToDate(Math.max(startCol, endCol));
-                            // Snap away from weekends
-                            if (node.startDate) {
-                                const sd = new Date(node.startDate + 'T00:00:00');
-                                if (sd.getDay() === 6) sd.setDate(sd.getDate() + 2);
-                                else if (sd.getDay() === 0) sd.setDate(sd.getDate() + 1);
-                                node.startDate = sd.toISOString().slice(0, 10);
-                            }
-                            if (node.endDate) {
-                                const ed = new Date(node.endDate + 'T00:00:00');
-                                if (ed.getDay() === 6) ed.setDate(ed.getDate() + 2);
-                                else if (ed.getDay() === 0) ed.setDate(ed.getDate() + 1);
-                                node.endDate = ed.toISOString().slice(0, 10);
-                            }
-                            saveState();
-                            render();
-                        }
-                        document.addEventListener('mousemove', onMove);
-                        document.addEventListener('mouseup', onUp);
-                    });
-                }
-                setupDrag(handleL, 'left');
-                setupDrag(handleR, 'right');
-            });
+            // Store render context for delegated event handlers
+            _ganttColW = colW;
+            _ganttColToDate = colToDate;
         }
+
+        // --- Gantt delegated event handlers (attached once, not per-render) ---
+        let _ganttColW = 36;
+        let _ganttColToDate = null;
+        let _ganttClickTimer = null;
+
+        ganttBody.addEventListener('click', e => {
+            const el = e.target.closest('[data-gantt-id]');
+            if (!el) return;
+            clearTimeout(_ganttClickTimer);
+            _ganttClickTimer = setTimeout(() => {
+                selectedId = el.dataset.ganttId;
+                render();
+                focusNode(selectedId);
+            }, 500);
+        });
+
+        ganttBody.addEventListener('dblclick', e => {
+            const el = e.target.closest('[data-gantt-id]');
+            if (!el) return;
+            clearTimeout(_ganttClickTimer);
+            const id = el.dataset.ganttId;
+            const node = nodes.get(id);
+            if (!node) return;
+            selectedId = id;
+            showNodeModal({
+                title: 'Edit Node',
+                name: node.name,
+                status: node.status,
+                editId: id,
+                onSave(name, status, extras) { renameNode(id, name); setNodeStatus(id, status); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; saveState(); render(); }
+            });
+        });
+
+        ganttBody.addEventListener('contextmenu', e => {
+            const el = e.target.closest('[data-gantt-id]');
+            if (!el) return;
+            e.preventDefault();
+            const id = el.dataset.ganttId;
+            const node = nodes.get(id);
+            if (!node) return;
+            const menu = document.createElement('div');
+            menu.style.cssText = 'position:fixed;z-index:400;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-lg);padding:4px 0;min-width:140px';
+            menu.innerHTML = '<button style="display:block;width:100%;text-align:left;padding:6px 14px;border:none;background:transparent;font-size:12px;color:var(--text);cursor:pointer">Clear dates</button>';
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+            document.body.appendChild(menu);
+            menu.querySelector('button').addEventListener('click', () => {
+                node.startDate = null;
+                node.endDate = null;
+                saveState();
+                render();
+                document.body.removeChild(menu);
+            });
+            const dismiss = ev => { if (!menu.contains(ev.target)) { if (document.body.contains(menu)) document.body.removeChild(menu); document.removeEventListener('mousedown', dismiss); } };
+            setTimeout(() => document.addEventListener('mousedown', dismiss), 0);
+        });
+
+        ganttBody.addEventListener('mousedown', e => {
+            const handle = e.target.closest('.gantt-handle-l, .gantt-handle-r');
+            if (!handle) return;
+            e.preventDefault();
+            e.stopPropagation();
+            clearTimeout(_ganttClickTimer);
+            const el = handle.closest('[data-gantt-id]');
+            if (!el) return;
+            const id = el.dataset.ganttId;
+            const node = nodes.get(id);
+            if (!node) return;
+            const side = handle.classList.contains('gantt-handle-l') ? 'left' : 'right';
+            const colW = _ganttColW;
+            const colToDate = _ganttColToDate;
+            const initLeft = parseFloat(el.style.left);
+            const initWidth = parseFloat(el.style.width);
+            const startX = e.clientX;
+
+            function onMove(me) {
+                const dx = me.clientX - startX;
+                if (side === 'left') {
+                    const rawLeft = initLeft + dx;
+                    const snappedLeft = Math.round(rawLeft / colW) * colW;
+                    const snappedWidth = (initLeft + initWidth) - snappedLeft;
+                    if (snappedWidth < colW) return;
+                    el.style.left = snappedLeft + 'px';
+                    el.style.width = snappedWidth + 'px';
+                } else {
+                    const rawWidth = initWidth + dx;
+                    const snappedWidth = Math.max(colW, Math.round(rawWidth / colW) * colW);
+                    el.style.width = snappedWidth + 'px';
+                }
+            }
+            function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                const finalLeft = parseFloat(el.style.left);
+                const finalWidth = parseFloat(el.style.width);
+                const startCol = Math.round(finalLeft / colW);
+                const endCol = Math.round((finalLeft + finalWidth) / colW) - 1;
+                node.startDate = colToDate(startCol);
+                node.endDate = colToDate(Math.max(startCol, endCol));
+                if (node.startDate) {
+                    const sd = new Date(node.startDate + 'T00:00:00');
+                    if (sd.getDay() === 6) sd.setDate(sd.getDate() + 2);
+                    else if (sd.getDay() === 0) sd.setDate(sd.getDate() + 1);
+                    node.startDate = sd.toISOString().slice(0, 10);
+                }
+                if (node.endDate) {
+                    const ed = new Date(node.endDate + 'T00:00:00');
+                    if (ed.getDay() === 6) ed.setDate(ed.getDate() + 2);
+                    else if (ed.getDay() === 0) ed.setDate(ed.getDate() + 1);
+                    node.endDate = ed.toISOString().slice(0, 10);
+                }
+                saveState();
+                render();
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
 
         /* ═══════════════════════════════════════════
            DEPENDENCY VALIDATION
@@ -4333,21 +4345,30 @@
         /* ═══════════════════════════════════════════
            MARKDOWN RENDERER
            ═══════════════════════════════════════════ */
+        // Pre-compiled regex patterns for markdown renderer
+        const _mdBold = /\*\*(.+?)\*\*/g;
+        const _mdItalic = /\*(.+?)\*/g;
+        const _mdCode = /`(.+?)`/g;
+        const _mdLink = /\[(.+?)\]\((.+?)\)/g;
+        const _mdSafeHref = /^(https?:\/\/|\/|#)/;
+        const _mdHeader = /^(#{1,3})\s+(.+)$/;
+        const _mdUl = /^[-*+]\s+/;
+        const _mdOl = /^\d+\.\s+/;
+        const _mdHr = /^[-*_]{3,}\s*$/;
+
         function renderMarkdown(text) {
             if (!text) return '';
-            const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
             // Inline formatting (applied to already-escaped text)
             function inlineFmt(line) {
+                _mdBold.lastIndex = 0; _mdItalic.lastIndex = 0; _mdCode.lastIndex = 0; _mdLink.lastIndex = 0;
                 return esc(line)
-                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-                    .replace(/`(.+?)`/g, '<code>$1</code>')
-                    .replace(/\[(.+?)\]\((.+?)\)/g, (_, label, href) => {
-                        // Unescape the href that esc() encoded
+                    .replace(_mdBold, '<strong>$1</strong>')
+                    .replace(_mdItalic, '<em>$1</em>')
+                    .replace(_mdCode, '<code>$1</code>')
+                    .replace(_mdLink, (_, label, href) => {
                         const safeHref = href.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
-                        // Only allow http(s) and relative links
-                        if (/^(https?:\/\/|\/|#)/.test(safeHref)) {
+                        if (_mdSafeHref.test(safeHref)) {
                             return `<a href="${esc(safeHref)}" target="_blank" rel="noopener">${label}</a>`;
                         }
                         return `[${label}](${href})`;
@@ -4365,7 +4386,7 @@
                 if (line.trim() === '') { i++; continue; }
 
                 // Headers
-                const hMatch = line.match(/^(#{1,3})\s+(.+)$/);
+                const hMatch = line.match(_mdHeader);
                 if (hMatch) {
                     const lvl = hMatch[1].length;
                     out.push(`<h${lvl}>${inlineFmt(hMatch[2])}</h${lvl}>`);
@@ -4397,10 +4418,10 @@
                 }
 
                 // Unordered list
-                if (/^[-*+]\s+/.test(line)) {
+                if (_mdUl.test(line)) {
                     const items = [];
-                    while (i < lines.length && /^[-*+]\s+/.test(lines[i])) {
-                        items.push(`<li>${inlineFmt(lines[i].replace(/^[-*+]\s+/, ''))}</li>`);
+                    while (i < lines.length && _mdUl.test(lines[i])) {
+                        items.push(`<li>${inlineFmt(lines[i].replace(_mdUl, ''))}</li>`);
                         i++;
                     }
                     out.push(`<ul>${items.join('')}</ul>`);
@@ -4408,10 +4429,10 @@
                 }
 
                 // Ordered list
-                if (/^\d+\.\s+/.test(line)) {
+                if (_mdOl.test(line)) {
                     const items = [];
-                    while (i < lines.length && /^\d+\.\s+/.test(lines[i])) {
-                        items.push(`<li>${inlineFmt(lines[i].replace(/^\d+\.\s+/, ''))}</li>`);
+                    while (i < lines.length && _mdOl.test(lines[i])) {
+                        items.push(`<li>${inlineFmt(lines[i].replace(_mdOl, ''))}</li>`);
                         i++;
                     }
                     out.push(`<ol>${items.join('')}</ol>`);
@@ -4419,7 +4440,7 @@
                 }
 
                 // Horizontal rule
-                if (/^[-*_]{3,}\s*$/.test(line)) {
+                if (_mdHr.test(line)) {
                     out.push('<hr style="border:none;border-top:1px solid var(--border);margin:8px 0">');
                     i++; continue;
                 }
@@ -4427,9 +4448,9 @@
                 // Regular paragraph — collect consecutive non-special lines
                 const paraLines = [];
                 while (i < lines.length && lines[i].trim() !== '' &&
-                    !/^#{1,3}\s/.test(lines[i]) && !/^[-*+]\s/.test(lines[i]) &&
-                    !/^\d+\.\s/.test(lines[i]) && !lines[i].trim().startsWith('```') &&
-                    !lines[i].startsWith('> ') && !/^[-*_]{3,}\s*$/.test(lines[i])) {
+                    !_mdHeader.test(lines[i]) && !_mdUl.test(lines[i]) &&
+                    !_mdOl.test(lines[i]) && !lines[i].trim().startsWith('```') &&
+                    !lines[i].startsWith('> ') && !_mdHr.test(lines[i])) {
                     paraLines.push(inlineFmt(lines[i]));
                     i++;
                 }

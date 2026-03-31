@@ -102,7 +102,8 @@
             font-size: 15px;
             font-weight: 600;
             letter-spacing: -.3px;
-            color: var(--text)
+            color: var(--text);
+            white-space: nowrap
         }
 
         #toolbar .sep {
@@ -124,7 +125,8 @@
             display: flex;
             align-items: center;
             gap: 6px;
-            transition: all .15s
+            transition: all .15s;
+            white-space: nowrap
         }
 
         .tb-btn:hover {
@@ -158,9 +160,96 @@
             align-items: center
         }
 
-        #toolbar .hint {
+        /* ─── HAMBURGER DROPDOWNS ─── */
+        .tb-hamburger {
+            position: relative;
+            display: none
+        }
+
+        .tb-hamburger-btn {
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            border-radius: 8px;
+            font-size: 16px;
+            color: var(--text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all .15s
+        }
+
+        .tb-hamburger-btn:hover {
+            background: var(--hover-bg);
+            border-color: var(--hover-border)
+        }
+
+        .tb-hamburger-btn .ham-label {
             font-size: 12px;
-            color: var(--text-secondary)
+            font-weight: 500
+        }
+
+        .tb-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 180px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: 6px;
+            display: none;
+            flex-direction: column;
+            gap: 2px;
+            z-index: 200
+        }
+
+        .tb-dropdown.right-align {
+            left: auto;
+            right: 0
+        }
+
+        .tb-dropdown.open {
+            display: flex
+        }
+
+        .tb-dropdown .tb-btn {
+            width: 100%;
+            border: none;
+            border-radius: 6px;
+            justify-content: flex-start;
+            height: 32px;
+            font-size: 13px
+        }
+
+        .tb-dropdown .tb-btn:hover {
+            background: var(--hover-bg)
+        }
+
+        .tb-dropdown .dd-sep {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 8px
+        }
+
+        /* Inline items that hide when hamburger appears */
+        .tb-inline {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        @media (max-width: 1500px) {
+            .tb-inline {
+                display: none
+            }
+
+            .tb-hamburger {
+                display: flex
+            }
         }
 
         /* ─── LEGEND ─── */
@@ -183,6 +272,43 @@
 
         #legend.panel-minimized {
             right: 52px
+        }
+
+        #legend.legend-collapsed #legend-rows,
+        #legend.legend-collapsed #completion-stats,
+        #legend.legend-collapsed #btn-customize {
+            display: none
+        }
+
+        #legend.legend-collapsed h3 {
+            margin-bottom: 0
+        }
+
+        .legend-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px
+        }
+
+        .legend-toggle {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: background .15s;
+            flex-shrink: 0
+        }
+
+        .legend-toggle:hover {
+            background: var(--hover-bg)
         }
 
         #legend h3 {
@@ -921,24 +1047,60 @@
         <h1>Development Manager</h1>
         <div class="sep"></div>
         <button class="tb-btn primary" id="btn-add-node">+ Node</button>
-        <button class="tb-btn" id="btn-add-child" disabled>+ Child</button>
-        <button class="tb-btn" id="btn-link" disabled title="Add an additional child to the selected node">+ Additional
-            Child</button>
-        <button class="tb-btn" id="btn-insert-before" disabled>+ Parent</button>
-        <button class="tb-btn" id="btn-edit" disabled>Edit</button>
-        <button class="tb-btn" id="btn-delete" disabled>Delete</button>
-        <div class="sep"></div>
-        <button class="tb-btn" id="btn-undo" disabled title="Undo (Ctrl+Z)">↩ Undo</button>
-        <button class="tb-btn" id="btn-redo" disabled title="Redo (Ctrl+Y)">↪ Redo</button>
-        <div class="right">
-            <span class="hint">Right-click for options · Double-click to rename</span>
+
+        <!-- Inline buttons (wide screens) -->
+        <div class="tb-inline" id="tb-actions-inline">
+            <button class="tb-btn" id="btn-add-child" disabled>+ Child</button>
+            <button class="tb-btn" id="btn-link" disabled title="Add an additional child to the selected node">+
+                Additional Child</button>
+            <button class="tb-btn" id="btn-insert-before" disabled>+ Parent</button>
+            <button class="tb-btn" id="btn-edit" disabled>Edit</button>
+            <button class="tb-btn" id="btn-delete" disabled>Delete</button>
             <div class="sep"></div>
-            <button class="tb-btn" id="btn-fit">Fit View</button>
-            <button class="tb-btn" id="btn-orient" title="Toggle horizontal/vertical layout">↔ Horizontal</button>
-            <button class="tb-btn" id="btn-theme" title="Toggle light/dark mode">☀ Light</button>
-            <button class="tb-btn" id="btn-clear">Clear All</button>
-            <button class="tb-btn" id="btn-import">Import</button>
-            <button class="tb-btn" id="btn-export">Export</button>
+            <button class="tb-btn" id="btn-undo" disabled title="Undo (Ctrl+Z)">↩ Undo</button>
+            <button class="tb-btn" id="btn-redo" disabled title="Redo (Ctrl+Y)">↪ Redo</button>
+        </div>
+
+        <!-- Actions hamburger (narrow screens) -->
+        <div class="tb-hamburger" id="ham-actions">
+            <button class="tb-hamburger-btn" title="Actions">☰ <span class="ham-label">Actions</span></button>
+            <div class="tb-dropdown">
+                <button class="tb-btn" data-proxy="btn-add-child" disabled>+ Add Child</button>
+                <button class="tb-btn" data-proxy="btn-link" disabled>+ Add Additional Child</button>
+                <button class="tb-btn" data-proxy="btn-insert-before" disabled>+ Add Parent</button>
+                <button class="tb-btn" data-proxy="btn-edit" disabled>Edit</button>
+                <button class="tb-btn" data-proxy="btn-delete" disabled>Delete</button>
+                <div class="dd-sep"></div>
+                <button class="tb-btn" data-proxy="btn-undo" disabled>↩ Undo</button>
+                <button class="tb-btn" data-proxy="btn-redo" disabled>↪ Redo</button>
+            </div>
+        </div>
+
+        <div class="right">
+
+            <!-- Inline right buttons (wide screens) -->
+            <div class="tb-inline" id="tb-settings-inline">
+                <button class="tb-btn" id="btn-fit">Fit View</button>
+                <button class="tb-btn" id="btn-orient" title="Toggle horizontal/vertical layout">↔ Horizontal</button>
+                <button class="tb-btn" id="btn-theme" title="Toggle light/dark mode">☀ Light</button>
+                <button class="tb-btn" id="btn-clear">Clear All</button>
+                <button class="tb-btn" id="btn-import">Import</button>
+                <button class="tb-btn" id="btn-export">Export</button>
+            </div>
+
+            <!-- Settings hamburger (narrow screens) -->
+            <div class="tb-hamburger" id="ham-settings">
+                <button class="tb-hamburger-btn" title="Settings">☰ <span class="ham-label">Settings</span></button>
+                <div class="tb-dropdown right-align">
+                    <button class="tb-btn" data-proxy="btn-fit">Fit View</button>
+                    <button class="tb-btn" data-proxy="btn-orient">↔ Horizontal</button>
+                    <button class="tb-btn" data-proxy="btn-theme">☀ Light</button>
+                    <div class="dd-sep"></div>
+                    <button class="tb-btn" data-proxy="btn-clear">Clear All</button>
+                    <button class="tb-btn" data-proxy="btn-import">Import</button>
+                    <button class="tb-btn" data-proxy="btn-export">Export</button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -963,8 +1125,11 @@
 
     <!-- LEGEND + STATS -->
     <div id="legend">
+        <div class="legend-header">
+            <h3>Status</h3>
+            <button class="legend-toggle" id="legend-toggle" title="Minimize">▼</button>
+        </div>
         <div id="completion-stats"></div>
-        <h3>Status</h3>
         <div id="legend-rows"></div>
         <button class="tb-btn" id="btn-customize"
             style="width:100%;margin-top:10px;justify-content:center;font-size:11px">⚙ Customize Statuses</button>
@@ -1030,6 +1195,12 @@
         let nextId = 1;
 
         const NODE_W = 200, NODE_H = 78, H_GAP = 110, V_GAP = 48;
+
+        // Subtle colour palette for connectors — distinct enough to tell apart
+        const CONN_COLORS = [
+            '#8da4bf', '#b5a089', '#8fad8f', '#a893b5', '#b09090',
+            '#7fb5b0', '#bf9f7f', '#9095ad', '#a5b57f', '#b08fa5',
+        ];
 
         /* orientation */
         let isVertical = localStorage.getItem('tree-graph-orientation') === 'vertical';
@@ -1250,8 +1421,9 @@
             const toRemove = new Set([id]);
             const _queue = [id];
             const _remaining = new Map();
-            while (_queue.length > 0) {
-                const did = _queue.shift();
+            let _qi = 0;
+            while (_qi < _queue.length) {
+                const did = _queue[_qi++];
                 const dn = nodes.get(did);
                 if (!dn) continue;
                 for (const cid of dn.children) {
@@ -1307,7 +1479,8 @@
         }
 
         /* ═══════════════════════════════════════════
-           LAYOUT ENGINE  (Sugiyama-style DAG layout)
+           LAYOUT ENGINE  (Reingold-Tilford DAG layout)
+           Reference: https://towardsdatascience.com/reingold-tilford-algorithm-explained-with-walkthrough-be5810e8ed93
            ═══════════════════════════════════════════ */
         const layoutCache = new Map(); // id → {x, y}
 
@@ -1315,13 +1488,14 @@
             layoutCache.clear();
             if (nodes.size === 0) return;
 
-            // Orientation-dependent dimensions
             const PRI_SIZE = isVertical ? NODE_H : NODE_W;
             const SEC_SIZE = isVertical ? NODE_W : NODE_H;
             const PRI_GAP = isVertical ? V_GAP + 30 : H_GAP;
             const SEC_GAP = isVertical ? H_GAP - 60 : V_GAP;
+            const SIBLING_SEP = 1;   // in node-size units
+            const SUBTREE_SEP = 1;   // in node-size units
 
-            // 1. Discover connected components (treat edges as undirected)
+            // 1. Connected components
             const compVis = new Set();
             const components = [];
             for (const [id] of nodes) {
@@ -1340,17 +1514,15 @@
                 components.push(comp);
             }
 
-            // 2. Lay out each component independently, then pack together
             const COMP_GAP = SEC_GAP * 2;
             let compOffset = 0;
 
             for (const compSet of components) {
-                // Depth via topological sort within this component
+                // 2. Layer assignment via topological sort (longest path)
                 const depth = new Map();
                 const inDeg = new Map();
                 for (const id of compSet) {
                     const node = nodes.get(id);
-                    // Only count parents within this component
                     let pCount = 0;
                     for (const p of node.parentIds) if (compSet.has(p)) pCount++;
                     inDeg.set(id, pCount);
@@ -1360,8 +1532,9 @@
                 for (const [id, deg] of inDeg) {
                     if (deg === 0) queue.push(id);
                 }
-                while (queue.length > 0) {
-                    const id = queue.shift();
+                let qi = 0;
+                while (qi < queue.length) {
+                    const id = queue[qi++];
                     const node = nodes.get(id);
                     for (const cid of node.children) {
                         if (!compSet.has(cid)) continue;
@@ -1371,143 +1544,260 @@
                     }
                 }
 
-                // Group by layer
+                // 3. Build spanning tree: pick primary parent for each node
+                //    Primary parent = the parent at the closest layer (most direct)
+                const primaryParent = new Map();
+                const treeChildren = new Map();
+                for (const id of compSet) treeChildren.set(id, []);
+
+                for (const id of compSet) {
+                    const node = nodes.get(id);
+                    if (node.parentIds.length === 0) continue;
+                    let bestPid = null, bestDist = Infinity;
+                    for (const pid of node.parentIds) {
+                        if (!compSet.has(pid)) continue;
+                        const dist = depth.get(id) - depth.get(pid);
+                        if (dist < bestDist || (dist === bestDist && pid < bestPid)) {
+                            bestDist = dist;
+                            bestPid = pid;
+                        }
+                    }
+                    if (bestPid !== null) {
+                        primaryParent.set(id, bestPid);
+                        treeChildren.get(bestPid).push(id);
+                    }
+                }
+
+                // Collect roots (no primary parent in this component)
+                const roots = [];
+                for (const id of compSet) {
+                    if (!primaryParent.has(id)) roots.push(id);
+                }
+
+                // 4. Reingold-Tilford layout on the spanning tree
+                const rtX = new Map();    // preliminary x position in node-units
+                const rtMod = new Map();  // mod shift for descendants
+
+                // Pre-build sibling index: node → index in its parent's children list (avoids O(n) indexOf)
+                const siblingIdx = new Map();
+                for (const [, children] of treeChildren) {
+                    for (let i = 0; i < children.length; i++) siblingIdx.set(children[i], i);
+                }
+                for (let i = 0; i < roots.length; i++) siblingIdx.set(roots[i], i);
+
+                for (const id of compSet) {
+                    rtX.set(id, 0);
+                    rtMod.set(id, 0);
+                }
+
+                // ── First Pass: post-order traversal ──
+                function firstPass(id) {
+                    const children = treeChildren.get(id);
+                    for (const cid of children) firstPass(cid);
+
+                    const siblings = primaryParent.has(id)
+                        ? treeChildren.get(primaryParent.get(id))
+                        : roots;
+                    const sibIdx = siblingIdx.get(id) ?? 0;
+
+                    if (sibIdx === 0) {
+                        // Leftmost child
+                        if (children.length > 0) {
+                            // Center over own children
+                            const firstChild = rtX.get(children[0]);
+                            const lastChild = rtX.get(children[children.length - 1]);
+                            rtX.set(id, (firstChild + lastChild) / 2);
+                        } else {
+                            rtX.set(id, 0);
+                        }
+                    } else {
+                        // Place sibling-distance to the right of left sibling
+                        const leftSib = siblings[sibIdx - 1];
+                        rtX.set(id, rtX.get(leftSib) + SIBLING_SEP);
+
+                        if (children.length > 0) {
+                            // Center over own children: compute mod
+                            const firstChild = rtX.get(children[0]);
+                            const lastChild = rtX.get(children[children.length - 1]);
+                            const childMid = (firstChild + lastChild) / 2;
+                            rtMod.set(id, rtX.get(id) - childMid);
+                        }
+                    }
+
+                    // Part 2: Check contours for overlaps with left siblings
+                    if (sibIdx > 0) {
+                        for (let si = sibIdx - 1; si >= 0; si--) {
+                            const leftSib = siblings[si];
+                            const shift = computeShift(leftSib, id);
+                            if (shift > 0) {
+                                rtX.set(id, rtX.get(id) + shift);
+                                if (children.length > 0) {
+                                    rtMod.set(id, rtMod.get(id) + shift);
+                                }
+                                // Distribute shift among intermediate siblings
+                                const numBetween = sibIdx - si;
+                                if (numBetween > 1) {
+                                    for (let mi = si + 1; mi < sibIdx; mi++) {
+                                        const portion = shift * ((mi - si) / numBetween);
+                                        rtX.set(siblings[mi], rtX.get(siblings[mi]) + portion);
+                                        const midChildren = treeChildren.get(siblings[mi]);
+                                        if (midChildren.length > 0) {
+                                            rtMod.set(siblings[mi], rtMod.get(siblings[mi]) + portion);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Compute the shift needed so right subtree doesn't overlap left subtree
+                function computeShift(leftId, rightId) {
+                    const leftContour = getRightContour(leftId);
+                    const rightContour = getLeftContour(rightId);
+                    const maxLevels = Math.min(leftContour.length, rightContour.length);
+                    let maxShift = 0;
+                    for (let lv = 0; lv < maxLevels; lv++) {
+                        const gap = rightContour[lv] - leftContour[lv];
+                        const needed = SUBTREE_SEP - gap;
+                        if (needed > maxShift) maxShift = needed;
+                    }
+                    return maxShift > 0 ? maxShift : 0;
+                }
+
+                // Get right contour (rightmost x at each level) of subtree rooted at id
+                function getRightContour(id) {
+                    const contour = [];
+                    function walk(nid, modSum, level) {
+                        const x = rtX.get(nid) + modSum;
+                        if (level >= contour.length) contour.push(x);
+                        else if (x > contour[level]) contour[level] = x;
+                        const newMod = modSum + rtMod.get(nid);
+                        for (const cid of treeChildren.get(nid)) walk(cid, newMod, level + 1);
+                    }
+                    const mod = rtMod.get(id);
+                    for (const cid of treeChildren.get(id)) walk(cid, mod, 0);
+                    return contour;
+                }
+
+                // Get left contour (leftmost x at each level) of subtree rooted at id
+                function getLeftContour(id) {
+                    const contour = [];
+                    function walk(nid, modSum, level) {
+                        const x = rtX.get(nid) + modSum;
+                        if (level >= contour.length) contour.push(x);
+                        else if (x < contour[level]) contour[level] = x;
+                        const newMod = modSum + rtMod.get(nid);
+                        for (const cid of treeChildren.get(nid)) walk(cid, newMod, level + 1);
+                    }
+                    const mod = rtMod.get(id);
+                    for (const cid of treeChildren.get(id)) walk(cid, mod, 0);
+                    return contour;
+                }
+
+                // Run first pass on each root
+                // Treat multiple roots as siblings of a virtual root
+                for (const rid of roots) firstPass(rid);
+
+                // Check contours between roots (treat as siblings)
+                for (let ri = 1; ri < roots.length; ri++) {
+                    for (let si = ri - 1; si >= 0; si--) {
+                        const shift = computeShift(roots[si], roots[ri]);
+                        if (shift > 0) {
+                            rtX.set(roots[ri], rtX.get(roots[ri]) + shift);
+                            if (treeChildren.get(roots[ri]).length > 0) {
+                                rtMod.set(roots[ri], rtMod.get(roots[ri]) + shift);
+                            }
+                            const numBetween = ri - si;
+                            if (numBetween > 1) {
+                                for (let mi = si + 1; mi < ri; mi++) {
+                                    const portion = shift * ((mi - si) / numBetween);
+                                    rtX.set(roots[mi], rtX.get(roots[mi]) + portion);
+                                    if (treeChildren.get(roots[mi]).length > 0) {
+                                        rtMod.set(roots[mi], rtMod.get(roots[mi]) + portion);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // ── Second Pass: pre-order traversal to compute final positions ──
+                const finalX = new Map();
+                let minFinalX = Infinity;
+
+                function secondPass(id, modSum) {
+                    const x = rtX.get(id) + modSum;
+                    finalX.set(id, x);
+                    if (x < minFinalX) minFinalX = x;
+                    const newMod = modSum + rtMod.get(id);
+                    for (const cid of treeChildren.get(id)) secondPass(cid, newMod);
+                }
+
+                for (const rid of roots) secondPass(rid, 0);
+
+                // ── Third Pass: normalize (shift so minimum x is 0) ──
+                if (minFinalX < 0) {
+                    for (const [id, x] of finalX) finalX.set(id, x - minFinalX);
+                }
+
+                // ── Multi-parent nudge: gently adjust nodes toward all-parent centroid ──
                 const columns = new Map();
                 for (const [id, d] of depth) {
                     if (!columns.has(d)) columns.set(d, []);
                     columns.get(d).push(id);
                 }
+                // Sort each layer by finalX
+                for (const [, col] of columns) {
+                    col.sort((a, b) => finalX.get(a) - finalX.get(b));
+                }
+
                 let maxDepth = 0;
-                for (const k of columns.keys()) if (k > maxDepth) maxDepth = k;
+                for (const d of depth.values()) if (d > maxDepth) maxDepth = d;
 
-                // Initial positioning (secondary axis starts at 0 for each component)
-                const absPos = new Map();
-                for (const [d, col] of columns) {
-                    const p = d * (PRI_SIZE + PRI_GAP);
-                    let s = 0;
-                    for (const id of col) {
-                        absPos.set(id, { p, s });
-                        s += SEC_SIZE + SEC_GAP;
-                    }
-                }
-
-                // Barycenter iterations (only within this component)
-                for (let iter = 0; iter < 20; iter++) {
-                    // Forward pass
-                    for (let d = 1; d <= maxDepth; d++) {
-                        const col = columns.get(d);
-                        if (!col) continue;
-                        for (const id of col) {
-                            const node = nodes.get(id);
-                            if (node.parentIds.length > 0) {
-                                let minPS = Infinity, maxPS = -Infinity;
-                                for (const pid of node.parentIds) {
-                                    const pp = absPos.get(pid);
-                                    if (pp) {
-                                        const cs = pp.s + SEC_SIZE / 2;
-                                        if (cs < minPS) minPS = cs;
-                                        if (cs > maxPS) maxPS = cs;
-                                    }
-                                }
-                                if (minPS !== Infinity) {
-                                    absPos.get(id)._t = (minPS + maxPS) / 2 - SEC_SIZE / 2;
-                                }
-                            }
-                        }
-                        col.sort((a, b) => {
-                            const at = absPos.get(a)._t ?? absPos.get(a).s;
-                            const bt = absPos.get(b)._t ?? absPos.get(b).s;
-                            return at - bt;
-                        });
-                        packLayer(col, absPos, SEC_SIZE, SEC_GAP);
-                    }
-                    // Backward pass
-                    for (let d = maxDepth - 1; d >= 0; d--) {
-                        const col = columns.get(d);
-                        if (!col) continue;
-                        for (const id of col) {
-                            const node = nodes.get(id);
-                            if (node.children.length > 0) {
-                                let minCS = Infinity, maxCS = -Infinity;
-                                for (const cid of node.children) {
-                                    const cp = absPos.get(cid);
-                                    if (cp) {
-                                        const cs = cp.s + SEC_SIZE / 2;
-                                        if (cs < minCS) minCS = cs;
-                                        if (cs > maxCS) maxCS = cs;
-                                    }
-                                }
-                                if (minCS !== Infinity) {
-                                    absPos.get(id)._t = (minCS + maxCS) / 2 - SEC_SIZE / 2;
-                                }
-                            }
-                        }
-                        col.sort((a, b) => {
-                            const at = absPos.get(a)._t ?? absPos.get(a).s;
-                            const bt = absPos.get(b)._t ?? absPos.get(b).s;
-                            return at - bt;
-                        });
-                        packLayer(col, absPos, SEC_SIZE, SEC_GAP);
-                    }
-                }
-
-                // Final centering pass for multi-parent nodes
                 for (let d = 1; d <= maxDepth; d++) {
                     const col = columns.get(d);
                     if (!col) continue;
-                    const colIdx = new Map();
-                    for (let ci = 0; ci < col.length; ci++) colIdx.set(col[ci], ci);
-                    for (const id of col) {
+                    for (let ci = 0; ci < col.length; ci++) {
+                        const id = col[ci];
                         const node = nodes.get(id);
                         if (node.parentIds.length <= 1) continue;
-                        let minPS = Infinity, maxPS = -Infinity;
+                        // Compute centroid of all parents
+                        let sum = 0, cnt = 0;
                         for (const pid of node.parentIds) {
-                            const pp = absPos.get(pid);
-                            if (pp) {
-                                const cs = pp.s + SEC_SIZE / 2;
-                                if (cs < minPS) minPS = cs;
-                                if (cs > maxPS) maxPS = cs;
-                            }
+                            if (finalX.has(pid)) { sum += finalX.get(pid); cnt++; }
                         }
-                        if (minPS === Infinity) continue;
-                        const ideal = (minPS + maxPS) / 2 - SEC_SIZE / 2;
-                        const pos = absPos.get(id);
-                        const idx = colIdx.get(id);
-                        const above = idx > 0 ? absPos.get(col[idx - 1]) : null;
-                        const below = idx < col.length - 1 ? absPos.get(col[idx + 1]) : null;
-                        const lo = above ? above.s + SEC_SIZE + SEC_GAP : -Infinity;
-                        const hi = below ? below.s - SEC_SIZE - SEC_GAP : Infinity;
-                        pos.s = Math.max(lo, Math.min(hi, ideal));
+                        if (cnt === 0) continue;
+                        const ideal = sum / cnt;
+                        const cur = finalX.get(id);
+                        // Bound by neighbors
+                        const lo = ci > 0 ? finalX.get(col[ci - 1]) + SIBLING_SEP : -Infinity;
+                        const hi = ci < col.length - 1 ? finalX.get(col[ci + 1]) - SIBLING_SEP : Infinity;
+                        // Nudge up to 50% toward ideal
+                        const target = cur + (ideal - cur) * 0.5;
+                        finalX.set(id, Math.max(lo, Math.min(hi, target)));
                     }
                 }
 
-                // Shift this component so it packs after the previous one
+                // ── Convert to pixel coordinates and pack components ──
                 let minS = Infinity, maxS = -Infinity;
-                for (const [, pos] of absPos) {
-                    minS = Math.min(minS, pos.s);
-                    maxS = Math.max(maxS, pos.s + SEC_SIZE);
+                for (const id of compSet) {
+                    const s = finalX.get(id) * (SEC_SIZE + SEC_GAP);
+                    if (s < minS) minS = s;
+                    if (s + SEC_SIZE > maxS) maxS = s + SEC_SIZE;
                 }
                 const shift = compOffset - minS;
-                for (const [id, pos] of absPos) {
-                    pos.s += shift;
+
+                for (const id of compSet) {
+                    const p = depth.get(id) * (PRI_SIZE + PRI_GAP);
+                    const s = finalX.get(id) * (SEC_SIZE + SEC_GAP) + shift;
                     if (isVertical) {
-                        layoutCache.set(id, { x: pos.s, y: pos.p });
+                        layoutCache.set(id, { x: s, y: p });
                     } else {
-                        layoutCache.set(id, { x: pos.p, y: pos.s });
+                        layoutCache.set(id, { x: p, y: s });
                     }
                 }
                 compOffset = maxS + shift + COMP_GAP;
-            }
-        }
-
-        function packLayer(col, absPos, secSize, secGap) {
-            let s = 0;
-            for (const id of col) {
-                const pos = absPos.get(id);
-                const target = pos._t ?? pos.s;
-                pos.s = Math.max(s, target);
-                s = pos.s + secSize + secGap;
-                pos._t = undefined;
             }
         }
 
@@ -1591,20 +1881,6 @@
                     edges.push({ parentId: id, childId: cid, pPos, cPos });
                 }
             }
-
-            // Subtle colour palette for connectors — distinct enough to tell apart
-            const CONN_COLORS = [
-                '#8da4bf', // steel blue
-                '#b5a089', // warm tan
-                '#8fad8f', // sage green
-                '#a893b5', // soft purple
-                '#b09090', // dusty rose
-                '#7fb5b0', // teal
-                '#bf9f7f', // camel
-                '#9095ad', // blue gray
-                '#a5b57f', // olive
-                '#b08fa5', // mauve
-            ];
 
             // Build adjacency: edges that share a node or visually intersect should differ in colour
             const edgeNeighbours = edges.map(() => new Set());
@@ -1719,31 +1995,47 @@
             svgEl.appendChild(svgFrag);
         }
 
+        /* Parse hex colour to [r,g,b] — cached to avoid repeated parseInt calls */
+        const _hexCache = new Map();
+        function parseHex(hex) {
+            let rgb = _hexCache.get(hex);
+            if (!rgb) {
+                rgb = [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+                _hexCache.set(hex, rgb);
+            }
+            return rgb;
+        }
+
+        function _toHex(c) { return c.toString(16).padStart(2, '0'); }
+
         /* Darken a hex colour by a factor (0=black, 1=original) */
         function darkenColor(hex, factor) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            const dr = Math.round(r * factor);
-            const dg = Math.round(g * factor);
-            const db = Math.round(b * factor);
-            return '#' + [dr, dg, db].map(c => c.toString(16).padStart(2, '0')).join('');
+            const [r, g, b] = parseHex(hex);
+            return '#' + _toHex(Math.round(r * factor)) + _toHex(Math.round(g * factor)) + _toHex(Math.round(b * factor));
         }
 
         /* Lighten a hex colour by blending toward white */
         function lightenColor(hex, amount) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            const lr = Math.min(255, Math.round(r + (255 - r) * amount));
-            const lg = Math.min(255, Math.round(g + (255 - g) * amount));
-            const lb = Math.min(255, Math.round(b + (255 - b) * amount));
-            return '#' + [lr, lg, lb].map(c => c.toString(16).padStart(2, '0')).join('');
+            const [r, g, b] = parseHex(hex);
+            return '#' + _toHex(Math.min(255, Math.round(r + (255 - r) * amount))) + _toHex(Math.min(255, Math.round(g + (255 - g) * amount))) + _toHex(Math.min(255, Math.round(b + (255 - b) * amount)));
+        }
+
+        /* Precomputed highlight colours for the CONN_COLORS palette (rebuilt on theme toggle) */
+        let _hlLight = null, _hlDark = null;
+        function _buildHighlightCache() {
+            _hlLight = new Map();
+            _hlDark = new Map();
+            for (const c of CONN_COLORS) {
+                _hlLight.set(c, darkenColor(c, 0.6));
+                _hlDark.set(c, lightenColor(c, 0.5));
+            }
         }
 
         /* Pick highlight colour based on current theme */
         function highlightColor(hex) {
-            return isDark ? lightenColor(hex, 0.5) : darkenColor(hex, 0.6);
+            if (!_hlLight) _buildHighlightCache();
+            const cache = isDark ? _hlDark : _hlLight;
+            return cache.get(hex) || (isDark ? lightenColor(hex, 0.5) : darkenColor(hex, 0.6));
         }
 
         /* Route a single edge around node obstacles using 90-degree segments.
@@ -1772,10 +2064,15 @@
                 gaps.push({ left: gapLeft, right: gapRight, mid: (gapLeft + gapRight) / 2 });
             }
 
+            // Pre-filter nodeRects to exclude edge endpoints (done once per edge)
+            const rects = [];
+            for (const r of nodeRects) {
+                if (r.id !== e.parentId && r.id !== e.childId) rects.push(r);
+            }
+
             function hitsNodeAt(vx, yA, yB) {
                 const lo = Math.min(yA, yB), hi = Math.max(yA, yB);
-                for (const r of nodeRects) {
-                    if (r.id === e.parentId || r.id === e.childId) continue;
+                for (const r of rects) {
                     if (vx >= r.x && vx <= r.x + r.w && hi >= r.y && lo <= r.y + r.h) return true;
                 }
                 return false;
@@ -1784,16 +2081,15 @@
             function findClearY(gapX, fromY, toY) {
                 if (!hitsNodeAt(gapX, fromY, toY)) return null;
                 const lo = Math.min(fromY, toY), hi = Math.max(fromY, toY);
-                const blockers = nodeRects.filter(r => {
-                    if (r.id === e.parentId || r.id === e.childId) return false;
-                    return gapX >= r.x && gapX <= r.x + r.w && r.y + r.h > lo && r.y < hi;
-                });
-                if (blockers.length === 0) return null;
-                let blockTop = Infinity, blockBot = -Infinity;
-                for (const b of blockers) {
-                    if (b.y < blockTop) blockTop = b.y;
-                    if (b.y + b.h > blockBot) blockBot = b.y + b.h;
+                let blockTop = Infinity, blockBot = -Infinity, found = false;
+                for (const r of rects) {
+                    if (gapX >= r.x && gapX <= r.x + r.w && r.y + r.h > lo && r.y < hi) {
+                        if (r.y < blockTop) blockTop = r.y;
+                        if (r.y + r.h > blockBot) blockBot = r.y + r.h;
+                        found = true;
+                    }
                 }
+                if (!found) return null;
                 const aboveY = blockTop - NODE_H * 0.5;
                 const belowY = blockBot + NODE_H * 0.5;
                 const aboveCost = Math.abs(fromY - aboveY) + Math.abs(aboveY - toY);
@@ -1838,17 +2134,16 @@
                     }
                 } else {
                     const nextColX = (parentCol + gi + 1) * colStep;
-                    const colNodes = nodeRects.filter(r => {
-                        if (r.id === e.parentId || r.id === e.childId) return false;
-                        return r.x < nextColX + NODE_W && r.x + r.w > nextColX &&
-                            curY >= r.y && curY <= r.y + r.h;
-                    });
-                    if (colNodes.length > 0) {
-                        let blockTop = Infinity, blockBot = -Infinity;
-                        for (const r of colNodes) {
+                    let blockTop = Infinity, blockBot = -Infinity, hasCol = false;
+                    for (const r of rects) {
+                        if (r.x < nextColX + NODE_W && r.x + r.w > nextColX &&
+                            curY >= r.y && curY <= r.y + r.h) {
                             if (r.y < blockTop) blockTop = r.y;
                             if (r.y + r.h > blockBot) blockBot = r.y + r.h;
+                            hasCol = true;
                         }
+                    }
+                    if (hasCol) {
                         const aboveY = blockTop - NODE_H * 0.5;
                         const belowY = blockBot + NODE_H * 0.5;
                         const newY = Math.abs(aboveY - y2) <= Math.abs(belowY - y2) ? aboveY : belowY;
@@ -1884,11 +2179,16 @@
                 gaps.push({ top: gapTop, bot: gapBot, mid: (gapTop + gapBot) / 2 });
             }
 
+            // Pre-filter nodeRects to exclude edge endpoints (done once per edge)
+            const rects = [];
+            for (const r of nodeRects) {
+                if (r.id !== e.parentId && r.id !== e.childId) rects.push(r);
+            }
+
             // Check if a horizontal segment at hy from xA to xB hits any node
             function hitsNodeH(hy, xA, xB) {
                 const lo = Math.min(xA, xB), hi = Math.max(xA, xB);
-                for (const r of nodeRects) {
-                    if (r.id === e.parentId || r.id === e.childId) continue;
+                for (const r of rects) {
                     if (hy >= r.y && hy <= r.y + r.h && hi >= r.x && lo <= r.x + r.w) return true;
                 }
                 return false;
@@ -1897,16 +2197,15 @@
             function findClearX(gapY, fromX, toX) {
                 if (!hitsNodeH(gapY, fromX, toX)) return null;
                 const lo = Math.min(fromX, toX), hi = Math.max(fromX, toX);
-                const blockers = nodeRects.filter(r => {
-                    if (r.id === e.parentId || r.id === e.childId) return false;
-                    return gapY >= r.y && gapY <= r.y + r.h && r.x + r.w > lo && r.x < hi;
-                });
-                if (blockers.length === 0) return null;
-                let blockLeft = Infinity, blockRight = -Infinity;
-                for (const b of blockers) {
-                    if (b.x < blockLeft) blockLeft = b.x;
-                    if (b.x + b.w > blockRight) blockRight = b.x + b.w;
+                let blockLeft = Infinity, blockRight = -Infinity, found = false;
+                for (const r of rects) {
+                    if (gapY >= r.y && gapY <= r.y + r.h && r.x + r.w > lo && r.x < hi) {
+                        if (r.x < blockLeft) blockLeft = r.x;
+                        if (r.x + r.w > blockRight) blockRight = r.x + r.w;
+                        found = true;
+                    }
                 }
+                if (!found) return null;
                 const leftX = blockLeft - NODE_W * 0.5;
                 const rightX = blockRight + NODE_W * 0.5;
                 const leftCost = Math.abs(fromX - leftX) + Math.abs(leftX - toX);
@@ -1952,17 +2251,16 @@
                 } else {
                     const SEC_GAP = H_GAP - 60;
                     const nextRowY = (parentRow + gi + 1) * rowStep;
-                    const rowNodes = nodeRects.filter(r => {
-                        if (r.id === e.parentId || r.id === e.childId) return false;
-                        return r.y < nextRowY + NODE_H && r.y + r.h > nextRowY &&
-                            curX >= r.x && curX <= r.x + r.w;
-                    });
-                    if (rowNodes.length > 0) {
-                        let blockLeft = Infinity, blockRight = -Infinity;
-                        for (const r of rowNodes) {
+                    let blockLeft = Infinity, blockRight = -Infinity, hasRow = false;
+                    for (const r of rects) {
+                        if (r.y < nextRowY + NODE_H && r.y + r.h > nextRowY &&
+                            curX >= r.x && curX <= r.x + r.w) {
                             if (r.x < blockLeft) blockLeft = r.x;
                             if (r.x + r.w > blockRight) blockRight = r.x + r.w;
+                            hasRow = true;
                         }
+                    }
+                    if (hasRow) {
                         const leftX = blockLeft - NODE_W * 0.5;
                         const rightX = blockRight + NODE_W * 0.5;
                         const newX = Math.abs(leftX - x2) <= Math.abs(rightX - x2) ? leftX : rightX;
@@ -2001,32 +2299,69 @@
             document.getElementById('empty-state').style.display = nodes.size === 0 ? 'block' : 'none';
         }
 
+        // Cached toolbar button references (avoid repeated getElementById)
+        const _tbBtns = {};
+        const _tbIds = ['btn-add-child', 'btn-link', 'btn-insert-before', 'btn-edit', 'btn-delete', 'btn-undo', 'btn-redo'];
+        for (const id of _tbIds) _tbBtns[id] = document.getElementById(id);
+
+        // Cached proxy element references (avoid repeated querySelectorAll)
+        const _proxyCache = new Map();
+        function _getProxies(id) {
+            let list = _proxyCache.get(id);
+            if (!list) {
+                list = Array.from(document.querySelectorAll(`[data-proxy="${id}"]`));
+                _proxyCache.set(id, list);
+            }
+            return list;
+        }
+
+        function syncProxyState(id, disabled) {
+            for (const p of _getProxies(id)) p.disabled = disabled;
+        }
+
         function updateToolbar() {
             const hasSel = !!selectedId;
-            document.getElementById('btn-add-child').disabled = !hasSel;
-            document.getElementById('btn-link').disabled = !hasSel;
-            document.getElementById('btn-insert-before').disabled = !hasSel;
-            document.getElementById('btn-edit').disabled = !hasSel;
-            document.getElementById('btn-delete').disabled = !hasSel;
-            document.getElementById('btn-undo').disabled = undoStack.length === 0;
-            document.getElementById('btn-redo').disabled = redoStack.length === 0;
+            _tbBtns['btn-add-child'].disabled = !hasSel;
+            _tbBtns['btn-link'].disabled = !hasSel;
+            _tbBtns['btn-insert-before'].disabled = !hasSel;
+            _tbBtns['btn-edit'].disabled = !hasSel;
+            _tbBtns['btn-delete'].disabled = !hasSel;
+            _tbBtns['btn-undo'].disabled = undoStack.length === 0;
+            _tbBtns['btn-redo'].disabled = redoStack.length === 0;
+            syncProxyState('btn-add-child', !hasSel);
+            syncProxyState('btn-link', !hasSel);
+            syncProxyState('btn-insert-before', !hasSel);
+            syncProxyState('btn-edit', !hasSel);
+            syncProxyState('btn-delete', !hasSel);
+            syncProxyState('btn-undo', undoStack.length === 0);
+            syncProxyState('btn-redo', redoStack.length === 0);
         }
 
         /* ── Legend (dynamic from STATUSES) ── */
         let filterStatus = null;
+        let _legendVersion = -1; // track when STATUSES change to avoid full innerHTML rebuild
 
         function renderLegend() {
             const container = document.getElementById('legend-rows');
-            container.innerHTML = STATUSES.map(s =>
-                `<div class="legend-row${filterStatus === s.id ? ' active-filter' : ''}" data-filter-status="${s.id}"><span class="legend-dot" style="background:${s.color}">${s.icon || ''}</span> ${esc(s.label)}</div>`
-            ).join('');
-            container.querySelectorAll('[data-filter-status]').forEach(el => {
-                el.addEventListener('click', () => {
-                    const sid = el.dataset.filterStatus;
-                    filterStatus = (filterStatus === sid) ? null : sid;
-                    applyStatusFilter();
-                    renderLegend();
+            const curVersion = STATUSES.length + STATUSES.map(s => s.id + s.label + s.color + (s.icon || '')).join('|');
+            if (_legendVersion !== curVersion) {
+                // Full rebuild only when statuses actually changed
+                _legendVersion = curVersion;
+                container.innerHTML = STATUSES.map(s =>
+                    `<div class="legend-row" data-filter-status="${s.id}"><span class="legend-dot" style="background:${s.color}">${s.icon || ''}</span> ${esc(s.label)}</div>`
+                ).join('');
+                container.querySelectorAll('[data-filter-status]').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const sid = el.dataset.filterStatus;
+                        filterStatus = (filterStatus === sid) ? null : sid;
+                        applyStatusFilter();
+                        renderLegend();
+                    });
                 });
+            }
+            // Toggle active class in-place (cheap DOM operation)
+            container.querySelectorAll('[data-filter-status]').forEach(el => {
+                el.classList.toggle('active-filter', filterStatus === el.dataset.filterStatus);
             });
         }
 
@@ -2155,6 +2490,7 @@
                 el.addEventListener('click', () => {
                     selectedId = el.dataset.goto;
                     render();
+                    focusNode(selectedId);
                 });
             });
         }
@@ -2514,8 +2850,10 @@
 
             clearTimeout(clickTimer);
             clickTimer = setTimeout(() => {
-                selectedId = (selectedId === id) ? null : id;
+                const newSel = (selectedId === id) ? null : id;
+                selectedId = newSel;
                 render();
+                if (newSel) focusNode(newSel);
             }, 250);
         });
 
@@ -2554,7 +2892,7 @@
                     }
                 },
                 {
-                    label: '+ Additional Child…', icon: '', action: 'link', handler() {
+                    label: 'Additional Child', icon: '＋', action: 'link', handler() {
                         enterLinkMode(id);
                     }
                 },
@@ -2715,6 +3053,19 @@
             setTimeout(fitView, 50);
         }
 
+        function focusNode(id) {
+            const pos = layoutCache.get(id);
+            if (!pos) return;
+            const cx = pos.x + NODE_W / 2;
+            const cy = pos.y + NODE_H / 2;
+            panX = wrapEl.clientWidth / 2 - cx * scale;
+            panY = wrapEl.clientHeight / 2 - cy * scale;
+            canvasEl.style.transition = 'transform 0.25s ease';
+            applyTransform();
+            const onEnd = () => { canvasEl.style.transition = ''; canvasEl.removeEventListener('transitionend', onEnd); };
+            canvasEl.addEventListener('transitionend', onEnd);
+        }
+
         /* ── Toolbar Buttons ── */
         function addNodeHandler() {
             showNodeModal({
@@ -2764,7 +3115,9 @@
         document.getElementById('btn-redo').addEventListener('click', redo);
 
         function updateOrientBtn() {
-            document.getElementById('btn-orient').textContent = isVertical ? '↕ Vertical' : '↔ Horizontal';
+            const t = isVertical ? '↕ Vertical' : '↔ Horizontal';
+            document.getElementById('btn-orient').textContent = t;
+            document.querySelectorAll('[data-proxy="btn-orient"]').forEach(p => p.textContent = t);
         }
         updateOrientBtn();
 
@@ -2777,12 +3130,15 @@
         });
 
         function updateThemeBtn() {
-            document.getElementById('btn-theme').textContent = isDark ? '🌙 Dark' : '☀ Light';
+            const t = isDark ? '🌙 Dark' : '☀ Light';
+            document.getElementById('btn-theme').textContent = t;
+            document.querySelectorAll('[data-proxy="btn-theme"]').forEach(p => p.textContent = t);
         }
         updateThemeBtn();
 
         document.getElementById('btn-theme').addEventListener('click', () => {
             isDark = !isDark;
+            _hlLight = null; _hlDark = null; // invalidate highlight cache
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
             localStorage.setItem('tree-graph-theme', isDark ? 'dark' : 'light');
             updateThemeBtn();
@@ -2796,6 +3152,38 @@
         });
 
         document.getElementById('btn-customize').addEventListener('click', showStatusCustomizer);
+
+        /* ── Hamburger dropdowns ── */
+        function closeAllDropdowns() {
+            document.querySelectorAll('.tb-dropdown.open').forEach(d => d.classList.remove('open'));
+        }
+
+        document.querySelectorAll('.tb-hamburger-btn').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const dd = btn.nextElementSibling;
+                const wasOpen = dd.classList.contains('open');
+                closeAllDropdowns();
+                if (!wasOpen) dd.classList.add('open');
+            });
+        });
+
+        document.querySelectorAll('[data-proxy]').forEach(proxy => {
+            proxy.addEventListener('click', () => {
+                closeAllDropdowns();
+                const target = document.getElementById(proxy.dataset.proxy);
+                if (target && !target.disabled) target.click();
+            });
+        });
+
+        document.addEventListener('click', closeAllDropdowns);
+
+        let legendCollapsed = false;
+        document.getElementById('legend-toggle').addEventListener('click', () => {
+            legendCollapsed = !legendCollapsed;
+            document.getElementById('legend').classList.toggle('legend-collapsed', legendCollapsed);
+            document.getElementById('legend-toggle').textContent = legendCollapsed ? '▲' : '▼';
+        });
 
         document.getElementById('btn-import').addEventListener('click', () => {
             const input = document.createElement('input');

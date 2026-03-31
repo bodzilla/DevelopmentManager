@@ -476,19 +476,19 @@
         /* ─── DEP BADGE ─── */
         .dep-badge {
             position: absolute;
-            top: -6px;
-            left: -6px;
-            min-width: 16px;
-            height: 16px;
+            top: -8px;
+            left: -8px;
+            min-width: 20px;
+            height: 20px;
             background: var(--border);
             color: var(--text-secondary);
-            border-radius: 8px;
-            font-size: 9px;
+            border-radius: 10px;
+            font-size: 11px;
             font-weight: 600;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 0 4px
+            padding: 0 5px
         }
 
         /* ─── CONTEXT MENU ─── */
@@ -756,7 +756,11 @@
             border-radius: 6px;
             padding: 2px 6px;
             margin-left: -6px;
-            transition: background .15s
+            transition: background .15s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px
         }
 
         .legend-row:hover {
@@ -766,6 +770,20 @@
         .legend-row.active-filter {
             background: var(--filter-active);
             font-weight: 600
+        }
+
+        .legend-count {
+            font-size: 11px;
+            font-weight: 600;
+            min-width: 20px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            border-radius: 9px;
+            background: var(--border);
+            color: var(--text-secondary);
+            padding: 0 6px;
+            flex-shrink: 0
         }
 
         /* ─── LINK MODE ─── */
@@ -2348,7 +2366,7 @@
                 // Full rebuild only when statuses actually changed
                 _legendVersion = curVersion;
                 container.innerHTML = STATUSES.map(s =>
-                    `<div class="legend-row" data-filter-status="${s.id}"><span class="legend-dot" style="background:${s.color}">${s.icon || ''}</span> ${esc(s.label)}</div>`
+                    `<div class="legend-row" data-filter-status="${s.id}"><span style="display:flex;align-items:center;gap:4px"><span class="legend-dot" style="background:${s.color}">${s.icon || ''}</span> ${esc(s.label)}</span><span class="legend-count" data-count-status="${s.id}">0</span></div>`
                 ).join('');
                 container.querySelectorAll('[data-filter-status]').forEach(el => {
                     el.addEventListener('click', () => {
@@ -2359,6 +2377,12 @@
                     });
                 });
             }
+            // Update counts per status
+            const counts = new Map();
+            for (const n of nodes.values()) counts.set(n.status, (counts.get(n.status) || 0) + 1);
+            container.querySelectorAll('[data-count-status]').forEach(el => {
+                el.textContent = counts.get(el.dataset.countStatus) || 0;
+            });
             // Toggle active class in-place (cheap DOM operation)
             container.querySelectorAll('[data-filter-status]').forEach(el => {
                 el.classList.toggle('active-filter', filterStatus === el.dataset.filterStatus);

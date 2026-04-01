@@ -1730,7 +1730,6 @@
             try { localStorage.setItem(STORAGE_KEY, prev); } catch { }
             selectedId = null;
             render();
-            fitViewIfNeeded();
         }
 
         function redo() {
@@ -1743,7 +1742,6 @@
             try { localStorage.setItem(STORAGE_KEY, next); } catch { }
             selectedId = null;
             render();
-            fitViewIfNeeded();
         }
 
         function loadState() {
@@ -3182,7 +3180,7 @@
             if (!node) return;
 
             if (node.children.length === 0) {
-                showConfirm(`Delete <strong>${esc(node.name)}</strong>?`, () => { deleteNode(id); render(); fitViewIfNeeded(); });
+                showConfirm(`Delete <strong>${esc(node.name)}</strong>?`, () => { deleteNode(id); render(); });
                 return;
             }
 
@@ -3195,8 +3193,8 @@
       <button onclick="closeModal()" style="width:100%;justify-content:center">Cancel</button>
     </div>
   `);
-            document.getElementById('m-recon').addEventListener('click', () => { deleteNode(id); closeModal(); render(); fitViewIfNeeded(); });
-            document.getElementById('m-subtree').addEventListener('click', () => { deleteSubtree(id); closeModal(); render(); fitViewIfNeeded(); });
+            document.getElementById('m-recon').addEventListener('click', () => { deleteNode(id); closeModal(); render(); });
+            document.getElementById('m-subtree').addEventListener('click', () => { deleteSubtree(id); closeModal(); render(); });
         }
 
         /* ═══════════════════════════════════════════
@@ -3422,7 +3420,6 @@
                 if (ok) toast('Link created');
                 exitLinkMode();
                 render();
-                fitViewIfNeeded();
                 return;
             }
 
@@ -3483,7 +3480,7 @@
             const items = [
                 {
                     label: 'Add Child', icon: '＋', action: 'add-child', handler() {
-                        showNodeModal({ title: 'Add Child Node', onSave(n, s, extras) { addChild(id, n, s, extras); render(); fitViewIfNeeded(); } });
+                        showNodeModal({ title: 'Add Child Node', onSave(n, s, extras) { addChild(id, n, s, extras); render(); } });
                     }
                 },
                 {
@@ -3493,7 +3490,7 @@
                 },
                 {
                     label: 'Add Parent', icon: '↑', action: 'insert', handler() {
-                        showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(id, n, s, extras); render(); fitViewIfNeeded(); } });
+                        showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(id, n, s, extras); render(); } });
                     }
                 },
                 { divider: true },
@@ -3574,7 +3571,6 @@
                                 addLink(parentId, newId);
                                 addLink(newId, childId);
                                 render();
-                                fitViewIfNeeded();
                             }
                         });
                     }
@@ -3665,9 +3661,10 @@
         function addNodeHandler() {
             showNodeModal({
                 title: 'Create Node', onSave(n, s, extras) {
+                    const isFirst = nodes.size === 0;
                     createNode(n, s, extras);
                     render();
-                    fitView();
+                    if (isFirst) fitView();
                 }
             });
         }
@@ -3677,7 +3674,7 @@
 
         document.getElementById('btn-add-child').addEventListener('click', () => {
             if (!selectedId) return;
-            showNodeModal({ title: 'Add Child Node', onSave(n, s, extras) { addChild(selectedId, n, s, extras); render(); fitViewIfNeeded(); } });
+            showNodeModal({ title: 'Add Child Node', onSave(n, s, extras) { addChild(selectedId, n, s, extras); render(); } });
         });
 
         document.getElementById('btn-link').addEventListener('click', () => {
@@ -3687,7 +3684,7 @@
 
         document.getElementById('btn-insert-before').addEventListener('click', () => {
             if (!selectedId) return;
-            showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(selectedId, n, s, extras); render(); fitViewIfNeeded(); } });
+            showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(selectedId, n, s, extras); render(); } });
         });
 
         document.getElementById('btn-edit').addEventListener('click', () => {
@@ -3746,7 +3743,7 @@
         document.getElementById('btn-clear').addEventListener('click', () => {
             if (nodes.size === 0) return;
             showConfirm('This will delete all nodes and links. Are you sure?', () => {
-                nodes.clear(); selectedId = null; nextId = 1; saveState(); render(); fitViewIfNeeded();
+                nodes.clear(); selectedId = null; nextId = 1; saveState(); render();
             }, 'Clear All');
         });
 

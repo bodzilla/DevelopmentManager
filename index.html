@@ -98,6 +98,135 @@
             z-index: 100
         }
 
+        /* ─── TAB BAR ─── */
+        #tab-bar {
+            position: fixed;
+            top: 40px;
+            left: 0;
+            right: 0;
+            height: 32px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-end;
+            padding: 0 4px;
+            gap: 0;
+            z-index: 99;
+            overflow-x: auto;
+            overflow-y: hidden;
+            user-select: none
+        }
+
+        #tab-bar::-webkit-scrollbar {
+            height: 0
+        }
+
+        .tab {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            height: 28px;
+            padding: 0 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: transparent;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 6px 6px 0 0;
+            cursor: pointer;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: background .1s, color .1s;
+            position: relative;
+            top: 1px
+        }
+
+        .tab:hover {
+            background: var(--surface);
+            color: var(--text)
+        }
+
+        .tab.active {
+            background: var(--surface);
+            border-color: var(--border);
+            color: var(--text);
+            font-weight: 600
+        }
+
+        .tab .tab-close {
+            width: 16px;
+            height: 16px;
+            border: none;
+            background: transparent;
+            border-radius: 3px;
+            font-size: 11px;
+            line-height: 16px;
+            text-align: center;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0;
+            opacity: 0;
+            transition: opacity .1s, background .1s
+        }
+
+        .tab:hover .tab-close,
+        .tab.active .tab-close {
+            opacity: 1
+        }
+
+        .tab .tab-close:hover {
+            background: var(--hover-bg);
+            color: var(--danger)
+        }
+
+        .tab.dragging {
+            opacity: .4
+        }
+
+        .tab.drag-over-left {
+            box-shadow: -2px 0 0 0 var(--accent)
+        }
+
+        .tab.drag-over-right {
+            box-shadow: 2px 0 0 0 var(--accent)
+        }
+
+        .tab-name-input {
+            border: 1px solid var(--accent);
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: 500;
+            padding: 1px 4px;
+            outline: none;
+            background: var(--bg);
+            color: var(--text);
+            width: 100px
+        }
+
+        #tab-add {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            border-radius: 6px 6px 0 0;
+            font-size: 16px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .1s, color .1s;
+            position: relative;
+            top: 1px
+        }
+
+        #tab-add:hover {
+            background: var(--surface);
+            color: var(--accent)
+        }
+
         #toolbar h1 {
             font-size: 14px;
             font-weight: 600;
@@ -425,7 +554,7 @@
         /* ─── CANVAS ─── */
         #canvas-wrap {
             position: fixed;
-            top: 40px;
+            top: 72px;
             left: 0;
             right: 0;
             bottom: 0;
@@ -832,7 +961,7 @@
         /* ─── LINK BANNER ─── */
         #link-banner {
             position: fixed;
-            top: 58px;
+            top: 90px;
             left: 50%;
             transform: translateX(-50%);
             background: var(--accent);
@@ -961,7 +1090,7 @@
         /* ─── SIDE PANEL ─── */
         #side-panel {
             position: fixed;
-            top: 40px;
+            top: 72px;
             right: 0;
             bottom: 0;
             width: 300px;
@@ -1521,6 +1650,11 @@
         </div>
     </div>
 
+    <!-- TAB BAR -->
+    <div id="tab-bar">
+        <button id="tab-add" title="New project tab">+</button>
+    </div>
+
     <!-- EMPTY STATE -->
     <div id="empty-state">
         <p>No nodes yet — add a node to begin.</p>
@@ -1617,19 +1751,9 @@
             { id: 'qa', label: 'Dev Complete / QA', color: '#22c55e', icon: '✓', complete: true }
         ];
 
-        let STATUSES = loadStatuses();
+        let STATUSES = JSON.parse(JSON.stringify(DEFAULT_STATUSES));
 
-        function loadStatuses() {
-            try {
-                const raw = localStorage.getItem('tree-graph-statuses');
-                if (raw) return JSON.parse(raw);
-            } catch { }
-            return JSON.parse(JSON.stringify(DEFAULT_STATUSES));
-        }
-
-        function saveStatuses() {
-            try { localStorage.setItem('tree-graph-statuses', JSON.stringify(STATUSES)); } catch { }
-        }
+        function saveStatuses() { /* now handled by saveWorkspaces */ }
 
         let statusMap = new Map();
         function rebuildStatusMap() {
@@ -1652,7 +1776,7 @@
         ];
 
         /* orientation */
-        let isVertical = localStorage.getItem('tree-graph-orientation') === 'vertical';
+        let isVertical = false;
 
         /* theme */
         let isDark = localStorage.getItem('tree-graph-theme') === 'dark';
@@ -1685,12 +1809,154 @@
         }
 
         /* ═══════════════════════════════════════════
-           PERSISTENCE (localStorage)
+           PERSISTENCE (Workspace-based localStorage)
            ═══════════════════════════════════════════ */
-        const STORAGE_KEY = 'tree-graph-manager-data';
+        const WS_STORAGE_KEY = 'tree-graph-workspaces';
         const MAX_HISTORY = 50;
         const undoStack = [];
         const redoStack = [];
+        let _wsNextNum = 1;
+
+        /* ── Workspace registry ── */
+        const workspaces = new Map();  // id → workspace object
+        let wsOrder = [];              // ordered array of workspace ids (tab order)
+        let activeWsId = null;
+
+        function _genWsId() { return 'ws-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6); }
+
+        /* Capture current global state into a serializable workspace object */
+        function captureWorkspace() {
+            return {
+                id: activeWsId,
+                name: workspaces.has(activeWsId) ? workspaces.get(activeWsId).name : 'Project 1',
+                nodes: [...nodes.entries()],
+                nextId,
+                statuses: JSON.parse(JSON.stringify(STATUSES)),
+                panX, panY, scale,
+                isVertical,
+                showGantt, animateEdges, showDepWarnings, showUndated,
+                ganttHeight, ganttMinimized: ganttMinimized || false,
+                undoStack: undoStack.slice(),
+                redoStack: redoStack.slice(),
+                lastSnapshot: undoStack._last
+            };
+        }
+
+        /* Restore a workspace object into global state (does NOT call render) */
+        function restoreWorkspace(ws) {
+            nodes.clear();
+            for (const [id, node] of ws.nodes) nodes.set(id, node);
+            nextId = ws.nextId || nodes.size + 1;
+            STATUSES = ws.statuses ? JSON.parse(JSON.stringify(ws.statuses)) : JSON.parse(JSON.stringify(DEFAULT_STATUSES));
+            rebuildStatusMap();
+            selectedId = null;
+            multiSelectedIds.clear();
+            panX = ws.panX ?? 60;
+            panY = ws.panY ?? 0;
+            scale = ws.scale ?? 1;
+            isVertical = ws.isVertical ?? false;
+            showGantt = ws.showGantt ?? false;
+            animateEdges = ws.animateEdges ?? false;
+            showDepWarnings = ws.showDepWarnings !== false;
+            showUndated = ws.showUndated ?? false;
+            ganttHeight = ws.ganttHeight ?? 200;
+            ganttMinimized = ws.ganttMinimized ?? false;
+            undoStack.length = 0;
+            redoStack.length = 0;
+            if (ws.undoStack) undoStack.push(...ws.undoStack);
+            if (ws.redoStack) redoStack.push(...ws.redoStack);
+            undoStack._last = ws.lastSnapshot || getSnapshot();
+            _legendVersion = -1; // force legend rebuild
+            filterStatus = null;
+        }
+
+        /* Persist entire workspace registry to localStorage */
+        function saveWorkspaces() {
+            if (activeWsId) {
+                workspaces.set(activeWsId, captureWorkspace());
+            }
+            const data = {
+                activeWsId,
+                wsOrder,
+                workspaces: [...workspaces.entries()]
+            };
+            try { localStorage.setItem(WS_STORAGE_KEY, JSON.stringify(data)); } catch { }
+        }
+
+        /* Load workspace registry from localStorage, with migration from legacy format */
+        function loadWorkspaces() {
+            try {
+                const raw = localStorage.getItem(WS_STORAGE_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    workspaces.clear();
+                    for (const [id, ws] of data.workspaces) workspaces.set(id, ws);
+                    wsOrder = data.wsOrder || [...workspaces.keys()];
+                    activeWsId = data.activeWsId || wsOrder[0];
+                    _wsNextNum = wsOrder.length + 1;
+                    return true;
+                }
+            } catch { }
+
+            // Migration: check for legacy single-workspace data
+            try {
+                const legacyData = localStorage.getItem('tree-graph-manager-data');
+                if (legacyData) {
+                    const parsed = JSON.parse(legacyData);
+                    const wsId = _genWsId();
+                    const legacyStatuses = localStorage.getItem('tree-graph-statuses');
+
+                    workspaces.set(wsId, {
+                        id: wsId, name: 'Project 1',
+                        nodes: parsed.nodes || [],
+                        nextId: parsed.nextId || 1,
+                        statuses: legacyStatuses ? JSON.parse(legacyStatuses) : JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
+                        panX: 60, panY: 0, scale: 1,
+                        isVertical: localStorage.getItem('tree-graph-orientation') === 'vertical',
+                        showGantt: localStorage.getItem('tree-graph-gantt') === 'true',
+                        animateEdges: localStorage.getItem('tree-graph-animate') === 'true',
+                        showDepWarnings: localStorage.getItem('tree-graph-dep-warn') !== 'false',
+                        showUndated: localStorage.getItem('tree-graph-undated') === 'true',
+                        ganttHeight: 200, ganttMinimized: false,
+                        undoStack: [], redoStack: [], lastSnapshot: null
+                    });
+                    wsOrder = [wsId];
+                    activeWsId = wsId;
+                    _wsNextNum = 2;
+                    // Clean up legacy keys
+                    localStorage.removeItem('tree-graph-manager-data');
+                    localStorage.removeItem('tree-graph-statuses');
+                    localStorage.removeItem('tree-graph-orientation');
+                    localStorage.removeItem('tree-graph-gantt');
+                    localStorage.removeItem('tree-graph-animate');
+                    localStorage.removeItem('tree-graph-dep-warn');
+                    localStorage.removeItem('tree-graph-undated');
+                    return true;
+                }
+            } catch { }
+
+            return false;
+        }
+
+        /* Create a default empty workspace if none exist */
+        function ensureWorkspace() {
+            if (wsOrder.length === 0) {
+                const wsId = _genWsId();
+                workspaces.set(wsId, {
+                    id: wsId, name: 'Project 1',
+                    nodes: [], nextId: 1,
+                    statuses: JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
+                    panX: 60, panY: 0, scale: 1,
+                    isVertical: false,
+                    showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
+                    ganttHeight: 200, ganttMinimized: false,
+                    undoStack: [], redoStack: [], lastSnapshot: null
+                });
+                wsOrder = [wsId];
+                activeWsId = wsId;
+                _wsNextNum = 2;
+            }
+        }
 
         function getSnapshot() {
             return JSON.stringify({ nodes: [...nodes.entries()], nextId });
@@ -1717,7 +1983,7 @@
             }
             undoStack._last = snap;
             redoStack.length = 0;
-            try { localStorage.setItem(STORAGE_KEY, snap); } catch { }
+            saveWorkspaces();
         }
 
         function undo() {
@@ -1727,7 +1993,7 @@
             const prev = undoStack.pop();
             undoStack._last = prev;
             restoreSnapshot(prev);
-            try { localStorage.setItem(STORAGE_KEY, prev); } catch { }
+            saveWorkspaces();
             selectedId = null;
             render();
         }
@@ -1739,20 +2005,9 @@
             const next = redoStack.pop();
             undoStack._last = next;
             restoreSnapshot(next);
-            try { localStorage.setItem(STORAGE_KEY, next); } catch { }
+            saveWorkspaces();
             selectedId = null;
             render();
-        }
-
-        function loadState() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return;
-                const data = JSON.parse(raw);
-                nodes = new Map(data.nodes);
-                nextId = data.nextId || nodes.size + 1;
-                saveState();
-            } catch { }
         }
 
         /* ═══════════════════════════════════════════
@@ -1923,6 +2178,7 @@
            Reference: https://towardsdatascience.com/reingold-tilford-algorithm-explained-with-walkthrough-be5810e8ed93
            ═══════════════════════════════════════════ */
         const layoutCache = new Map(); // id → {x, y}
+        function _nodeCmp(a, b) { return (parseInt(a.split('-')[1]) || 0) - (parseInt(b.split('-')[1]) || 0); }
 
         function computeLayout() {
             layoutCache.clear();
@@ -1972,6 +2228,7 @@
                 for (const [id, deg] of inDeg) {
                     if (deg === 0) queue.push(id);
                 }
+                queue.sort(_nodeCmp);
                 let qi = 0;
                 while (qi < queue.length) {
                     const id = queue[qi++];
@@ -2007,12 +2264,14 @@
                         treeChildren.get(bestPid).push(id);
                     }
                 }
+                for (const [, ch] of treeChildren) ch.sort(_nodeCmp);
 
                 // Collect roots (no primary parent in this component)
                 const roots = [];
                 for (const id of compSet) {
                     if (!primaryParent.has(id)) roots.push(id);
                 }
+                roots.sort(_nodeCmp);
 
                 // 4. Reingold-Tilford layout on the spanning tree
                 const rtX = new Map();    // preliminary x position in node-units
@@ -3717,7 +3976,7 @@
 
         document.getElementById('btn-orient').addEventListener('click', () => {
             isVertical = !isVertical;
-            localStorage.setItem('tree-graph-orientation', isVertical ? 'vertical' : 'horizontal');
+            saveWorkspaces();
             updateOrientBtn();
             render();
             fitView();
@@ -3803,7 +4062,10 @@
                     try {
                         const data = JSON.parse(reader.result);
                         if (!data.nodes || !Array.isArray(data.nodes)) throw new Error('Invalid format');
-                        nodes.clear();
+                        // Create a new workspace tab for the imported data
+                        const importName = data.name || file.name.replace(/\.json$/i, '') || 'Imported';
+                        const wsId = _genWsId();
+                        const importedNodes = [];
                         for (const [id, node] of data.nodes) {
                             if (!node.parentIds) node.parentIds = node.parentId != null ? [node.parentId] : [];
                             delete node.parentId;
@@ -3811,13 +4073,23 @@
                             if (node.startDate === undefined) node.startDate = null;
                             if (node.endDate === undefined) node.endDate = null;
                             if (node.estimatedHours === undefined) node.estimatedHours = null;
-                            nodes.set(id, node);
+                            importedNodes.push([id, node]);
                         }
-                        if (data.statuses) { STATUSES.length = 0; STATUSES.push(...data.statuses); saveStatuses(); rebuildStatusMap(); }
-                        if (data.nextId) nextId = data.nextId;
-                        selectedId = null;
-                        saveState(); render(); fitViewIfNeeded();
-                        toast('Imported successfully');
+                        workspaces.set(wsId, {
+                            id: wsId, name: importName,
+                            nodes: importedNodes,
+                            nextId: data.nextId || 1,
+                            statuses: data.statuses ? JSON.parse(JSON.stringify(data.statuses)) : JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
+                            panX: 60, panY: 0, scale: 1,
+                            isVertical: false,
+                            showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
+                            ganttHeight: 200, ganttMinimized: false,
+                            undoStack: [], redoStack: [], lastSnapshot: null
+                        });
+                        wsOrder.push(wsId);
+                        switchWorkspace(wsId);
+                        setTimeout(fitView, 50);
+                        toast('Imported as new tab: ' + importName);
                     } catch (err) {
                         toast('Import failed: ' + err.message);
                     }
@@ -3828,11 +4100,13 @@
         });
 
         document.getElementById('btn-export').addEventListener('click', () => {
-            const data = { nodes: [...nodes.entries()], statuses: STATUSES, nextId };
+            const ws = workspaces.get(activeWsId);
+            const wsName = ws ? ws.name : 'Project';
+            const data = { name: wsName, nodes: [...nodes.entries()], statuses: STATUSES, nextId };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = 'dev-manager-export.json';
+            a.download = wsName.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.json';
             a.click();
             URL.revokeObjectURL(a.href);
             toast('Exported');
@@ -3854,6 +4128,61 @@
             if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); toggleSearch(true); }
             if (e.key === 'Escape' && searchOpen) toggleSearch(false);
+            // Arrow-key traversal of nodes by depth layers
+            if (selectedId && layoutCache.size > 1 && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT')) return;
+                e.preventDefault();
+                const cur = layoutCache.get(selectedId);
+                if (!cur) return;
+                // Group nodes into depth layers
+                const layerMap = new Map();
+                for (const [id, pos] of layoutCache) {
+                    const dk = isVertical ? Math.round(pos.y) : Math.round(pos.x);
+                    if (!layerMap.has(dk)) layerMap.set(dk, []);
+                    layerMap.get(dk).push({ id, x: pos.x, y: pos.y });
+                }
+                const layerKeys = [...layerMap.keys()].sort((a, b) => a - b);
+                for (const [, arr] of layerMap) arr.sort((a, b) => isVertical ? a.x - b.x : a.y - b.y);
+                const curDK = isVertical ? Math.round(cur.y) : Math.round(cur.x);
+                const curBreadth = isVertical ? cur.x : cur.y;
+                const curLayerIdx = layerKeys.indexOf(curDK);
+                // Map arrow to semantic action based on orientation
+                let action;
+                if (isVertical) {
+                    if (e.key === 'ArrowDown') action = 'deeper';
+                    else if (e.key === 'ArrowUp') action = 'shallower';
+                    else if (e.key === 'ArrowRight') action = 'next';
+                    else action = 'prev';
+                } else {
+                    if (e.key === 'ArrowRight') action = 'deeper';
+                    else if (e.key === 'ArrowLeft') action = 'shallower';
+                    else if (e.key === 'ArrowDown') action = 'next';
+                    else action = 'prev';
+                }
+                let best = null;
+                if (action === 'deeper' || action === 'shallower') {
+                    const ti = action === 'deeper' ? curLayerIdx + 1 : curLayerIdx - 1;
+                    if (ti >= 0 && ti < layerKeys.length) {
+                        const layer = layerMap.get(layerKeys[ti]);
+                        let bestDist = Infinity;
+                        for (const n of layer) {
+                            const d = Math.abs((isVertical ? n.x : n.y) - curBreadth);
+                            if (d < bestDist) { bestDist = d; best = n.id; }
+                        }
+                    }
+                } else {
+                    const layer = layerMap.get(curDK);
+                    const ci = layer.findIndex(n => n.id === selectedId);
+                    const ni = action === 'next' ? ci + 1 : ci - 1;
+                    if (ni >= 0 && ni < layer.length) best = layer[ni].id;
+                }
+                if (best) {
+                    selectedId = best;
+                    multiSelectedIds.clear();
+                    render();
+                    focusNode(best);
+                }
+            }
         });
 
         /* ═══════════════════════════════════════════
@@ -3984,12 +4313,250 @@
         });
 
         /* ═══════════════════════════════════════════
+           WORKSPACE TAB SYSTEM
+           ═══════════════════════════════════════════ */
+        const tabBar = document.getElementById('tab-bar');
+        const tabAddBtn = document.getElementById('tab-add');
+
+        function renderTabs() {
+            // Remove existing tabs (keep the + button)
+            tabBar.querySelectorAll('.tab').forEach(t => t.remove());
+            for (let i = 0; i < wsOrder.length; i++) {
+                const wsId = wsOrder[i];
+                const ws = workspaces.get(wsId);
+                if (!ws) continue;
+                const tab = document.createElement('div');
+                tab.className = 'tab' + (wsId === activeWsId ? ' active' : '');
+                tab.dataset.wsId = wsId;
+                tab.draggable = true;
+                tab.innerHTML = `<span class="tab-label">${esc(ws.name)}</span><button class="tab-close" title="Close tab">\u00d7</button>`;
+                tabBar.insertBefore(tab, tabAddBtn);
+            }
+            // Update page title
+            const ws = workspaces.get(activeWsId);
+            document.title = ws ? ws.name + ' \u2014 Development Manager' : 'Development Manager';
+        }
+
+        function switchWorkspace(wsId) {
+            if (wsId === activeWsId) return;
+            if (!workspaces.has(wsId)) return;
+            // Save current workspace state
+            if (activeWsId) workspaces.set(activeWsId, captureWorkspace());
+            activeWsId = wsId;
+            const ws = workspaces.get(wsId);
+            restoreWorkspace(ws);
+            // Update UI
+            updateViewChecks();
+            updateOrientBtn();
+            ganttPanel.style.height = ganttHeight + 'px';
+            ganttPanel.classList.toggle('minimized', ganttMinimized);
+            document.getElementById('gantt-minimize').textContent = ganttMinimized ? '\u25b2' : '\u25bc';
+            render();
+            applyTransform();
+            _syncLegendBottom();
+            renderTabs();
+            saveWorkspaces();
+        }
+
+        function createWorkspace(name) {
+            const wsId = _genWsId();
+            const wsName = name || ('Project ' + _wsNextNum++);
+            workspaces.set(wsId, {
+                id: wsId, name: wsName,
+                nodes: [], nextId: 1,
+                statuses: JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
+                panX: 60, panY: 0, scale: 1,
+                isVertical: false,
+                showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
+                ganttHeight: 200, ganttMinimized: false,
+                undoStack: [], redoStack: [], lastSnapshot: null
+            });
+            wsOrder.push(wsId);
+            switchWorkspace(wsId);
+            return wsId;
+        }
+
+        function closeWorkspace(wsId) {
+            if (wsOrder.length <= 1) {
+                toast('Cannot close the last tab');
+                return;
+            }
+            const ws = workspaces.get(wsId);
+            const hasNodes = ws && ws.nodes && ws.nodes.length > 0;
+            // If it's the active workspace, check live nodes count
+            const liveNodes = (wsId === activeWsId) ? nodes.size : (hasNodes ? ws.nodes.length : 0);
+
+            function doClose() {
+                const idx = wsOrder.indexOf(wsId);
+                wsOrder.splice(idx, 1);
+                workspaces.delete(wsId);
+                if (wsId === activeWsId) {
+                    const newIdx = Math.min(idx, wsOrder.length - 1);
+                    activeWsId = null; // prevent captureWorkspace on switch
+                    switchWorkspace(wsOrder[newIdx]);
+                } else {
+                    saveWorkspaces();
+                    renderTabs();
+                }
+            }
+
+            if (liveNodes > 0) {
+                showConfirm(`Close tab "${esc(ws ? ws.name : '')}"? Remember to save your changes before closing.`, doClose, 'Close Tab', 'danger');
+            } else {
+                doClose();
+            }
+        }
+
+        function renameWorkspace(wsId, newName) {
+            const ws = workspaces.get(wsId);
+            if (!ws) return;
+            ws.name = newName;
+            if (wsId === activeWsId) {
+                document.title = newName + ' \u2014 Development Manager';
+            }
+            saveWorkspaces();
+            renderTabs();
+        }
+
+        function duplicateWorkspace(wsId) {
+            // Capture source workspace (may be active or not)
+            const srcWs = wsId === activeWsId ? captureWorkspace() : workspaces.get(wsId);
+            if (!srcWs) return;
+            const newId = _genWsId();
+            const copy = JSON.parse(JSON.stringify(srcWs));
+            copy.id = newId;
+            copy.name = srcWs.name + ' (Copy)';
+            copy.undoStack = [];
+            copy.redoStack = [];
+            copy.lastSnapshot = null;
+            workspaces.set(newId, copy);
+            const idx = wsOrder.indexOf(wsId);
+            wsOrder.splice(idx + 1, 0, newId);
+            switchWorkspace(newId);
+        }
+
+        // Delegated tab bar events
+        tabBar.addEventListener('click', e => {
+            const closeBtn = e.target.closest('.tab-close');
+            if (closeBtn) {
+                e.stopPropagation();
+                const tab = closeBtn.closest('.tab');
+                if (tab) closeWorkspace(tab.dataset.wsId);
+                return;
+            }
+            const tab = e.target.closest('.tab');
+            if (tab) {
+                switchWorkspace(tab.dataset.wsId);
+                return;
+            }
+        });
+
+        tabAddBtn.addEventListener('click', () => createWorkspace());
+
+        // Double-click to rename
+        tabBar.addEventListener('dblclick', e => {
+            const tab = e.target.closest('.tab');
+            if (!tab) return;
+            const label = tab.querySelector('.tab-label');
+            if (!label) return;
+            const wsId = tab.dataset.wsId;
+            const ws = workspaces.get(wsId);
+            if (!ws) return;
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'tab-name-input';
+            inp.value = ws.name;
+            inp.maxLength = 40;
+            label.replaceWith(inp);
+            inp.focus();
+            inp.select();
+            function finish() {
+                const val = inp.value.trim() || ws.name;
+                renameWorkspace(wsId, val);
+            }
+            inp.addEventListener('blur', finish);
+            inp.addEventListener('keydown', ev => {
+                if (ev.key === 'Enter') { ev.preventDefault(); inp.blur(); }
+                if (ev.key === 'Escape') { inp.value = ws.name; inp.blur(); }
+            });
+        });
+
+        // Drag-and-drop tab reordering
+        let _dragWsId = null;
+        tabBar.addEventListener('dragstart', e => {
+            const tab = e.target.closest('.tab');
+            if (!tab) return;
+            _dragWsId = tab.dataset.wsId;
+            tab.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', _dragWsId);
+        });
+        tabBar.addEventListener('dragend', e => {
+            _dragWsId = null;
+            tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('dragging', 'drag-over-left', 'drag-over-right'));
+        });
+        tabBar.addEventListener('dragover', e => {
+            const tab = e.target.closest('.tab');
+            if (!tab || !_dragWsId || tab.dataset.wsId === _dragWsId) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            tabBar.querySelectorAll('.tab').forEach(t => t.classList.remove('drag-over-left', 'drag-over-right'));
+            const rect = tab.getBoundingClientRect();
+            const mid = rect.left + rect.width / 2;
+            tab.classList.add(e.clientX < mid ? 'drag-over-left' : 'drag-over-right');
+        });
+        tabBar.addEventListener('dragleave', e => {
+            const tab = e.target.closest('.tab');
+            if (tab) tab.classList.remove('drag-over-left', 'drag-over-right');
+        });
+        tabBar.addEventListener('drop', e => {
+            e.preventDefault();
+            const tab = e.target.closest('.tab');
+            if (!tab || !_dragWsId || tab.dataset.wsId === _dragWsId) return;
+            const fromIdx = wsOrder.indexOf(_dragWsId);
+            const toWsId = tab.dataset.wsId;
+            let toIdx = wsOrder.indexOf(toWsId);
+            if (fromIdx < 0 || toIdx < 0) return;
+            wsOrder.splice(fromIdx, 1);
+            toIdx = wsOrder.indexOf(toWsId);
+            const rect = tab.getBoundingClientRect();
+            const insertAfter = e.clientX >= rect.left + rect.width / 2;
+            wsOrder.splice(insertAfter ? toIdx + 1 : toIdx, 0, _dragWsId);
+            _dragWsId = null;
+            renderTabs();
+            saveWorkspaces();
+        });
+
+        // Right-click context menu on tabs
+        tabBar.addEventListener('contextmenu', e => {
+            const tab = e.target.closest('.tab');
+            if (!tab) return;
+            e.preventDefault();
+            const wsId = tab.dataset.wsId;
+            const ws = workspaces.get(wsId);
+            if (!ws) return;
+            showCtxMenu(e.clientX, e.clientY, [
+                {
+                    label: 'Rename', icon: '✎', action: 'rename-tab', handler() {
+                        tab.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+                    }
+                },
+                { label: 'Duplicate', icon: '⧉', action: 'dup-tab', handler() { duplicateWorkspace(wsId); } },
+                { divider: true },
+                {
+                    label: 'Close', icon: '✕', action: 'close-tab', danger: true, disabled: wsOrder.length <= 1,
+                    handler() { closeWorkspace(wsId); }
+                }
+            ]);
+        });
+
+        /* ═══════════════════════════════════════════
            VIEW TOGGLES & PERSISTENCE
            ═══════════════════════════════════════════ */
-        let showGantt = localStorage.getItem('tree-graph-gantt') === 'true';
-        let animateEdges = localStorage.getItem('tree-graph-animate') === 'true';
-        let showDepWarnings = localStorage.getItem('tree-graph-dep-warn') !== 'false'; // default on
-        let showUndated = localStorage.getItem('tree-graph-undated') === 'true';
+        let showGantt = false;
+        let animateEdges = false;
+        let showDepWarnings = true;
+        let showUndated = false;
 
         const ganttPanel = document.getElementById('gantt-panel');
 
@@ -4007,25 +4574,25 @@
 
         document.getElementById('btn-toggle-gantt').addEventListener('click', () => {
             showGantt = !showGantt;
-            localStorage.setItem('tree-graph-gantt', showGantt);
+            saveWorkspaces();
             updateViewChecks();
             _syncLegendBottom();
             if (showGantt) renderGantt();
         });
         document.getElementById('btn-toggle-animate').addEventListener('click', () => {
             animateEdges = !animateEdges;
-            localStorage.setItem('tree-graph-animate', animateEdges);
+            saveWorkspaces();
             updateViewChecks();
         });
         document.getElementById('btn-toggle-dep-warn').addEventListener('click', () => {
             showDepWarnings = !showDepWarnings;
-            localStorage.setItem('tree-graph-dep-warn', showDepWarnings);
+            saveWorkspaces();
             updateViewChecks();
             render();
         });
         document.getElementById('btn-toggle-undated').addEventListener('click', () => {
             showUndated = !showUndated;
-            localStorage.setItem('tree-graph-undated', showUndated);
+            saveWorkspaces();
             updateViewChecks();
             render();
         });
@@ -4068,6 +4635,7 @@
                 if (node.startDate || node.endDate) dated.push({ id, node });
             }
             if (dated.length === 0) { ganttBody.innerHTML = '<div style="padding:16px;color:var(--text-secondary);font-size:13px">No nodes have dates set. Edit a node to add start/end dates.</div>'; return; }
+            dated.sort((a, b) => _nodeCmp(a.id, b.id));
 
             let minD = Infinity, maxD = -Infinity;
             for (const { node } of dated) {
@@ -4299,7 +4867,9 @@
            SHAREABLE LINKS (URL HASH)
            ═══════════════════════════════════════════ */
         document.getElementById('btn-share').addEventListener('click', () => {
-            const data = { nodes: [...nodes.entries()], statuses: STATUSES, nextId };
+            const ws = workspaces.get(activeWsId);
+            const wsName = ws ? ws.name : 'Project';
+            const data = { name: wsName, nodes: [...nodes.entries()], statuses: STATUSES, nextId };
             try {
                 const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
                 window.location.hash = encoded;
@@ -4320,7 +4890,9 @@
                 const json = decodeURIComponent(escape(atob(hash)));
                 const data = JSON.parse(json);
                 if (!data.nodes || !Array.isArray(data.nodes)) return false;
-                nodes.clear();
+                const importName = data.name || 'Shared Project';
+                const wsId = _genWsId();
+                const importedNodes = [];
                 for (const [id, node] of data.nodes) {
                     if (!node.parentIds) node.parentIds = node.parentId != null ? [node.parentId] : [];
                     delete node.parentId;
@@ -4328,13 +4900,22 @@
                     if (node.startDate === undefined) node.startDate = null;
                     if (node.endDate === undefined) node.endDate = null;
                     if (node.estimatedHours === undefined) node.estimatedHours = null;
-                    nodes.set(id, node);
+                    importedNodes.push([id, node]);
                 }
-                if (data.statuses) { STATUSES.length = 0; STATUSES.push(...data.statuses); saveStatuses(); rebuildStatusMap(); }
-                if (data.nextId) nextId = data.nextId;
-                selectedId = null;
-                saveState();
-                toast('Loaded from shared link');
+                workspaces.set(wsId, {
+                    id: wsId, name: importName,
+                    nodes: importedNodes,
+                    nextId: data.nextId || 1,
+                    statuses: data.statuses ? JSON.parse(JSON.stringify(data.statuses)) : JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
+                    panX: 60, panY: 0, scale: 1,
+                    isVertical: false,
+                    showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
+                    ganttHeight: 200, ganttMinimized: false,
+                    undoStack: [], redoStack: [], lastSnapshot: null
+                });
+                wsOrder.push(wsId);
+                activeWsId = wsId;
+                toast('Loaded from shared link: ' + importName);
                 return true;
             } catch { return false; }
         }
@@ -4476,11 +5057,17 @@
         /* ═══════════════════════════════════════════
            INIT
            ═══════════════════════════════════════════ */
+        loadWorkspaces();
         const loadedFromHash = loadFromHash();
-        if (!loadedFromHash) loadState();
-        undoStack._last = getSnapshot();
+        ensureWorkspace();
+        restoreWorkspace(workspaces.get(activeWsId));
+        updateViewChecks();
+        updateOrientBtn();
+        ganttPanel.style.height = ganttHeight + 'px';
+        renderTabs();
         render();
         if (nodes.size > 0) setTimeout(fitView, 100);
+        window.location.hash = '';
     </script>
 </body>
 

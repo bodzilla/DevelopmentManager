@@ -560,7 +560,8 @@
             bottom: 0;
             overflow: hidden;
             cursor: grab;
-            user-select: none
+            user-select: none;
+            opacity: 0
         }
 
         #canvas-wrap.grabbing {
@@ -5748,7 +5749,8 @@
         renderTabs();
         render();
         _syncLegendBottom();
-        if (nodes.size > 0) setTimeout(fitView, 100);
+        if (nodes.size > 0) fitView();
+        wrapEl.style.opacity = '1';
         window.location.hash = '';
         if (_isFirstVisit) setTimeout(() => showHelpModal('about'), 300);
 

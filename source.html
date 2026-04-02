@@ -4192,6 +4192,8 @@
         function focusNode(id) {
             const pos = layoutCache.get(id);
             if (!pos) return;
+            // Cancel any pending rAF render to prevent it from stomping the transition
+            if (_renderRafId) { cancelAnimationFrame(_renderRafId); _renderRafId = 0; render(); }
             const cx = pos.x + NODE_W / 2;
             const cy = pos.y + NODE_H / 2;
             panX = wrapEl.clientWidth / 2 - cx * scale;

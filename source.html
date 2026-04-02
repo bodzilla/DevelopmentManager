@@ -1475,7 +1475,8 @@
         }
 
         #gantt-panel.minimized #gantt-body,
-        #gantt-panel.minimized #gantt-handle {
+        #gantt-panel.minimized #gantt-handle,
+        #gantt-panel.minimized #gantt-dates {
             display: none
         }
 
@@ -1506,9 +1507,13 @@
 
         #gantt-body {
             flex: 1;
-            overflow-x: auto;
-            overflow-y: auto;
-            position: relative
+            overflow: hidden;
+            position: relative;
+            cursor: grab
+        }
+
+        #gantt-body.grabbing {
+            cursor: grabbing
         }
 
         .gantt-row {
@@ -1816,7 +1821,14 @@
                 id="gantt-minimize"
                 style="margin-left:auto;border:none;background:transparent;color:var(--text-secondary);font-size:13px;cursor:pointer;padding:2px 6px"
                 title="Minimize">▼</button></div>
-        <div id="gantt-body"></div>
+        <div id="gantt-dates"
+            style="overflow:hidden;position:relative;height:20px;flex-shrink:0;border-bottom:1px solid var(--border)">
+        </div>
+        <div id="gantt-body">
+            <div id="gantt-grid"
+                style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:0">
+            </div>
+        </div>
     </div>
 
     <!-- LEGEND + STATS -->
@@ -1980,6 +1992,8 @@
                 isVertical,
                 showGantt, animateEdges, showDepWarnings, showUndated,
                 ganttHeight, ganttMinimized: ganttMinimized || false,
+                ganttScale: _ganttScale,
+                ganttPanX: _ganttPanX, ganttPanY: _ganttPanY,
                 spMinimized: spMinimized || false,
                 legendCollapsed: legendCollapsed || false,
                 undoStack: undoStack.slice(),
@@ -2007,6 +2021,9 @@
             showUndated = ws.showUndated ?? false;
             ganttHeight = ws.ganttHeight ?? 200;
             ganttMinimized = ws.ganttMinimized ?? false;
+            _ganttScale = ws.ganttScale ?? 0;
+            _ganttPanX = ws.ganttPanX ?? 0;
+            _ganttPanY = ws.ganttPanY ?? 0;
             spMinimized = ws.spMinimized ?? false;
             legendCollapsed = ws.legendCollapsed ?? false;
             undoStack.length = 0;
@@ -4113,6 +4130,34 @@
             applyTransform();
         }, { passive: false });
 
+        /* ── Canvas touch pinch-to-zoom ── */
+        let _canvasTouches = null;
+        wrapEl.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                _canvasTouches = {
+                    dist: Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY),
+                    scale: scale, panX: panX, panY: panY,
+                    mx: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                    my: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                };
+            }
+        }, { passive: false });
+        wrapEl.addEventListener('touchmove', e => {
+            if (!_canvasTouches || e.touches.length !== 2) return;
+            e.preventDefault();
+            const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+            const newScale = Math.min(2, Math.max(0.25, _canvasTouches.scale * (newDist / _canvasTouches.dist)));
+            const rect = wrapEl.getBoundingClientRect();
+            const mx = _canvasTouches.mx - rect.left;
+            const my = _canvasTouches.my - rect.top;
+            panX = mx - (mx - _canvasTouches.panX) * (newScale / _canvasTouches.scale);
+            panY = my - (my - _canvasTouches.panY) * (newScale / _canvasTouches.scale);
+            scale = newScale;
+            applyTransform();
+        }, { passive: false });
+        wrapEl.addEventListener('touchend', () => { _canvasTouches = null; });
+
         /* ── Fit View ── */
         function fitView() {
             if (layoutCache.size === 0) return;
@@ -4858,7 +4903,13 @@
            ═══════════════════════════════════════════ */
         const ganttHandle = document.getElementById('gantt-handle');
         const ganttBody = document.getElementById('gantt-body');
+        const ganttDatesEl = document.getElementById('gantt-dates');
+        const ganttGridEl = document.getElementById('gantt-grid');
         let ganttMinimized = false;
+        let _ganttScale = 0;
+        let _ganttPanX = 0, _ganttPanY = 0;
+        let _ganttContentW = 0, _ganttContentH = 0;
+        let _ganttTlEl = null; // cached .gantt-timeline element
 
         function _syncGanttMinBtn() {
             ganttPanel.classList.toggle('minimized', ganttMinimized);
@@ -4877,7 +4928,7 @@
             const startY = e.clientY;
             const startH = ganttHeight;
             function onMove(ev) {
-                ganttHeight = Math.max(100, Math.min(500, startH + (startY - ev.clientY)));
+                ganttHeight = Math.max(100, Math.min(window.innerHeight - 80, startH + (startY - ev.clientY)));
                 ganttPanel.style.height = ganttHeight + 'px';
                 _syncLegendBottom();
             }
@@ -4885,6 +4936,108 @@
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
         });
+
+        /* ── Gantt pan (drag) ── */
+        let _ganttPanning = false, _ganttPanStartX = 0, _ganttPanStartY = 0;
+
+        function _ganttMinScale() {
+            const rect = ganttBody.getBoundingClientRect();
+            if (_ganttContentW === 0 || _ganttContentH === 0) return 0.3;
+            return Math.max(0.15, Math.min(rect.width / _ganttContentW, rect.height / _ganttContentH, 1));
+        }
+
+        function _clampGanttPan() {
+            const rect = ganttBody.getBoundingClientRect();
+            const sw = _ganttContentW * _ganttScale;
+            const sh = _ganttContentH * _ganttScale;
+            const margin = 40;
+            // Ensure at least `margin` px of content visible in each axis
+            _ganttPanX = Math.max(-(sw - margin), Math.min(rect.width - margin, _ganttPanX));
+            _ganttPanY = Math.max(-(sh - margin), Math.min(rect.height - margin, _ganttPanY));
+        }
+
+        function _applyGanttTransform() {
+            if (!_ganttTlEl) return;
+            _clampGanttPan();
+            _ganttTlEl.style.transform = `translate(${_ganttPanX}px,${_ganttPanY}px) scale(${_ganttScale})`;
+            _updateGanttDates();
+        }
+
+        function _updateGanttDates() {
+            const labels = ganttDatesEl.querySelectorAll('.gantt-date-label');
+            for (const lbl of labels) {
+                const col = +lbl.dataset.col;
+                const baseW = +lbl.dataset.baseW;
+                lbl.style.left = (col * baseW * _ganttScale + _ganttPanX) + 'px';
+                lbl.style.width = (baseW * _ganttScale) + 'px';
+            }
+            const lines = ganttGridEl.querySelectorAll('.gantt-grid-line');
+            for (const ln of lines) {
+                ln.style.left = (+ln.dataset.col * +ln.dataset.baseW * _ganttScale + _ganttPanX) + 'px';
+            }
+        }
+
+        ganttBody.addEventListener('mousedown', e => {
+            if (e.target.closest('.gantt-handle-l, .gantt-handle-r') || e.target.closest('[data-gantt-id]') || e.button !== 0) return;
+            _ganttPanning = true;
+            _ganttPanStartX = e.clientX - _ganttPanX;
+            _ganttPanStartY = e.clientY - _ganttPanY;
+            ganttBody.classList.add('grabbing');
+            e.preventDefault();
+        });
+        window.addEventListener('mousemove', e => {
+            if (!_ganttPanning) return;
+            _ganttPanX = e.clientX - _ganttPanStartX;
+            _ganttPanY = e.clientY - _ganttPanStartY;
+            _applyGanttTransform();
+        });
+        window.addEventListener('mouseup', () => { if (_ganttPanning) { _ganttPanning = false; ganttBody.classList.remove('grabbing'); } });
+
+        /* ── Gantt zoom (wheel / pinch) ── */
+        ganttBody.addEventListener('wheel', e => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.08 : 0.08;
+            const minS = _ganttMinScale();
+            const newScale = Math.min(3, Math.max(minS, _ganttScale + delta));
+            if (newScale === _ganttScale) return;
+            const rect = ganttBody.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            _ganttPanX = mx - (mx - _ganttPanX) * (newScale / _ganttScale);
+            _ganttPanY = my - (my - _ganttPanY) * (newScale / _ganttScale);
+            _ganttScale = newScale;
+            _applyGanttTransform();
+        }, { passive: false });
+
+        /* ── Gantt touch pinch-to-zoom ── */
+        let _ganttTouches = null;
+        function _touchDist(t) { return Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY); }
+        ganttBody.addEventListener('touchstart', e => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                _ganttTouches = {
+                    dist: _touchDist(e.touches), scale: _ganttScale,
+                    panX: _ganttPanX, panY: _ganttPanY,
+                    mx: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                    my: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                };
+            }
+        }, { passive: false });
+        ganttBody.addEventListener('touchmove', e => {
+            if (!_ganttTouches || e.touches.length !== 2) return;
+            e.preventDefault();
+            const newDist = _touchDist(e.touches);
+            const minS = _ganttMinScale();
+            const newScale = Math.min(3, Math.max(minS, _ganttTouches.scale * (newDist / _ganttTouches.dist)));
+            const rect = ganttBody.getBoundingClientRect();
+            const mx = _ganttTouches.mx - rect.left;
+            const my = _ganttTouches.my - rect.top;
+            _ganttPanX = mx - (mx - _ganttTouches.panX) * (newScale / _ganttTouches.scale);
+            _ganttPanY = my - (my - _ganttTouches.panY) * (newScale / _ganttTouches.scale);
+            _ganttScale = newScale;
+            _applyGanttTransform();
+        }, { passive: false });
+        ganttBody.addEventListener('touchend', () => { _ganttTouches = null; });
 
         function _isWeekend(d) { const day = d.getDay(); return day === 0 || day === 6; }
         const _gMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -4895,7 +5048,7 @@
             for (const [id, node] of nodes) {
                 if (node.startDate || node.endDate) dated.push({ id, node });
             }
-            if (dated.length === 0) { ganttBody.innerHTML = '<div style="padding:16px;color:var(--text-secondary);font-size:13px">No nodes have dates set. Edit a node to add start/end dates.</div>'; return; }
+            if (dated.length === 0) { const oldTl2 = ganttBody.querySelector('.gantt-timeline'); if (oldTl2) oldTl2.remove(); ganttGridEl.innerHTML = ''; ganttDatesEl.innerHTML = ''; if (!ganttBody.querySelector('.gantt-no-dates')) ganttGridEl.insertAdjacentHTML('beforebegin', '<div class="gantt-no-dates">No nodes have dates set. Edit a node to add start/end dates.</div>'); return; }
             dated.sort((a, b) => _nodeCmp(a.id, b.id));
 
             let minD = Infinity, maxD = -Infinity;
@@ -4956,13 +5109,22 @@
                 return d.toISOString().slice(0, 10);
             }
 
-            const parts = ['<div class="gantt-timeline" style="position:relative;min-width:' + (colCount * colW) + 'px">'];
-            // Day column headers (weekdays only)
+            const noDatesMsg = ganttBody.querySelector('.gantt-no-dates'); if (noDatesMsg) noDatesMsg.remove();
+            const parts = ['<div class="gantt-timeline" style="position:relative;z-index:1;min-width:' + (colCount * colW) + 'px">'];
+            // Vertical grid lines rendered into non-scaled overlay
+            const gridParts = [];
+            // Day column headers rendered into fixed date strip (no scaleX — labels repositioned individually)
+            const dateParts = [];
             for (let i = 0; i < colCount; i++) {
                 const c = weekdayCols[i];
                 const label = c.day + ' ' + _gMonths[c.month];
-                parts.push(`<div style="position:absolute;left:${i * colW}px;top:0;width:${colW}px;text-align:center;font-size:9px;color:var(--text-secondary);border-left:1px solid var(--border);height:100%">${label}</div>`);
+                dateParts.push(`<div class="gantt-date-label" data-col="${i}" data-base-w="${colW}" style="position:absolute;left:${i * colW * _ganttScale + _ganttPanX}px;top:0;width:${colW * _ganttScale}px;text-align:center;font-size:9px;color:var(--text-secondary);height:100%;overflow:hidden;white-space:nowrap">${label}</div>`);
+                gridParts.push(`<div class="gantt-grid-line" data-col="${i}" data-base-w="${colW}" style="position:absolute;left:${i * colW * _ganttScale + _ganttPanX}px;top:0;width:0;height:100%;border-left:1px solid var(--border)"></div>`);
             }
+            // Closing vertical line at the end
+            gridParts.push(`<div class="gantt-grid-line" data-col="${colCount}" data-base-w="${colW}" style="position:absolute;left:${colCount * colW * _ganttScale + _ganttPanX}px;top:0;width:0;height:100%;border-left:1px solid var(--border)"></div>`);
+            ganttDatesEl.innerHTML = dateParts.join('');
+            ganttGridEl.innerHTML = gridParts.join('');
 
             let row = 0;
             for (const { id, node } of dated) {
@@ -4973,13 +5135,30 @@
                 const rightCol = Math.ceil(timeToCol(e));
                 const left = leftCol * colW;
                 const width = Math.max((rightCol - leftCol) * colW, colW);
-                parts.push(`<div class="gantt-row" data-gantt-id="${id}" style="position:absolute;top:${20 + row * 28}px;left:${left}px;width:${width}px;height:22px;background:${st.color};border-radius:4px;cursor:pointer;display:flex;align-items:center;padding:0 6px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden" title="${esc(node.name)}"><div class="gantt-handle-l" style="position:absolute;left:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:4px 0 0 4px"></div><span style="pointer-events:none;overflow:hidden;text-overflow:ellipsis;flex:1">${esc(node.name)}</span><div class="gantt-handle-r" style="position:absolute;right:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:0 4px 4px 0"></div></div>`);
+                parts.push(`<div class="gantt-row" data-gantt-id="${id}" style="position:absolute;top:${row * 28}px;left:${left}px;width:${width}px;height:22px;background:${st.color};border-radius:4px;cursor:pointer;display:flex;align-items:center;padding:0 6px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden" title="${esc(node.name)}"><div class="gantt-handle-l" style="position:absolute;left:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:4px 0 0 4px"></div><span style="pointer-events:none;overflow:hidden;text-overflow:ellipsis;flex:1">${esc(node.name)}</span><div class="gantt-handle-r" style="position:absolute;right:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:0 4px 4px 0"></div></div>`);
                 row++;
             }
             parts.push('</div>');
-            ganttBody.innerHTML = parts.join('');
-            const tl = ganttBody.querySelector('.gantt-timeline');
-            if (tl) tl.style.height = (20 + row * 28 + 10) + 'px';
+            // Preserve #gantt-grid overlay — remove old timeline, insert new one before grid
+            const oldTl = ganttBody.querySelector('.gantt-timeline');
+            if (oldTl) oldTl.remove();
+            ganttGridEl.insertAdjacentHTML('beforebegin', parts.join(''));
+            _ganttTlEl = ganttBody.querySelector('.gantt-timeline');
+            _ganttContentW = colCount * colW;
+            _ganttContentH = row * 28 + 10;
+            // Auto-fit on first render (scale === 0 sentinel)
+            if (_ganttScale === 0 && _ganttContentW > 0) {
+                const rect = ganttBody.getBoundingClientRect();
+                _ganttScale = Math.max(0.15, Math.min(1, rect.width / _ganttContentW));
+                _ganttPanX = 0;
+                _ganttPanY = 0;
+            }
+            if (_ganttTlEl) {
+                _ganttTlEl.style.height = _ganttContentH + 'px';
+                _ganttTlEl.style.transformOrigin = '0 0';
+                _ganttTlEl.style.transform = `translate(${_ganttPanX}px,${_ganttPanY}px) scale(${_ganttScale})`;
+            }
+            _updateGanttDates();
 
             // Store render context for delegated event handlers
             _ganttColW = colW;
@@ -5062,7 +5241,7 @@
             const startX = e.clientX;
 
             function onMove(me) {
-                const dx = me.clientX - startX;
+                const dx = (me.clientX - startX) / _ganttScale;
                 if (side === 'left') {
                     const rawLeft = initLeft + dx;
                     const snappedLeft = Math.round(rawLeft / colW) * colW;

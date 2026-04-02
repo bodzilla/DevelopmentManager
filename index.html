@@ -1693,19 +1693,22 @@
                     <div class="menu-sep"></div>
                     <button class="menu-entry" id="btn-share"><span class="menu-icon">🔗</span> Share Link</button>
                     <div class="menu-sep"></div>
-                    <button class="menu-entry danger" id="btn-clear"><span class="menu-icon">🗑</span> Clear
+                    <button class="menu-entry danger" id="btn-clear"><span class="menu-icon">✕</span> Clear
                         All</button>
                 </div>
             </div>
             <div class="menu-item" data-menu="edit">
                 <button class="menu-trigger">Edit</button>
                 <div class="menu-panel">
-                    <button class="menu-entry" id="btn-add-node"><span class="menu-icon">＋</span> Add Node</button>
+                    <button class="menu-entry" id="btn-add-node"><span class="menu-icon">✨</span> Add Node</button>
                     <button class="menu-entry" id="btn-add-child" disabled><span class="menu-icon">＋</span> Add
                         Child</button>
+                    <button class="menu-entry" id="btn-insert-before" disabled><span class="menu-icon">＋</span> Add
+                        Parent</button>
                     <button class="menu-entry" id="btn-link" disabled><span class="menu-icon">🔗</span> Add Additional
                         Child</button>
-                    <button class="menu-entry" id="btn-insert-before" disabled><span class="menu-icon">↑</span> Add
+                    <button class="menu-entry" id="btn-link-parent" disabled><span class="menu-icon">🔗</span> Add
+                        Additional
                         Parent</button>
                     <div class="menu-sep"></div>
                     <button class="menu-entry" id="btn-edit" disabled><span class="menu-icon">✎</span> Edit Node<span
@@ -1917,6 +1920,7 @@
         /* linking mode */
         let linkMode = false;
         let linkSourceId = null;
+        let linkReverse = false;
 
         /* pan / zoom */
         let panX = 60, panY = 0, scale = 1;
@@ -2608,9 +2612,8 @@
                         // Bound by neighbors
                         const lo = ci > 0 ? finalX.get(col[ci - 1]) + SIBLING_SEP : -Infinity;
                         const hi = ci < col.length - 1 ? finalX.get(col[ci + 1]) - SIBLING_SEP : Infinity;
-                        // Nudge up to 50% toward ideal
-                        const target = cur + (ideal - cur) * 0.5;
-                        finalX.set(id, Math.max(lo, Math.min(hi, target)));
+                        // Move to parent centroid (clamped by neighbor bounds)
+                        finalX.set(id, Math.max(lo, Math.min(hi, ideal)));
                     }
                 }
 
@@ -2988,23 +2991,35 @@
                         }
                     }
                 } else {
+                    // Intermediate gap — center connector in the gap between nodes in the next column
                     const nextColX = (parentCol + gi + 1) * colStep;
-                    let blockTop = Infinity, blockBot = -Infinity, hasCol = false;
+                    const colNodes = [];
                     for (const r of rects) {
-                        if (r.x < nextColX + NODE_W && r.x + r.w > nextColX &&
-                            curY >= r.y && curY <= r.y + r.h) {
-                            if (r.y < blockTop) blockTop = r.y;
-                            if (r.y + r.h > blockBot) blockBot = r.y + r.h;
-                            hasCol = true;
+                        if (r.x < nextColX + NODE_W && r.x + r.w > nextColX) {
+                            colNodes.push(r);
                         }
                     }
-                    if (hasCol) {
-                        const aboveY = blockTop - NODE_H * 0.5;
-                        const belowY = blockBot + NODE_H * 0.5;
-                        const newY = Math.abs(aboveY - y2) <= Math.abs(belowY - y2) ? aboveY : belowY;
-                        points.push({ x: gx, y: curY });
-                        points.push({ x: gx, y: newY });
-                        curY = newY;
+                    if (colNodes.length > 0) {
+                        colNodes.sort((a, b) => a.y - b.y);
+                        // Build gaps between adjacent nodes (and above/below extremes)
+                        const nodeGaps = [];
+                        nodeGaps.push({ mid: colNodes[0].y - NODE_H * 0.5 });
+                        for (let ni = 0; ni < colNodes.length - 1; ni++) {
+                            nodeGaps.push({ mid: (colNodes[ni].y + colNodes[ni].h + colNodes[ni + 1].y) / 2 });
+                        }
+                        nodeGaps.push({ mid: colNodes[colNodes.length - 1].y + colNodes[colNodes.length - 1].h + NODE_H * 0.5 });
+                        // Pick gap closest to the midpoint of curY and destination y2
+                        const targetY = (curY + y2) / 2;
+                        let bestMid = curY, bestDist = Infinity;
+                        for (const g of nodeGaps) {
+                            const d = Math.abs(g.mid - targetY);
+                            if (d < bestDist) { bestDist = d; bestMid = g.mid; }
+                        }
+                        if (Math.abs(bestMid - curY) > 1) {
+                            points.push({ x: gx, y: curY });
+                            points.push({ x: gx, y: bestMid });
+                            curY = bestMid;
+                        }
                     }
                 }
             }
@@ -3104,24 +3119,35 @@
                         }
                     }
                 } else {
-                    const SEC_GAP = H_GAP - 60;
+                    // Intermediate gap — center connector in the gap between nodes in the next row
                     const nextRowY = (parentRow + gi + 1) * rowStep;
-                    let blockLeft = Infinity, blockRight = -Infinity, hasRow = false;
+                    const rowNodes = [];
                     for (const r of rects) {
-                        if (r.y < nextRowY + NODE_H && r.y + r.h > nextRowY &&
-                            curX >= r.x && curX <= r.x + r.w) {
-                            if (r.x < blockLeft) blockLeft = r.x;
-                            if (r.x + r.w > blockRight) blockRight = r.x + r.w;
-                            hasRow = true;
+                        if (r.y < nextRowY + NODE_H && r.y + r.h > nextRowY) {
+                            rowNodes.push(r);
                         }
                     }
-                    if (hasRow) {
-                        const leftX = blockLeft - NODE_W * 0.5;
-                        const rightX = blockRight + NODE_W * 0.5;
-                        const newX = Math.abs(leftX - x2) <= Math.abs(rightX - x2) ? leftX : rightX;
-                        points.push({ x: curX, y: gy });
-                        points.push({ x: newX, y: gy });
-                        curX = newX;
+                    if (rowNodes.length > 0) {
+                        rowNodes.sort((a, b) => a.x - b.x);
+                        // Build gaps between adjacent nodes (and left/right extremes)
+                        const nodeGaps = [];
+                        nodeGaps.push({ mid: rowNodes[0].x - NODE_W * 0.5 });
+                        for (let ni = 0; ni < rowNodes.length - 1; ni++) {
+                            nodeGaps.push({ mid: (rowNodes[ni].x + rowNodes[ni].w + rowNodes[ni + 1].x) / 2 });
+                        }
+                        nodeGaps.push({ mid: rowNodes[rowNodes.length - 1].x + rowNodes[rowNodes.length - 1].w + NODE_W * 0.5 });
+                        // Pick gap closest to the midpoint of curX and destination x2
+                        const targetX = (curX + x2) / 2;
+                        let bestMid = curX, bestDist = Infinity;
+                        for (const g of nodeGaps) {
+                            const d = Math.abs(g.mid - targetX);
+                            if (d < bestDist) { bestDist = d; bestMid = g.mid; }
+                        }
+                        if (Math.abs(bestMid - curX) > 1) {
+                            points.push({ x: curX, y: gy });
+                            points.push({ x: bestMid, y: gy });
+                            curX = bestMid;
+                        }
                     }
                 }
             }
@@ -3157,7 +3183,7 @@
 
         // Cached toolbar button references (menu entries + quick buttons)
         const _tbBtns = {};
-        const _tbIds = ['btn-add-child', 'btn-link', 'btn-insert-before', 'btn-edit', 'btn-delete', 'btn-undo', 'btn-redo'];
+        const _tbIds = ['btn-add-child', 'btn-link', 'btn-link-parent', 'btn-insert-before', 'btn-edit', 'btn-delete', 'btn-undo', 'btn-redo'];
         for (const id of _tbIds) _tbBtns[id] = document.getElementById(id);
 
         // Quick-action icon buttons
@@ -3168,6 +3194,7 @@
             const hasSel = !!selectedId;
             _tbBtns['btn-add-child'].disabled = !hasSel;
             _tbBtns['btn-link'].disabled = !hasSel;
+            _tbBtns['btn-link-parent'].disabled = !hasSel;
             _tbBtns['btn-insert-before'].disabled = !hasSel;
             _tbBtns['btn-edit'].disabled = !hasSel;
             _tbBtns['btn-delete'].disabled = !hasSel;
@@ -3771,12 +3798,15 @@
         const linkBanner = document.getElementById('link-banner');
         const linkBannerText = document.getElementById('link-banner-text');
 
-        function enterLinkMode(sourceId) {
+        function enterLinkMode(sourceId, reverse) {
             const node = nodes.get(sourceId);
             if (!node) return;
             linkMode = true;
             linkSourceId = sourceId;
-            linkBannerText.textContent = `Click a node to make it a child of "${node.name}"`;
+            linkReverse = !!reverse;
+            linkBannerText.textContent = reverse
+                ? `Click a node to make it a parent of "${node.name}"`
+                : `Click a node to make it a child of "${node.name}"`;
             linkBanner.classList.add('show');
             wrapEl.classList.add('link-mode');
         }
@@ -3784,6 +3814,7 @@
         function exitLinkMode() {
             linkMode = false;
             linkSourceId = null;
+            linkReverse = false;
             linkBanner.classList.remove('show');
             wrapEl.classList.remove('link-mode');
         }
@@ -3818,7 +3849,7 @@
             // link mode: create edge source → clicked
             if (linkMode) {
                 if (id === linkSourceId) { toast('Cannot link a node to itself'); return; }
-                const ok = addLink(linkSourceId, id);
+                const ok = linkReverse ? addLink(id, linkSourceId) : addLink(linkSourceId, id);
                 if (ok) toast('Link created');
                 exitLinkMode();
                 render();
@@ -3886,13 +3917,18 @@
                     }
                 },
                 {
-                    label: 'Additional Child', icon: '＋', action: 'link', handler() {
+                    label: 'Add Parent', icon: '＋', action: 'insert', handler() {
+                        showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(id, n, s, extras); render(); } });
+                    }
+                },
+                {
+                    label: 'Add Additional Child', icon: '🔗', action: 'link', handler() {
                         enterLinkMode(id);
                     }
                 },
                 {
-                    label: 'Add Parent', icon: '↑', action: 'insert', handler() {
-                        showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(id, n, s, extras); render(); } });
+                    label: 'Add Additional Parent', icon: '🔗', action: 'link-parent', handler() {
+                        addAdditionalParent(id);
                     }
                 },
                 { divider: true },
@@ -3910,6 +3946,10 @@
             ];
             showCtxMenu(e.clientX, e.clientY, items);
         });
+
+        function addAdditionalParent(childId) {
+            enterLinkMode(childId, true);
+        }
 
         /* ── Pick-node modal (for Add Dependency) ── */
         function showPickNodeModal(title, description, excludeId, onPick) {
@@ -4082,6 +4122,11 @@
         document.getElementById('btn-link').addEventListener('click', () => {
             if (!selectedId) return;
             enterLinkMode(selectedId);
+        });
+
+        document.getElementById('btn-link-parent').addEventListener('click', () => {
+            if (!selectedId) return;
+            addAdditionalParent(selectedId);
         });
 
         document.getElementById('btn-insert-before').addEventListener('click', () => {
@@ -5244,6 +5289,7 @@
 <ul>
 <li><strong>Add Child</strong> — Select a node, then use <em>Edit → Add Child</em> or right-click → <em>Add Child</em>. The new node will appear below the selected node.</li>
 <li><strong>Add Additional Child (Link)</strong> — Creates a dependency link between two existing nodes. Select a parent, choose <em>Add Additional Child</em>, then click the target node. This allows one node to have multiple parents.</li>
+<li><strong>Add Additional Parent</strong> — The reverse of the above. Select a child node, choose <em>Add Additional Parent</em>, then pick an existing node from the list to make it an additional parent dependency.</li>
 <li><strong>Insert Parent</strong> — Inserts a new node above the selected node, automatically inheriting its position in the graph.</li>
 <li><strong>Delete</strong> — When deleting a node, you can choose to <em>reconnect children</em> to the deleted node's parent, or <em>remove the entire subtree</em>.</li>
 </ul>

@@ -1705,10 +1705,10 @@
                         Child</button>
                     <button class="menu-entry" id="btn-insert-before" disabled><span class="menu-icon">＋</span> Add
                         Parent</button>
-                    <button class="menu-entry" id="btn-link" disabled><span class="menu-icon">🔗</span> Add Additional
+                    <button class="menu-entry" id="btn-link" disabled><span class="menu-icon">🔗</span> Link Existing
                         Child</button>
-                    <button class="menu-entry" id="btn-link-parent" disabled><span class="menu-icon">🔗</span> Add
-                        Additional
+                    <button class="menu-entry" id="btn-link-parent" disabled><span class="menu-icon">🔗</span> Link
+                        Existing
                         Parent</button>
                     <div class="menu-sep"></div>
                     <button class="menu-entry" id="btn-edit" disabled><span class="menu-icon">✎</span> Edit Node<span
@@ -3922,12 +3922,12 @@
                     }
                 },
                 {
-                    label: 'Add Additional Child', icon: '🔗', action: 'link', handler() {
+                    label: 'Link Existing Child', icon: '🔗', action: 'link', handler() {
                         enterLinkMode(id);
                     }
                 },
                 {
-                    label: 'Add Additional Parent', icon: '🔗', action: 'link-parent', handler() {
+                    label: 'Link Existing Parent', icon: '🔗', action: 'link-parent', handler() {
                         addAdditionalParent(id);
                     }
                 },
@@ -5287,10 +5287,10 @@
 <div class="help-section"><h3>🔗 Dependencies &amp; Linking</h3>
 <p>Connections between nodes represent dependencies — a child cannot start until its parent is complete.</p>
 <ul>
-<li><strong>Add Child</strong> — Select a node, then use <em>Edit → Add Child</em> or right-click → <em>Add Child</em>. The new node will appear below the selected node.</li>
-<li><strong>Add Additional Child (Link)</strong> — Creates a dependency link between two existing nodes. Select a parent, choose <em>Add Additional Child</em>, then click the target node. This allows one node to have multiple parents.</li>
-<li><strong>Add Additional Parent</strong> — The reverse of the above. Select a child node, choose <em>Add Additional Parent</em>, then pick an existing node from the list to make it an additional parent dependency.</li>
-<li><strong>Insert Parent</strong> — Inserts a new node above the selected node, automatically inheriting its position in the graph.</li>
+<li><strong>Add Child</strong> — Inserts a new node as a child of the selected node.</li>
+<li><strong>Add Parent</strong> — Inserts a new node as a parent of the selected node.</li>
+<li><strong>Link Existing Child</strong> — Creates a dependency link between two existing nodes. Select a node, choose <em>Link Existing Child</em>, then click the target node. This allows one node to have multiple parents.</li>
+<li><strong>Link Existing Parent</strong> — The reverse of the above. Select a child node, choose <em>Link Existing Parent</em>, then click an existing node on the canvas to make it an additional parent dependency.</li>
 <li><strong>Delete</strong> — When deleting a node, you can choose to <em>reconnect children</em> to the deleted node's parent, or <em>remove the entire subtree</em>.</li>
 </ul>
 <div class="help-tip">💡 The dependency badge (e.g. <strong>2</strong>) on a node indicates how many parent dependencies it has. Hover to see details.</div>

@@ -4428,6 +4428,11 @@
             if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); toggleSearch(true); }
             if (e.key === 'Escape' && searchOpen) toggleSearch(false);
+            if (e.key === 'Escape' && !searchOpen && (selectedId || multiSelectedIds.size > 0)) {
+                selectedId = null;
+                multiSelectedIds.clear();
+                scheduleRender();
+            }
             // Arrow-key traversal of nodes by depth layers
             if (selectedId && layoutCache.size > 1 && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
                 if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'SELECT')) return;

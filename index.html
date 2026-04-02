@@ -1968,6 +1968,8 @@
                 isVertical,
                 showGantt, animateEdges, showDepWarnings, showUndated,
                 ganttHeight, ganttMinimized: ganttMinimized || false,
+                spMinimized: spMinimized || false,
+                legendCollapsed: legendCollapsed || false,
                 undoStack: undoStack.slice(),
                 redoStack: redoStack.slice(),
                 lastSnapshot: undoStack._last
@@ -1993,6 +1995,8 @@
             showUndated = ws.showUndated ?? false;
             ganttHeight = ws.ganttHeight ?? 200;
             ganttMinimized = ws.ganttMinimized ?? false;
+            spMinimized = ws.spMinimized ?? false;
+            legendCollapsed = ws.legendCollapsed ?? false;
             undoStack.length = 0;
             redoStack.length = 0;
             if (ws.undoStack) undoStack.push(...ws.undoStack);
@@ -2049,7 +2053,7 @@
                         animateEdges: localStorage.getItem('tree-graph-animate') === 'true',
                         showDepWarnings: localStorage.getItem('tree-graph-dep-warn') !== 'false',
                         showUndated: localStorage.getItem('tree-graph-undated') === 'true',
-                        ganttHeight: 200, ganttMinimized: false,
+                        ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
                         undoStack: [], redoStack: [], lastSnapshot: null
                     });
                     wsOrder = [wsId];
@@ -2081,7 +2085,7 @@
                     panX: 60, panY: 0, scale: 1,
                     isVertical: false,
                     showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
-                    ganttHeight: 200, ganttMinimized: false,
+                    ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
                     undoStack: [], redoStack: [], lastSnapshot: null
                 });
                 wsOrder = [wsId];
@@ -3276,6 +3280,14 @@
         const _ganttPanelEl = document.getElementById('gantt-panel');
         let spMinimized = false;
 
+        function _syncSpMinState() {
+            sidePanel.classList.toggle('minimized', spMinimized);
+            document.getElementById('sp-minimize').textContent = spMinimized ? '\u25c0' : '\u25b6';
+            _syncGanttRight();
+            _legendEl.classList.toggle('panel-open', !spMinimized && sidePanel.classList.contains('open'));
+            _legendEl.classList.toggle('panel-minimized', spMinimized && sidePanel.classList.contains('open'));
+        }
+
         function _syncGanttRight() {
             const isOpen = sidePanel.classList.contains('open');
             if (!isOpen) { _ganttPanelEl.style.right = '0'; return; }
@@ -3284,7 +3296,7 @@
 
         function _syncLegendBottom() {
             if (!showGantt) { _legendEl.style.bottom = '16px'; return; }
-            const gpH = _ganttPanelEl.offsetHeight || ganttHeight;
+            const gpH = ganttMinimized ? 32 : (ganttHeight || 200);
             _legendEl.style.bottom = (gpH + 16) + 'px';
         }
 
@@ -3394,11 +3406,8 @@
 
         document.getElementById('sp-minimize').addEventListener('click', () => {
             spMinimized = !spMinimized;
-            sidePanel.classList.toggle('minimized', spMinimized);
-            document.getElementById('sp-minimize').textContent = spMinimized ? '◀' : '▶';
-            _syncGanttRight();
-            _legendEl.classList.toggle('panel-open', !spMinimized);
-            _legendEl.classList.toggle('panel-minimized', spMinimized);
+            _syncSpMinState();
+            saveWorkspaces();
         });
 
         /* ═══════════════════════════════════════════
@@ -4178,10 +4187,16 @@
         document.addEventListener('click', closeAllMenus);
 
         let legendCollapsed = false;
+
+        function _syncLegendCollapsed() {
+            _legendEl.classList.toggle('legend-collapsed', legendCollapsed);
+            document.getElementById('legend-toggle').textContent = legendCollapsed ? '\u25b2' : '\u25bc';
+        }
+
         document.getElementById('legend-toggle').addEventListener('click', () => {
             legendCollapsed = !legendCollapsed;
-            _legendEl.classList.toggle('legend-collapsed', legendCollapsed);
-            document.getElementById('legend-toggle').textContent = legendCollapsed ? '▲' : '▼';
+            _syncLegendCollapsed();
+            saveWorkspaces();
         });
 
         document.getElementById('btn-import').addEventListener('click', () => {
@@ -4217,7 +4232,7 @@
                             panX: 60, panY: 0, scale: 1,
                             isVertical: false,
                             showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
-                            ganttHeight: 200, ganttMinimized: false,
+                            ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
                             undoStack: [], redoStack: [], lastSnapshot: null
                         });
                         wsOrder.push(wsId);
@@ -4483,8 +4498,9 @@
             updateViewChecks();
             updateOrientBtn();
             ganttPanel.style.height = ganttHeight + 'px';
-            ganttPanel.classList.toggle('minimized', ganttMinimized);
-            document.getElementById('gantt-minimize').textContent = ganttMinimized ? '\u25b2' : '\u25bc';
+            _syncGanttMinBtn();
+            _syncSpMinState();
+            _syncLegendCollapsed();
             render();
             applyTransform();
             _syncLegendBottom();
@@ -4502,7 +4518,7 @@
                 panX: 60, panY: 0, scale: 1,
                 isVertical: false,
                 showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
-                ganttHeight: 200, ganttMinimized: false,
+                ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
                 undoStack: [], redoStack: [], lastSnapshot: null
             });
             wsOrder.push(wsId);
@@ -4738,11 +4754,16 @@
         const ganttBody = document.getElementById('gantt-body');
         let ganttMinimized = false;
 
+        function _syncGanttMinBtn() {
+            ganttPanel.classList.toggle('minimized', ganttMinimized);
+            document.getElementById('gantt-minimize').textContent = ganttMinimized ? '\u25b2' : '\u25bc';
+        }
+
         document.getElementById('gantt-minimize').addEventListener('click', () => {
             ganttMinimized = !ganttMinimized;
-            ganttPanel.classList.toggle('minimized', ganttMinimized);
-            document.getElementById('gantt-minimize').textContent = ganttMinimized ? '▲' : '▼';
+            _syncGanttMinBtn();
             _syncLegendBottom();
+            saveWorkspaces();
         });
 
         ganttHandle.addEventListener('mousedown', e => {
@@ -5044,7 +5065,7 @@
                     panX: 60, panY: 0, scale: 1,
                     isVertical: false,
                     showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
-                    ganttHeight: 200, ganttMinimized: false,
+                    ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
                     undoStack: [], redoStack: [], lastSnapshot: null
                 });
                 wsOrder.push(wsId);
@@ -5382,8 +5403,12 @@
         updateViewChecks();
         updateOrientBtn();
         ganttPanel.style.height = ganttHeight + 'px';
+        _syncGanttMinBtn();
+        _syncSpMinState();
+        _syncLegendCollapsed();
         renderTabs();
         render();
+        _syncLegendBottom();
         if (nodes.size > 0) setTimeout(fitView, 100);
         window.location.hash = '';
         if (_isFirstVisit) setTimeout(() => showHelpModal('about'), 300);

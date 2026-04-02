@@ -1867,7 +1867,7 @@
             if (ws.redoStack) redoStack.push(...ws.redoStack);
             undoStack._last = ws.lastSnapshot || getSnapshot();
             _legendVersion = -1; // force legend rebuild
-            filterStatus = null;
+            filterStatus = new Set();
         }
 
         /* Persist entire workspace registry to localStorage */
@@ -3042,7 +3042,7 @@
         }
 
         /* ── Legend (dynamic from STATUSES) ── */
-        let filterStatus = null;
+        let filterStatus = new Set();
         let _legendVersion = -1; // track when STATUSES change to avoid full innerHTML rebuild
 
         function renderLegend() {
@@ -3057,7 +3057,8 @@
                 container.querySelectorAll('[data-filter-status]').forEach(el => {
                     el.addEventListener('click', () => {
                         const sid = el.dataset.filterStatus;
-                        filterStatus = (filterStatus === sid) ? null : sid;
+                        if (filterStatus.has(sid)) filterStatus.delete(sid);
+                        else filterStatus.add(sid);
                         applyStatusFilter();
                         renderLegend();
                     });
@@ -3071,17 +3072,18 @@
             });
             // Toggle active class in-place (cheap DOM operation)
             container.querySelectorAll('[data-filter-status]').forEach(el => {
-                el.classList.toggle('active-filter', filterStatus === el.dataset.filterStatus);
+                el.classList.toggle('active-filter', filterStatus.has(el.dataset.filterStatus));
             });
         }
 
         function applyStatusFilter() {
+            const hasFilter = filterStatus.size > 0;
             // Dim/undim nodes
             canvasEl.querySelectorAll('.node').forEach(el => {
                 const node = nodes.get(el.dataset.id);
-                if (!filterStatus || !node) {
+                if (!hasFilter || !node) {
                     el.classList.remove('dimmed', 'filter-match');
-                } else if (node.status === filterStatus) {
+                } else if (filterStatus.has(node.status)) {
                     el.classList.remove('dimmed');
                     el.classList.add('filter-match');
                 } else {
@@ -3091,14 +3093,14 @@
             });
             // Dim/undim connectors
             const matchIds = new Set();
-            if (filterStatus) {
+            if (hasFilter) {
                 for (const [id, node] of nodes) {
-                    if (node.status === filterStatus) matchIds.add(id);
+                    if (filterStatus.has(node.status)) matchIds.add(id);
                 }
             }
-            svgEl.classList.toggle('has-filter', !!filterStatus);
+            svgEl.classList.toggle('has-filter', hasFilter);
             svgEl.querySelectorAll('.edge-group').forEach(g => {
-                if (!filterStatus) {
+                if (!hasFilter) {
                     g.classList.remove('filter-edge');
                 } else {
                     const pid = g.dataset.parent;

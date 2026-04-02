@@ -4527,20 +4527,23 @@
         }
 
         function closeWorkspace(wsId) {
-            if (wsOrder.length <= 1) {
-                toast('Cannot close the last tab');
-                return;
-            }
             const ws = workspaces.get(wsId);
             const hasNodes = ws && ws.nodes && ws.nodes.length > 0;
             // If it's the active workspace, check live nodes count
             const liveNodes = (wsId === activeWsId) ? nodes.size : (hasNodes ? ws.nodes.length : 0);
 
+            // Don't close the last tab if it's already empty
+            if (wsOrder.length <= 1 && liveNodes === 0) return;
+
             function doClose() {
                 const idx = wsOrder.indexOf(wsId);
                 wsOrder.splice(idx, 1);
                 workspaces.delete(wsId);
-                if (wsId === activeWsId) {
+                if (wsOrder.length === 0) {
+                    // Last tab closed — create a fresh default workspace
+                    activeWsId = null;
+                    createWorkspace();
+                } else if (wsId === activeWsId) {
                     const newIdx = Math.min(idx, wsOrder.length - 1);
                     activeWsId = null; // prevent captureWorkspace on switch
                     switchWorkspace(wsOrder[newIdx]);
@@ -4599,6 +4602,14 @@
                 switchWorkspace(tab.dataset.wsId);
                 return;
             }
+        });
+
+        tabBar.addEventListener('auxclick', e => {
+            if (e.button !== 1) return;
+            const tab = e.target.closest('.tab');
+            if (!tab) return;
+            e.preventDefault();
+            closeWorkspace(tab.dataset.wsId);
         });
 
         tabAddBtn.addEventListener('click', () => createWorkspace());
@@ -4694,7 +4705,7 @@
                 { label: 'Duplicate', icon: '⧉', action: 'dup-tab', handler() { duplicateWorkspace(wsId); } },
                 { divider: true },
                 {
-                    label: 'Close', icon: '✕', action: 'close-tab', danger: true, disabled: wsOrder.length <= 1,
+                    label: 'Close', icon: '✕', action: 'close-tab', danger: true,
                     handler() { closeWorkspace(wsId); }
                 }
             ]);

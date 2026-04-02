@@ -1463,7 +1463,16 @@
             animation: dashFlow .8s linear infinite
         }
 
-
+        /* ─── CONFETTI CANVAS ─── */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 99999
+        }
 
         /* ─── GANTT PANEL ─── */
         #gantt-panel {
@@ -1816,6 +1825,8 @@
         <span id="link-banner-text">Click a node to add as additional child</span>
         <button id="link-cancel">Cancel (Esc)</button>
     </div>
+
+    <canvas id="confetti-canvas"></canvas>
 
     <!-- CANVAS -->
     <div id="canvas-wrap">
@@ -2353,7 +2364,22 @@
 
         function setNodeStatus(id, status) {
             const n = nodes.get(id);
-            if (n) { n.status = status; _markGanttDirty(); }
+            if (!n) return;
+            const oldComplete = statusMap.get(n.status)?.complete;
+            n.status = status;
+            _markGanttDirty();
+            const newComplete = statusMap.get(status)?.complete;
+            if (newComplete && !oldComplete) {
+                const pos = layoutCache.get(id);
+                if (pos) {
+                    const canvasEl = document.getElementById('canvas');
+                    const wrap = document.getElementById('canvas-wrap');
+                    const wrapR = wrap.getBoundingClientRect();
+                    const nodeScreenX = pos.x * scale + panX + wrapR.left + (NODE_W * scale) / 2;
+                    const nodeScreenY = pos.y * scale + panY + wrapR.top + (NODE_H * scale) / 2;
+                    _launchConfetti(nodeScreenX, nodeScreenY);
+                }
+            }
         }
 
         /* ═══════════════════════════════════════════
@@ -5725,6 +5751,93 @@
         if (nodes.size > 0) setTimeout(fitView, 100);
         window.location.hash = '';
         if (_isFirstVisit) setTimeout(() => showHelpModal('about'), 300);
+
+        /* ═══════════════════════════════════════════
+           CONFETTI CELEBRATION
+           ═══════════════════════════════════════════ */
+        const _confettiCvs = document.getElementById('confetti-canvas');
+        const _confettiCtx = _confettiCvs.getContext('2d');
+        let _confettiParticles = [];
+        let _confettiRaf = 0;
+
+        function _resizeConfetti() {
+            _confettiCvs.width = window.innerWidth;
+            _confettiCvs.height = window.innerHeight;
+        }
+        _resizeConfetti();
+        window.addEventListener('resize', _resizeConfetti);
+
+        const _CONFETTI_COLORS = [
+            '#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff',
+            '#5f27cd', '#01a3a4', '#f368e0', '#ff6348', '#7bed9f',
+            '#eccc68', '#a29bfe', '#fd79a8', '#00cec9', '#e17055'
+        ];
+
+        function _launchConfetti(cx, cy) {
+            const count = 70;
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.5;
+                const speed = 4 + Math.random() * 7;
+                const size = 4 + Math.random() * 4;
+                _confettiParticles.push({
+                    x: cx, y: cy,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 3,
+                    size,
+                    color: _CONFETTI_COLORS[Math.floor(Math.random() * _CONFETTI_COLORS.length)],
+                    rotation: Math.random() * Math.PI * 2,
+                    rotationSpeed: (Math.random() - 0.5) * 0.3,
+                    life: 1,
+                    decay: 0.008 + Math.random() * 0.008,
+                    shape: Math.random() < 0.4 ? 'circle' : Math.random() < 0.7 ? 'rect' : 'star'
+                });
+            }
+            if (!_confettiRaf) _confettiRaf = requestAnimationFrame(_tickConfetti);
+        }
+
+        function _tickConfetti() {
+            _confettiCtx.clearRect(0, 0, _confettiCvs.width, _confettiCvs.height);
+            for (let i = _confettiParticles.length - 1; i >= 0; i--) {
+                const p = _confettiParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.18; // gravity
+                p.vx *= 0.99; // air drag
+                p.rotation += p.rotationSpeed;
+                p.life -= p.decay;
+                if (p.life <= 0) { _confettiParticles.splice(i, 1); continue; }
+
+                _confettiCtx.save();
+                _confettiCtx.globalAlpha = p.life;
+                _confettiCtx.translate(p.x, p.y);
+                _confettiCtx.rotate(p.rotation);
+                _confettiCtx.fillStyle = p.color;
+
+                if (p.shape === 'circle') {
+                    _confettiCtx.beginPath();
+                    _confettiCtx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+                    _confettiCtx.fill();
+                } else if (p.shape === 'rect') {
+                    _confettiCtx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+                } else {
+                    // star
+                    _confettiCtx.beginPath();
+                    for (let s = 0; s < 5; s++) {
+                        const a = (s * Math.PI * 2) / 5 - Math.PI / 2;
+                        const r = s % 2 === 0 ? p.size / 2 : p.size / 4;
+                        _confettiCtx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+                    }
+                    _confettiCtx.closePath();
+                    _confettiCtx.fill();
+                }
+                _confettiCtx.restore();
+            }
+            if (_confettiParticles.length > 0) {
+                _confettiRaf = requestAnimationFrame(_tickConfetti);
+            } else {
+                _confettiRaf = 0;
+            }
+        }
     </script>
 </body>
 

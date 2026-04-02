@@ -1922,6 +1922,14 @@
         let linkSourceId = null;
         let linkReverse = false;
 
+        /* dirty flags for render pipeline */
+        let _layoutDirty = true;   // topology changed → recompute layout + connectors
+        let _ganttDirty = true;    // dates/status/names/topology changed → rebuild Gantt
+        let _renderRafId = 0;      // rAF batch id for render coalescing
+
+        function _markLayoutDirty() { _layoutDirty = true; _ganttDirty = true; }
+        function _markGanttDirty() { _ganttDirty = true; }
+
         /* pan / zoom */
         let panX = 60, panY = 0, scale = 1;
         let isPanning = false, panStartX = 0, panStartY = 0;
@@ -2008,6 +2016,8 @@
             undoStack._last = ws.lastSnapshot || getSnapshot();
             _legendVersion = -1; // force legend rebuild
             filterStatus = new Set();
+            _markLayoutDirty();
+            _nodeElCache.forEach(el => el.remove()); _nodeElCache.clear();
         }
 
         /* Persist entire workspace registry to localStorage */
@@ -2110,6 +2120,7 @@
                 nodes.set(id, node);
             }
             nextId = data.nextId || nodes.size + 1;
+            _markLayoutDirty();
         }
 
         let _batch = false;
@@ -2182,6 +2193,7 @@
         function createNode(name, status = 'not-started', extras = {}) {
             const id = 'node-' + (nextId++);
             nodes.set(id, { id, name, status, parentIds: [], children: [], notes: extras.notes || '', startDate: extras.startDate || null, endDate: extras.endDate || null, estimatedHours: extras.estimatedHours || null });
+            _markLayoutDirty();
             saveState();
             return id;
         }
@@ -2204,6 +2216,7 @@
             if (wouldCycle(parentId, childId)) { toast('Cannot link — would create a cycle'); return false; }
             child.parentIds.push(parentId);
             parent.children.push(childId);
+            _markLayoutDirty();
             saveState();
             return true;
         }
@@ -2216,6 +2229,7 @@
             if (pi !== -1) child.parentIds.splice(pi, 1);
             const ci = parent.children.indexOf(childId);
             if (ci !== -1) parent.children.splice(ci, 1);
+            _markLayoutDirty();
             saveState();
         }
 
@@ -2248,6 +2262,7 @@
             nodes.delete(id);
             if (selectedId === id) selectedId = null;
             _batch = false;
+            _markLayoutDirty();
             saveState();
         }
 
@@ -2300,17 +2315,18 @@
                 nodes.delete(did);
                 if (selectedId === did) selectedId = null;
             }
+            _markLayoutDirty();
             saveState();
         }
 
         function renameNode(id, name) {
             const n = nodes.get(id);
-            if (n) { n.name = name; }
+            if (n) { n.name = name; _markGanttDirty(); }
         }
 
         function setNodeStatus(id, status) {
             const n = nodes.get(id);
-            if (n) { n.status = status; }
+            if (n) { n.status = status; _markGanttDirty(); }
         }
 
         /* ═══════════════════════════════════════════
@@ -2647,9 +2663,14 @@
         const wrapEl = document.getElementById('canvas-wrap');
 
         function render() {
-            computeLayout();
+            if (_layoutDirty) {
+                _layoutDirty = false;
+                computeLayout();
+                renderConnectors();
+            } else {
+                updateConnectorHighlights();
+            }
             renderNodes();
-            renderConnectors();
             renderLegend();
             renderCompletionStats();
             renderSidePanel();
@@ -2658,46 +2679,67 @@
             applyTransform();
             applyStatusFilter();
             updateMultiSelectBar();
-            if (showGantt) renderGantt();
+            if (showGantt && _ganttDirty) { _ganttDirty = false; renderGantt(); }
             if (searchOpen && searchMatches.length > 0) highlightSearchMatches();
         }
 
-        function renderNodes() {
-            canvasEl.querySelectorAll('.node').forEach(el => el.remove());
-            const frag = document.createDocumentFragment();
+        /* Coalesce rapid render() calls into a single animation frame */
+        function scheduleRender() {
+            if (_renderRafId) return;
+            _renderRafId = requestAnimationFrame(() => { _renderRafId = 0; render(); });
+        }
 
+        const _nodeElCache = new Map(); // id → DOM element
+
+        function _buildNodeHTML(id, node) {
+            const st = statusMap.get(node.status);
+            const badge = node.parentIds.length > 1
+                ? `<span class="dep-badge" title="${node.parentIds.length} dependencies">${node.parentIds.length}</span>` : '';
+            const depWarnings = showDepWarnings ? getDepWarnings(id) : [];
+            const warnBadge = depWarnings.length > 0 ? `<span class="warn-badge" title="${depWarnings.join('\\n')}">⚠</span>` : '';
+            return `${badge}${warnBadge}<div class="node-name" title="${esc(node.name)}">${esc(node.name)}</div><div class="node-status-row"><span class="node-status-dot ${node.status}" style="background:${st.color}">${st.icon}</span><span class="node-status-label">${st.label}</span></div><button class="node-status-btn" title="Change status">▾</button>`;
+        }
+
+        function renderNodes() {
+            const activeIds = new Set(layoutCache.keys());
+
+            // Remove nodes no longer in layout
+            for (const [id, el] of _nodeElCache) {
+                if (!activeIds.has(id)) { el.remove(); _nodeElCache.delete(id); }
+            }
+
+            const frag = document.createDocumentFragment();
             for (const [id, pos] of layoutCache) {
                 const node = nodes.get(id);
-                const el = document.createElement('div');
                 let cls = 'node';
                 if (id === selectedId) cls += ' selected';
                 if (multiSelectedIds.has(id)) cls += ' multi-selected';
                 if (showUndated && !node.startDate && !node.endDate) cls += ' undated';
-                el.className = cls;
-                el.dataset.id = id;
-                el.style.left = pos.x + 'px';
-                el.style.top = pos.y + 'px';
 
-                const st = statusMap.get(node.status);
-                const badge = node.parentIds.length > 1
-                    ? `<span class="dep-badge" title="${node.parentIds.length} dependencies">${node.parentIds.length}</span>` : '';
-
-                // Dependency warning badge (toggleable)
-                const depWarnings = showDepWarnings ? getDepWarnings(id) : [];
-                const warnBadge = depWarnings.length > 0 ? `<span class="warn-badge" title="${depWarnings.join('\\n')}">⚠</span>` : '';
-
-                el.innerHTML = `
-      ${badge}${warnBadge}
-      <div class="node-name" title="${esc(node.name)}">${esc(node.name)}</div>
-      <div class="node-status-row">
-        <span class="node-status-dot ${node.status}" style="background:${st.color}">${st.icon}</span>
-        <span class="node-status-label">${st.label}</span>
-      </div>
-      <button class="node-status-btn" title="Change status">▾</button>
-    `;
-                frag.appendChild(el);
+                let el = _nodeElCache.get(id);
+                if (el) {
+                    // Update existing element — only touch what changed
+                    if (el.className !== cls) el.className = cls;
+                    const lx = pos.x + 'px', ly = pos.y + 'px';
+                    if (el.style.left !== lx) el.style.left = lx;
+                    if (el.style.top !== ly) el.style.top = ly;
+                    const html = _buildNodeHTML(id, node);
+                    if (el._lastHTML !== html) { el.innerHTML = html; el._lastHTML = html; }
+                } else {
+                    // Create new element
+                    el = document.createElement('div');
+                    el.className = cls;
+                    el.dataset.id = id;
+                    el.style.left = pos.x + 'px';
+                    el.style.top = pos.y + 'px';
+                    const html = _buildNodeHTML(id, node);
+                    el.innerHTML = html;
+                    el._lastHTML = html;
+                    _nodeElCache.set(id, el);
+                    frag.appendChild(el);
+                }
             }
-            canvasEl.appendChild(frag);
+            if (frag.childNodes.length > 0) canvasEl.appendChild(frag);
         }
 
         function renderConnectors() {
@@ -2707,7 +2749,6 @@
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             const PAD = 6;
             const nodeRects = [];
-            const selectedOverlays = [];
             for (const [id, pos] of layoutCache) {
                 if (pos.x < minX) minX = pos.x;
                 if (pos.y < minY) minY = pos.y;
@@ -2813,22 +2854,29 @@
                 g.appendChild(hit);
                 g.appendChild(line);
 
-                // If this edge connects to the selected node, queue a highlight overlay
-                if (selectedId && (e.parentId === selectedId || e.childId === selectedId)) {
-                    const hl = line.cloneNode();
-                    hl.setAttribute('class', 'connector-selected');
-                    hl.setAttribute('stroke', highlightColor(color));
-                    hl.setAttribute('stroke-width', '3');
-                    hl.setAttribute('pointer-events', 'none');
-                    selectedOverlays.push(hl);
-                }
-
                 svgFrag.appendChild(g);
             }
 
-            // Append selected-node connector overlays last so they render on top
-            for (const hl of selectedOverlays) svgFrag.appendChild(hl);
             svgEl.appendChild(svgFrag);
+            updateConnectorHighlights();
+        }
+
+        function updateConnectorHighlights() {
+            svgEl.querySelectorAll('.connector-selected').forEach(el => el.remove());
+            if (!selectedId) return;
+            const groups = svgEl.querySelectorAll('.edge-group');
+            for (const g of groups) {
+                if (g.dataset.parent === selectedId || g.dataset.child === selectedId) {
+                    const line = g.querySelector('.connector-line');
+                    if (!line) continue;
+                    const hl = line.cloneNode();
+                    hl.setAttribute('class', 'connector-selected');
+                    hl.setAttribute('stroke', highlightColor(g.dataset.color));
+                    hl.setAttribute('stroke-width', '3');
+                    hl.setAttribute('pointer-events', 'none');
+                    svgEl.appendChild(hl);
+                }
+            }
         }
 
         // Delegated edge hover — single listener pair on SVG instead of per-edge closures
@@ -3417,7 +3465,7 @@
             spBody.querySelectorAll('[data-goto]').forEach(el => {
                 el.addEventListener('click', () => {
                     selectedId = el.dataset.goto;
-                    render();
+                    scheduleRender();
                     focusNode(selectedId);
                 });
             });
@@ -3428,7 +3476,7 @@
             sidePanel.classList.remove('open');
             _legendEl.classList.remove('panel-open', 'panel-minimized');
             _syncGanttRight();
-            render();
+            scheduleRender();
         });
 
         document.getElementById('sp-minimize').addEventListener('click', () => {
@@ -3692,6 +3740,7 @@
                     for (const [, node] of nodes) {
                         if (!validIds.has(node.status)) node.status = STATUSES[0].id;
                     }
+                    _markLayoutDirty();
                     saveState();
                     closeModal();
                     render();
@@ -3833,7 +3882,7 @@
                 if (selectedId || multiSelectedIds.size > 0) {
                     selectedId = null;
                     multiSelectedIds.clear();
-                    render();
+                    scheduleRender();
                 }
             }
         });
@@ -3871,13 +3920,13 @@
                 } else {
                     multiSelectedIds.add(id);
                 }
-                render();
+                scheduleRender();
                 return;
             }
             clickTimer = setTimeout(() => {
                 const newSel = (selectedId === id) ? null : id;
                 selectedId = newSel;
-                render();
+                scheduleRender();
                 if (newSel) focusNode(newSel);
             }, 250);
         });
@@ -3907,7 +3956,7 @@
             if (!nodeEl) { hideCtxMenu(); return; }
             const id = nodeEl.dataset.id;
             selectedId = id;
-            render();
+            scheduleRender();
 
             const node = nodes.get(id);
             const items = [
@@ -4164,6 +4213,7 @@
 
         document.getElementById('btn-orient').addEventListener('click', () => {
             isVertical = !isVertical;
+            _markLayoutDirty();
             saveWorkspaces();
             updateOrientBtn();
             render();
@@ -4190,7 +4240,7 @@
         document.getElementById('btn-clear').addEventListener('click', () => {
             if (nodes.size === 0) return;
             showConfirm('This will delete all nodes and links. Are you sure?', () => {
-                nodes.clear(); selectedId = null; nextId = 1; saveState(); render();
+                nodes.clear(); selectedId = null; nextId = 1; _markLayoutDirty(); saveState(); render();
             }, 'Clear All');
         });
 
@@ -4373,7 +4423,7 @@
                 if (best) {
                     selectedId = best;
                     multiSelectedIds.clear();
-                    render();
+                    scheduleRender();
                     focusNode(best);
                 }
             }
@@ -4794,13 +4844,13 @@
             showDepWarnings = !showDepWarnings;
             saveWorkspaces();
             updateViewChecks();
-            render();
+            scheduleRender();
         });
         document.getElementById('btn-toggle-undated').addEventListener('click', () => {
             showUndated = !showUndated;
             saveWorkspaces();
             updateViewChecks();
-            render();
+            scheduleRender();
         });
 
         /* ═══════════════════════════════════════════
@@ -4947,7 +4997,7 @@
             clearTimeout(_ganttClickTimer);
             _ganttClickTimer = setTimeout(() => {
                 selectedId = el.dataset.ganttId;
-                render();
+                scheduleRender();
                 focusNode(selectedId);
             }, 500);
         });

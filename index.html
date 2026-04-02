@@ -958,6 +958,126 @@
             background: var(--danger-hover)
         }
 
+        /* ─── HELP MODAL ─── */
+        .help-modal {
+            width: 620px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column
+        }
+
+        .help-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px
+        }
+
+        .help-tab {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all .15s
+        }
+
+        .help-tab:hover {
+            color: var(--text)
+        }
+
+        .help-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent)
+        }
+
+        .help-content {
+            overflow-y: auto;
+            flex: 1;
+            max-height: 60vh;
+            padding-right: 8px
+        }
+
+        .help-content::-webkit-scrollbar {
+            width: 5px
+        }
+
+        .help-content::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px
+        }
+
+        .help-section {
+            margin-bottom: 20px
+        }
+
+        .help-section h3 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .help-section p,
+        .help-section li {
+            font-size: 12.5px;
+            line-height: 1.7;
+            color: var(--text-secondary)
+        }
+
+        .help-section ul {
+            margin: 4px 0 0 18px;
+            padding: 0
+        }
+
+        .help-section li {
+            margin-bottom: 2px
+        }
+
+        .help-kbd {
+            display: inline-block;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 6px;
+            font-size: 11px;
+            font-family: monospace;
+            color: var(--text);
+            margin: 0 2px
+        }
+
+        .help-tip {
+            background: var(--accent-light);
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text)
+        }
+
+        .help-about-header {
+            text-align: center;
+            margin-bottom: 16px
+        }
+
+        .help-about-header h3 {
+            font-size: 18px;
+            color: var(--text);
+            justify-content: center
+        }
+
+        .help-about-header p {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px
+        }
+
         /* ─── LINK BANNER ─── */
         #link-banner {
             position: fixed;
@@ -1627,6 +1747,16 @@
                         Statuses</button>
                 </div>
             </div>
+            <div class="menu-item" data-menu="help">
+                <button class="menu-trigger">Help</button>
+                <div class="menu-panel">
+                    <button class="menu-entry" id="btn-help-guide"><span class="menu-icon">📖</span> User Guide</button>
+                    <button class="menu-entry" id="btn-help-shortcuts"><span class="menu-icon">⌨</span> Keyboard
+                        Shortcuts</button>
+                    <div class="menu-sep"></div>
+                    <button class="menu-entry" id="btn-help-about"><span class="menu-icon">ℹ</span> About</button>
+                </div>
+            </div>
         </nav>
 
         <!-- Search Box (hidden by default) -->
@@ -1647,6 +1777,8 @@
             <button class="tb-icon-btn" id="qb-search" title="Search (Ctrl+F)">🔍</button>
             <button class="tb-icon-btn" id="qb-orient" title="Toggle orientation">↔</button>
             <button class="tb-icon-btn" id="qb-theme" title="Toggle theme">☀</button>
+            <div class="sep"></div>
+            <button class="tb-icon-btn" id="qb-help" title="Help">?</button>
         </div>
     </div>
 
@@ -3692,17 +3824,17 @@
             }
 
             clearTimeout(clickTimer);
-            clickTimer = setTimeout(() => {
-                // Shift+Click for multi-select
-                if (e.shiftKey) {
-                    if (multiSelectedIds.has(id)) {
-                        multiSelectedIds.delete(id);
-                    } else {
-                        multiSelectedIds.add(id);
-                    }
-                    render();
-                    return;
+            // Shift+Click for multi-select — respond immediately
+            if (e.shiftKey) {
+                if (multiSelectedIds.has(id)) {
+                    multiSelectedIds.delete(id);
+                } else {
+                    multiSelectedIds.add(id);
                 }
+                render();
+                return;
+            }
+            clickTimer = setTimeout(() => {
                 const newSel = (selectedId === id) ? null : id;
                 selectedId = newSel;
                 render();
@@ -5055,6 +5187,189 @@
         document.getElementById('qb-theme').addEventListener('click', () => {
             document.getElementById('btn-theme').click();
         });
+
+        /* ═══════════════════════════════════════════
+           HELP SYSTEM
+           ═══════════════════════════════════════════ */
+        function showHelpModal(tab) {
+            const guideHTML = `
+<div class="help-section"><h3>📄 Canvas &amp; Nodes</h3>
+<p>The canvas is your primary workspace — a visual dependency graph where each card represents a unit of work.</p>
+<ul>
+<li><strong>Pan</strong> — Click and drag on empty canvas space to move around.</li>
+<li><strong>Zoom</strong> — Scroll the mouse wheel to zoom in and out.</li>
+<li><strong>Select a node</strong> — Click any node card to select it. Click again to deselect.</li>
+<li><strong>Multi-select</strong> — Hold <span class="help-kbd">Shift</span> and click multiple nodes to select them together for bulk status changes.</li>
+<li><strong>Edit a node</strong> — Double-click a node, press <span class="help-kbd">F2</span>, or right-click and choose <em>Edit</em>.</li>
+<li><strong>Quick status cycle</strong> — Click the <strong>▾</strong> button on any node to quickly change its status without opening the edit dialog.</li>
+<li><strong>Arrow key navigation</strong> — When a node is selected, use arrow keys to traverse to neighbouring nodes. Up/Down moves between depth layers; Left/Right moves within the same layer.</li>
+</ul>
+<div class="help-tip">💡 Right-click any node to access a context menu with options to add a child, link as dependency, insert a parent above, edit, or delete.</div>
+</div>
+
+<div class="help-section"><h3>🔗 Dependencies &amp; Linking</h3>
+<p>Connections between nodes represent dependencies — a child cannot start until its parent is complete.</p>
+<ul>
+<li><strong>Add Child</strong> — Select a node, then use <em>Edit → Add Child</em> or right-click → <em>Add Child</em>. The new node will appear below the selected node.</li>
+<li><strong>Add Additional Child (Link)</strong> — Creates a dependency link between two existing nodes. Select a parent, choose <em>Add Additional Child</em>, then click the target node. This allows one node to have multiple parents.</li>
+<li><strong>Insert Parent</strong> — Inserts a new node above the selected node, automatically inheriting its position in the graph.</li>
+<li><strong>Delete</strong> — When deleting a node, you can choose to <em>reconnect children</em> to the deleted node's parent, or <em>remove the entire subtree</em>.</li>
+</ul>
+<div class="help-tip">💡 The dependency badge (e.g. <strong>2</strong>) on a node indicates how many parent dependencies it has. Hover to see details.</div>
+</div>
+
+<div class="help-section"><h3>📊 Gantt Timeline</h3>
+<p>Enable the Gantt chart from <em>View → Gantt Timeline</em> to see a time-based view of your work.</p>
+<ul>
+<li><strong>Resize the panel</strong> — Drag the top edge of the Gantt panel up or down to adjust its height.</li>
+<li><strong>Minimise</strong> — Click the <strong>▼</strong> button to collapse the Gantt panel; click <strong>▲</strong> to expand it again.</li>
+<li><strong>Scroll</strong> — Scroll horizontally within the Gantt body to navigate the timeline. Weekends are automatically excluded.</li>
+<li><strong>Drag bars to reschedule</strong> — Drag the left or right edge of any Gantt bar to adjust a node's start or end date.</li>
+<li><strong>Click a bar</strong> — Selects the corresponding node on the canvas and scrolls it into view.</li>
+<li><strong>Double-click a bar</strong> — Opens the node's edit dialog directly.</li>
+</ul>
+<div class="help-tip">💡 To add dates to a node, edit it (double-click or <span class="help-kbd">F2</span>) and fill in the Start Date and End Date fields. Use <em>View → Highlight Undated Nodes</em> to spot nodes without dates.</div>
+</div>
+
+<div class="help-section"><h3>📋 Status Panel</h3>
+<p>The status panel on the left shows all available statuses, node counts, and an overall completion bar.</p>
+<ul>
+<li><strong>Filter by status</strong> — Click one or more status rows to highlight only nodes with those statuses. Non-matching nodes are dimmed. Click a selected status again to remove the filter.</li>
+<li><strong>Multiple filters</strong> — You can select several statuses at once to show nodes matching any of them.</li>
+<li><strong>Completion percentage</strong> — The progress bar at the top shows how many nodes have a "done" status.</li>
+</ul>
+</div>
+
+<div class="help-section"><h3>🗂 Workspace Tabs</h3>
+<p>Each tab is an independent project with its own nodes, statuses, and settings.</p>
+<ul>
+<li><strong>Create a tab</strong> — Click the <strong>+</strong> button at the end of the tab bar.</li>
+<li><strong>Switch tabs</strong> — Click any tab to switch to that project.</li>
+<li><strong>Rename</strong> — Double-click a tab name to rename it inline. Press <span class="help-kbd">Enter</span> to confirm or <span class="help-kbd">Esc</span> to cancel.</li>
+<li><strong>Reorder</strong> — Drag and drop tabs to rearrange their order.</li>
+<li><strong>Duplicate / Close</strong> — Right-click a tab for options to duplicate or close it.</li>
+</ul>
+<div class="help-tip">💡 The tab name becomes the project identity — it's used as the filename when exporting and included in shared links.</div>
+</div>
+
+<div class="help-section"><h3>📁 File Operations</h3>
+<ul>
+<li><strong>Export</strong> — <em>File → Export</em> saves the current project as a JSON file, named after your tab.</li>
+<li><strong>Import</strong> — <em>File → Import</em> loads a JSON file as a <em>new tab</em>, preserving your existing projects.</li>
+<li><strong>Share Link</strong> — <em>File → Share Link</em> encodes the current project into the URL. Anyone with the link can open it as a new tab.</li>
+<li><strong>Clear All</strong> — Removes all nodes from the current tab (with confirmation).</li>
+</ul>
+</div>
+
+<div class="help-section"><h3>🎨 View &amp; Appearance</h3>
+<ul>
+<li><strong>Fit View</strong> — Resets zoom and pan to show all nodes on screen.</li>
+<li><strong>Orientation</strong> — Toggle between horizontal (left-to-right) and vertical (top-to-bottom) layouts.</li>
+<li><strong>Theme</strong> — Switch between light and dark mode.</li>
+<li><strong>Animate Edges</strong> — Adds a flowing dash animation to connector lines.</li>
+<li><strong>Dependency Warnings</strong> — Shows ⚠ badges on nodes with potential scheduling conflicts.</li>
+</ul>
+</div>
+
+<div class="help-section"><h3>🔍 Search</h3>
+<ul>
+<li>Open with <span class="help-kbd">Ctrl+F</span> or <em>Tools → Search Nodes</em>.</li>
+<li>Type to filter — matching nodes are highlighted on the canvas.</li>
+<li>Press <span class="help-kbd">Enter</span> to cycle through matches.</li>
+<li>Press <span class="help-kbd">Esc</span> to close the search bar.</li>
+</ul>
+</div>
+
+<div class="help-section"><h3>⚙ Customize Statuses</h3>
+<p>Open <em>Tools → Customize Statuses</em> to add, edit, remove, or reorder the available statuses. Each status has a label, colour, and icon. Changes are saved per workspace.</p>
+</div>
+
+<div class="help-section"><h3>📝 Node Notes</h3>
+<p>Each node has a Markdown-enabled notes field. Open it from the side panel (click a node, then expand the notes section) or through the edit dialog.</p>
+<ul>
+<li>Supports <strong>bold</strong>, <em>italic</em>, <code>code</code>, links, headers, lists, and horizontal rules.</li>
+<li>Click the <em>syntax help</em> link inside the editor for a quick Markdown reference.</li>
+</ul>
+</div>`;
+
+            const shortcutsHTML = `
+<div class="help-section"><h3>⌨ General</h3>
+<ul>
+<li><span class="help-kbd">Ctrl+Z</span> — Undo</li>
+<li><span class="help-kbd">Ctrl+Y</span> / <span class="help-kbd">Ctrl+Shift+Z</span> — Redo</li>
+<li><span class="help-kbd">Ctrl+F</span> — Open search</li>
+<li><span class="help-kbd">Esc</span> — Close dialogs, search, or exit link mode</li>
+</ul></div>
+<div class="help-section"><h3>⌨ Node Operations</h3>
+<ul>
+<li><span class="help-kbd">F2</span> — Edit selected node</li>
+<li><span class="help-kbd">Delete</span> — Delete selected node</li>
+<li><span class="help-kbd">Shift+Click</span> — Add/remove node from multi-selection</li>
+</ul></div>
+<div class="help-section"><h3>⌨ Navigation</h3>
+<ul>
+<li><span class="help-kbd">↑</span> <span class="help-kbd">↓</span> — Move to the next/previous depth layer (closest node visually)</li>
+<li><span class="help-kbd">←</span> <span class="help-kbd">→</span> — Move between sibling nodes on the same layer</li>
+<li><strong>Scroll wheel</strong> — Zoom in/out on the canvas</li>
+<li><strong>Click + drag</strong> — Pan the canvas</li>
+</ul></div>
+<div class="help-section"><h3>⌨ Search</h3>
+<ul>
+<li><span class="help-kbd">Enter</span> — Next match</li>
+<li><span class="help-kbd">Esc</span> — Close search</li>
+</ul></div>`;
+
+            const aboutHTML = `
+<div class="help-about-header">
+<h3>Development Manager</h3>
+<p>Dependency-first project planning &amp; visualisation</p>
+</div>
+<div class="help-section">
+<h3>Purpose</h3>
+<p>Development Manager is a lightweight project management tool designed around the principle that <strong>work order should be driven by dependencies</strong>, not arbitrary list positions.</p>
+<p>By representing your tasks as a directed acyclic graph (DAG), the tool gives you an immediate, intuitive picture of how work relates — which tasks must complete before others can begin, where bottlenecks exist, and what can be parallelised.</p>
+</div>
+<div class="help-section">
+<h3>Core Philosophy</h3>
+<ul>
+<li><strong>Dependency-first planning</strong> — The graph layout automatically arranges work by depth. Root nodes sit at the top (or left), and dependent work flows downward. This visual structure naturally suggests the order in which work should be tackled.</li>
+<li><strong>Effortless restructuring</strong> — Add, remove, or remap dependencies without worrying about manual layout. The graph re-arranges itself automatically, so you can focus on <em>what</em> needs doing, not <em>where</em> to place it on screen.</li>
+<li><strong>Estimation &amp; scheduling</strong> — The built-in Gantt timeline lets you assign dates to tasks and visualise overlaps, gaps, and scheduling conflicts across the project's timeline.</li>
+<li><strong>Progress tracking</strong> — The status panel provides at-a-glance completion metrics. Filter the graph by status, multi-select nodes for bulk updates, and customise statuses to match your workflow.</li>
+<li><strong>Multiple projects</strong> — Workspace tabs keep separate projects independent. Each tab has its own nodes, statuses, and settings — export, import, or share them individually.</li>
+</ul>
+</div>
+<div class="help-section">
+<h3>Ideal For</h3>
+<p>Project planning, project forecasting and estimations, Sprint planning, feature breakdowns, onboarding task trees, migration roadmaps, or any scenario where understanding <em>what depends on what</em> is more valuable than a flat to-do list.</p>
+</div>`;
+
+            const tabs = [
+                { id: 'guide', label: 'User Guide', html: guideHTML },
+                { id: 'shortcuts', label: 'Shortcuts', html: shortcutsHTML },
+                { id: 'about', label: 'About', html: aboutHTML }
+            ];
+            const activeTab = tab || 'guide';
+
+            openModal(`
+<div class="help-modal">
+<h2>Help</h2>
+<div class="help-tabs">${tabs.map(t => `<button class="help-tab${t.id === activeTab ? ' active' : ''}" data-help-tab="${t.id}">${t.label}</button>`).join('')}</div>
+<div class="help-content">${tabs.find(t => t.id === activeTab).html}</div>
+<div class="actions"><button onclick="closeModal()">Close</button></div>
+</div>`);
+
+            modalEl.querySelector('.help-tabs').addEventListener('click', e => {
+                const btn = e.target.closest('[data-help-tab]');
+                if (!btn) return;
+                showHelpModal(btn.dataset.helpTab);
+            });
+        }
+
+        document.getElementById('btn-help-guide').addEventListener('click', () => showHelpModal('guide'));
+        document.getElementById('btn-help-shortcuts').addEventListener('click', () => showHelpModal('shortcuts'));
+        document.getElementById('btn-help-about').addEventListener('click', () => showHelpModal('about'));
+        document.getElementById('qb-help').addEventListener('click', () => showHelpModal('guide'));
 
         /* ═══════════════════════════════════════════
            INIT

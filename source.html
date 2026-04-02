@@ -2852,8 +2852,16 @@
             }
 
             // Route each edge with obstacle avoidance
+            // Sort by span distance descending so longest edges render behind shortest
+            const edgeOrder = Array.from({ length: edges.length }, (_, i) => i);
+            edgeOrder.sort((a, b) => {
+                const ea = edges[a], eb = edges[b];
+                const da = (ea.pPos.x - ea.cPos.x) ** 2 + (ea.pPos.y - ea.cPos.y) ** 2;
+                const db = (eb.pPos.x - eb.cPos.x) ** 2 + (eb.pPos.y - eb.cPos.y) ** 2;
+                return db - da;
+            });
             const svgFrag = document.createDocumentFragment();
-            for (let ei = 0; ei < edges.length; ei++) {
+            for (const ei of edgeOrder) {
                 const e = edges[ei];
                 const d = routeEdge(e, nodeRects);
                 const color = CONN_COLORS[edgeColorIdx[ei] % CONN_COLORS.length];

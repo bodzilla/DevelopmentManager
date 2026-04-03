@@ -3207,8 +3207,15 @@
                         const proj = combinedProjects.find(p => p.id === pid);
                         if (!confirm('Delete "' + (proj?.name || 'project') + '" from cloud? This cannot be undone.')) return;
                         try {
-                            await _firebaseDb.ref('projects/' + pid).remove();
-                            await _firebaseDb.ref('sharing/' + pid).remove();
+                            // Atomic delete: project + sharing in single update
+                            // so ownership check passes for sharing path
+                            await _firebaseDb.ref().update({
+                                ['projects/' + pid]: null,
+                                ['sharing/' + pid]: null
+                            });
+                            // Clean up ephemeral data (best-effort)
+                            try { await _firebaseDb.ref('presence/' + pid).remove(); } catch { }
+                            try { await _firebaseDb.ref('locks/' + pid).remove(); } catch { }
                             // If this project is open locally, clear its cloud ID
                             for (const [wsId, ws] of workspaces) {
                                 if (ws.wsCloudId === pid) {

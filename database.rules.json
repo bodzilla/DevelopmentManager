@@ -51,6 +51,7 @@
         "presence": {
             "$projectId": {
                 ".read": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid).exists())",
+                ".write": "auth != null && root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid && !newData.exists()",
                 "$uid": {
                     ".write": "auth != null && (auth.uid === $uid || root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor')"
                 }
@@ -59,6 +60,7 @@
         "locks": {
             "$projectId": {
                 ".read": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid).exists())",
+                ".write": "auth != null && root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid && !newData.exists()",
                 "$nodeId": {
                     ".write": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor')",
                     ".validate": "!newData.exists() || newData.child('uid').val() === auth.uid"

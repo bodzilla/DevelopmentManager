@@ -154,6 +154,118 @@
             font-weight: 600
         }
 
+        .tab-cloud {
+            font-size: 10px;
+            opacity: .5;
+            margin-left: -2px;
+            flex-shrink: 0
+        }
+
+        .tab.active .tab-cloud {
+            opacity: .7
+        }
+
+        .readonly-badge {
+            display: none;
+            align-items: center;
+            gap: 4px;
+            height: 24px;
+            padding: 0 10px;
+            background: var(--danger-bg, rgba(239, 68, 68, .1));
+            color: var(--danger);
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 6px;
+            white-space: nowrap;
+            flex-shrink: 0
+        }
+
+        .readonly-badge.visible {
+            display: flex
+        }
+
+        .share-collab-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            background: var(--bg);
+            transition: background .15s
+        }
+
+        .share-collab-row:hover {
+            background: var(--hover-bg)
+        }
+
+        .share-collab-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+            letter-spacing: -.5px
+        }
+
+        .share-collab-info {
+            flex: 1;
+            min-width: 0
+        }
+
+        .share-collab-email {
+            font-size: 13px;
+            font-weight: 600;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.3
+        }
+
+        .share-collab-role {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 1px
+        }
+
+        .share-collab-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0
+        }
+
+        .share-invite-bar {
+            display: flex;
+            gap: 8px;
+            padding: 12px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 20px
+        }
+
+        .share-invite-bar input {
+            flex: 1;
+            margin-bottom: 0 !important
+        }
+
+        .share-section-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 8px
+        }
+
         .tab .tab-close {
             width: 16px;
             height: 16px;
@@ -1648,6 +1760,91 @@
             z-index: 5
         }
 
+        .lock-badge {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            padding: 1px 7px;
+            white-space: nowrap;
+            cursor: help;
+            z-index: 5;
+            color: var(--text);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .12)
+        }
+
+        .node.remote-locked {
+            opacity: .65;
+            pointer-events: none
+        }
+
+        /* ─── ONLINE AVATARS ─── */
+        #online-avatars {
+            display: flex;
+            align-items: center;
+            gap: 0;
+            margin-right: 4px
+        }
+
+        .online-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            color: #fff;
+            margin-left: -6px;
+            cursor: default;
+            position: relative;
+            flex-shrink: 0;
+            transition: transform .15s
+        }
+
+        .online-avatar:first-child {
+            margin-left: 0
+        }
+
+        .online-avatar:hover {
+            transform: scale(1.15);
+            z-index: 2
+        }
+
+        .online-avatar-tip {
+            position: absolute;
+            bottom: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 400;
+            color: var(--text);
+            padding: 2px 6px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .15s;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, .12);
+            z-index: 100
+        }
+
+        .online-avatar:hover .online-avatar-tip {
+            opacity: 1
+        }
+
         /* ─── SEARCH HIGHLIGHT ─── */
         .node.search-match {
             box-shadow: 0 0 0 2px #f59e0b, 0 0 8px rgba(245, 158, 11, .3) !important
@@ -1698,7 +1895,201 @@
             color: var(--accent);
             text-decoration: underline
         }
+
+        /* ─── AUTH UI ─── */
+        #auth-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all .15s;
+            position: relative;
+            flex-shrink: 0
+        }
+
+        #auth-btn:hover {
+            background: var(--hover-bg);
+            border-color: var(--hover-border)
+        }
+
+        #auth-btn.signed-in {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        #auth-btn.signed-in:hover {
+            background: var(--accent-hover)
+        }
+
+        #auth-menu {
+            position: absolute;
+            top: 36px;
+            right: 0;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: var(--shadow-lg);
+            min-width: 220px;
+            padding: 6px;
+            z-index: 200;
+            display: none
+        }
+
+        #auth-menu.open {
+            display: block
+        }
+
+        .auth-menu-header {
+            padding: 10px 12px 8px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 4px
+        }
+
+        .auth-menu-email {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            word-break: break-all
+        }
+
+        .auth-menu-sub {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px
+        }
+
+        .auth-menu-entry {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 8px 12px;
+            border: none;
+            background: none;
+            border-radius: 6px;
+            font-size: 13px;
+            color: var(--text);
+            cursor: pointer;
+            transition: background .1s;
+            text-align: left
+        }
+
+        .auth-menu-entry:hover {
+            background: var(--hover-bg)
+        }
+
+        .auth-menu-entry.danger {
+            color: var(--danger)
+        }
+
+        .auth-form-error {
+            background: var(--danger-bg, rgba(239, 68, 68, .1));
+            color: var(--danger);
+            font-size: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            display: none
+        }
+
+        .auth-form-error.visible {
+            display: block
+        }
+
+        .auth-form-input {
+            width: 100%;
+            height: 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .15s;
+            background: var(--bg);
+            color: var(--text);
+            margin-bottom: 12px
+        }
+
+        .auth-form-input:focus {
+            border-color: var(--accent)
+        }
+
+        .auth-form-btn {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent);
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .15s;
+            margin-bottom: 8px
+        }
+
+        .auth-form-btn:hover {
+            background: var(--accent-hover)
+        }
+
+        .auth-form-btn:disabled {
+            opacity: .6;
+            cursor: not-allowed
+        }
+
+        .auth-form-link {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 12px;
+            cursor: pointer;
+            padding: 0;
+            text-decoration: underline
+        }
+
+        .auth-form-link:hover {
+            color: var(--accent-hover)
+        }
+
+        .auth-form-footer {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 12px
+        }
+
+        .auth-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, .3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: authSpin .6s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px
+        }
+
+        @keyframes authSpin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
     </style>
+
+    <!-- Firebase SDK (compat for inline script usage) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 </head>
 
 <body>
@@ -1716,7 +2107,13 @@
                             class="menu-shortcut"></span></button>
                     <button class="menu-entry" id="btn-export"><span class="menu-icon">💾</span> Export</button>
                     <div class="menu-sep"></div>
-                    <button class="menu-entry" id="btn-share"><span class="menu-icon">🔗</span> Share Link</button>
+                    <button class="menu-entry" id="btn-save-cloud" style="display:none"><span class="menu-icon">☁</span>
+                        Save to Cloud</button>
+                    <button class="menu-entry" id="btn-my-projects" style="display:none"><span
+                            class="menu-icon">📁</span> My Projects</button>
+                    <button class="menu-entry" id="btn-share-project" style="display:none"><span
+                            class="menu-icon">👥</span> Share Project</button>
+                    <div class="menu-sep" id="cloud-menu-sep" style="display:none"></div>
                     <div class="menu-sep"></div>
                     <button class="menu-entry danger" id="btn-clear"><span class="menu-icon">✕</span> Clear
                         All</button>
@@ -1807,6 +2204,13 @@
             <button class="tb-icon-btn" id="qb-theme" title="Toggle theme">☀</button>
             <div class="sep"></div>
             <button class="tb-icon-btn" id="qb-help" title="Help">?</button>
+            <div class="sep"></div>
+            <span class="readonly-badge" id="readonly-badge">🔒 Read Only</span>
+            <div id="online-avatars"></div>
+            <div style="position:relative">
+                <button id="auth-btn" title="Sign In">👤</button>
+                <div id="auth-menu"></div>
+            </div>
         </div>
     </div>
 
@@ -1861,6 +2265,9 @@
         </div>
         <div id="completion-stats"></div>
         <div id="legend-rows"></div>
+        <div id="status-lock-banner"
+            style="display:none;padding:6px 10px;border-radius:8px;background:var(--accent-light);border:1px solid var(--accent);font-size:11px;font-weight:600;text-align:center;margin-top:8px;color:var(--text)">
+            🔒 <span id="status-lock-user"></span> is editing statuses</div>
         <button class="tb-btn" id="btn-customize-legend"
             style="width:100%;margin-top:10px;justify-content:center;font-size:11px">⚙ Customize Statuses</button>
     </div>
@@ -1911,6 +2318,1273 @@
     <div id="toast"></div>
 
     <script>
+        /* ═══════════════════════════════════════════
+           FIREBASE INITIALIZATION
+           ═══════════════════════════════════════════ */
+        // TODO: Replace with your Firebase project config
+        const _firebaseConfig = {
+            apiKey: '',
+            authDomain: '',
+            databaseURL: '',
+            projectId: '',
+            storageBucket: '',
+            messagingSenderId: '',
+            appId: ''
+        };
+
+        let _firebaseApp = null;
+        let _firebaseAuth = null;
+        let _firebaseDb = null;
+        let _firebaseUser = null;
+
+        // Initialize Firebase only if config is provided
+        const _fbConfigured = _firebaseConfig.apiKey && _firebaseConfig.apiKey.length > 0;
+        if (_fbConfigured) {
+            _firebaseApp = firebase.initializeApp(_firebaseConfig);
+            _firebaseAuth = firebase.auth();
+            _firebaseDb = firebase.database();
+            _firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+        }
+
+        /* ═══════════════════════════════════════════
+           AUTH SYSTEM
+           ═══════════════════════════════════════════ */
+        const _authBtn = document.getElementById('auth-btn');
+        const _authMenu = document.getElementById('auth-menu');
+
+        function _userInitial(email) {
+            return (email || '?')[0].toUpperCase();
+        }
+
+        function _updateAuthUI() {
+            if (_firebaseUser) {
+                _authBtn.textContent = _userInitial(_firebaseUser.email);
+                _authBtn.classList.add('signed-in');
+                _authBtn.title = _firebaseUser.email;
+            } else {
+                _authBtn.textContent = '👤';
+                _authBtn.classList.remove('signed-in');
+                _authBtn.title = 'Sign In';
+            }
+            _closeAuthMenu();
+        }
+
+        function _closeAuthMenu() {
+            _authMenu.classList.remove('open');
+        }
+
+        function _renderAuthMenu() {
+            if (_firebaseUser) {
+                _authMenu.innerHTML = `
+                    <div class="auth-menu-header">
+                        <div class="auth-menu-email">${_esc(_firebaseUser.email)}</div>
+                        <div class="auth-menu-sub">Signed in</div>
+                    </div>
+                    <button class="auth-menu-entry" id="am-my-projects">📁 My Projects</button>
+                    <button class="auth-menu-entry" id="am-change-pw">🔑 Change Password</button>
+                    <button class="auth-menu-entry danger" id="am-sign-out">Sign Out</button>
+                `;
+                document.getElementById('am-sign-out').addEventListener('click', async () => {
+                    _unlockAllMyNodes();
+                    _detachRealtime();
+                    await _firebaseAuth.signOut();
+                    _closeAuthMenu();
+                    toast('Signed out');
+                });
+                document.getElementById('am-change-pw').addEventListener('click', () => {
+                    _closeAuthMenu();
+                    _showChangePasswordModal();
+                });
+                document.getElementById('am-my-projects').addEventListener('click', () => {
+                    _closeAuthMenu();
+                    _showMyProjectsModal();
+                });
+            } else {
+                _authMenu.innerHTML = `
+                    <div style="padding:8px 12px">
+                        <button class="auth-form-btn" id="am-sign-in" style="margin-bottom:0">Sign In / Sign Up</button>
+                    </div>
+                `;
+                document.getElementById('am-sign-in').addEventListener('click', () => {
+                    _closeAuthMenu();
+                    _showAuthModal('login');
+                });
+            }
+        }
+
+        // Helper: escape HTML (reuse pattern from main code)
+        function _esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+        _authBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!_fbConfigured) {
+                toast('Firebase not configured — add your config to use auth');
+                return;
+            }
+            _renderAuthMenu();
+            _authMenu.classList.toggle('open');
+        });
+
+        // Close auth menu on outside click
+        document.addEventListener('click', (e) => {
+            if (!_authMenu.contains(e.target) && e.target !== _authBtn) {
+                _closeAuthMenu();
+            }
+        });
+
+        function _showAuthModal(mode) {
+            const isLogin = mode === 'login';
+            openModal(`
+                <h2>${isLogin ? 'Sign In' : 'Create Account'}</h2>
+                <div class="auth-form-error" id="auth-error"></div>
+                <label style="margin-bottom:4px">Email</label>
+                <input type="email" class="auth-form-input" id="auth-email" placeholder="you@example.com" autocomplete="email">
+                <label style="margin-bottom:4px">Password</label>
+                <input type="password" class="auth-form-input" id="auth-password" placeholder="${isLogin ? 'Your password' : 'Min. 6 characters'}" autocomplete="${isLogin ? 'current-password' : 'new-password'}">
+                ${!isLogin ? '<label style="margin-bottom:4px">Confirm Password</label><input type="password" class="auth-form-input" id="auth-password2" placeholder="Confirm password" autocomplete="new-password">' : ''}
+                <button class="auth-form-btn" id="auth-submit">${isLogin ? 'Sign In' : 'Create Account'}</button>
+                <div class="auth-form-footer">
+                    ${isLogin ? 'Don\'t have an account? <button class="auth-form-link" id="auth-toggle">Sign Up</button>' : 'Already have an account? <button class="auth-form-link" id="auth-toggle">Sign In</button>'}
+                </div>
+                ${isLogin ? '<div style="text-align:center;margin-top:6px"><button class="auth-form-link" id="auth-forgot">Forgot password?</button></div>' : ''}
+                <div class="actions" style="margin-top:16px"><button onclick="closeModal()">Cancel</button></div>
+            `);
+
+            // Focus email field
+            const emailInp = document.getElementById('auth-email');
+            emailInp.focus();
+
+            // Toggle between login/signup
+            document.getElementById('auth-toggle').addEventListener('click', () => {
+                closeModal();
+                _showAuthModal(isLogin ? 'signup' : 'login');
+            });
+
+            // Forgot password
+            if (isLogin) {
+                document.getElementById('auth-forgot').addEventListener('click', () => {
+                    closeModal();
+                    _showForgotPasswordModal();
+                });
+            }
+
+            // Submit
+            document.getElementById('auth-submit').addEventListener('click', () => _handleAuthSubmit(mode));
+
+            // Enter key submits
+            modalEl.querySelectorAll('.auth-form-input').forEach(inp => {
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') _handleAuthSubmit(mode);
+                });
+            });
+        }
+
+        async function _handleAuthSubmit(mode) {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+            const errEl = document.getElementById('auth-error');
+            const submitBtn = document.getElementById('auth-submit');
+
+            errEl.classList.remove('visible');
+
+            if (!email || !password) {
+                errEl.textContent = 'Please fill in all fields.';
+                errEl.classList.add('visible');
+                return;
+            }
+
+            if (mode === 'signup') {
+                const password2 = document.getElementById('auth-password2').value;
+                if (password !== password2) {
+                    errEl.textContent = 'Passwords do not match.';
+                    errEl.classList.add('visible');
+                    return;
+                }
+                if (password.length < 6) {
+                    errEl.textContent = 'Password must be at least 6 characters.';
+                    errEl.classList.add('visible');
+                    return;
+                }
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="auth-spinner"></span> Please wait...';
+
+            try {
+                if (mode === 'login') {
+                    await _firebaseAuth.signInWithEmailAndPassword(email, password);
+                } else {
+                    const cred = await _firebaseAuth.createUserWithEmailAndPassword(email, password);
+                    // Write user profile to RTDB
+                    await _firebaseDb.ref('users/' + cred.user.uid).set({
+                        email: cred.user.email,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                    // Write email index for sharing lookups
+                    const sanitizedEmail = email.toLowerCase().replace(/\./g, ',');
+                    await _firebaseDb.ref('emailIndex/' + sanitizedEmail).set(cred.user.uid);
+                }
+                closeModal();
+                toast(mode === 'login' ? 'Signed in as ' + email : 'Account created — welcome!');
+            } catch (err) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = mode === 'login' ? 'Sign In' : 'Create Account';
+                const msg = _firebaseErrorMsg(err.code);
+                errEl.textContent = msg;
+                errEl.classList.add('visible');
+            }
+        }
+
+        function _firebaseErrorMsg(code) {
+            const msgs = {
+                'auth/invalid-email': 'Invalid email address.',
+                'auth/user-disabled': 'This account has been disabled.',
+                'auth/user-not-found': 'No account found with this email.',
+                'auth/wrong-password': 'Incorrect password.',
+                'auth/email-already-in-use': 'An account with this email already exists.',
+                'auth/weak-password': 'Password is too weak (min 6 characters).',
+                'auth/too-many-requests': 'Too many attempts. Please try again later.',
+                'auth/invalid-credential': 'Invalid email or password.',
+                'auth/network-request-failed': 'Network error. Check your connection.'
+            };
+            return msgs[code] || 'Authentication failed. Please try again.';
+        }
+
+        function _showForgotPasswordModal() {
+            openModal(`
+                <h2>Reset Password</h2>
+                <div class="auth-form-error" id="auth-error"></div>
+                <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">Enter your email and we'll send a password reset link.</p>
+                <label style="margin-bottom:4px">Email</label>
+                <input type="email" class="auth-form-input" id="auth-email" placeholder="you@example.com" autocomplete="email">
+                <button class="auth-form-btn" id="auth-reset-submit">Send Reset Link</button>
+                <div class="actions" style="margin-top:12px">
+                    <button onclick="closeModal()">Cancel</button>
+                    <button class="auth-form-link" id="auth-back-login" style="font-size:13px">Back to Sign In</button>
+                </div>
+            `);
+
+            document.getElementById('auth-email').focus();
+
+            document.getElementById('auth-back-login').addEventListener('click', () => {
+                closeModal();
+                _showAuthModal('login');
+            });
+
+            document.getElementById('auth-reset-submit').addEventListener('click', async () => {
+                const email = document.getElementById('auth-email').value.trim();
+                const errEl = document.getElementById('auth-error');
+                const btn = document.getElementById('auth-reset-submit');
+                errEl.classList.remove('visible');
+
+                if (!email) {
+                    errEl.textContent = 'Please enter your email.';
+                    errEl.classList.add('visible');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<span class="auth-spinner"></span> Sending...';
+
+                try {
+                    await _firebaseAuth.sendPasswordResetEmail(email);
+                    closeModal();
+                    toast('Password reset email sent to ' + email);
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.textContent = 'Send Reset Link';
+                    errEl.textContent = _firebaseErrorMsg(err.code);
+                    errEl.classList.add('visible');
+                }
+            });
+
+            document.getElementById('auth-email').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') document.getElementById('auth-reset-submit').click();
+            });
+        }
+
+        function _showChangePasswordModal() {
+            openModal(`
+                <h2>Change Password</h2>
+                <div class="auth-form-error" id="auth-error"></div>
+                <label style="margin-bottom:4px">New Password</label>
+                <input type="password" class="auth-form-input" id="auth-new-pw" placeholder="Min. 6 characters" autocomplete="new-password">
+                <label style="margin-bottom:4px">Confirm New Password</label>
+                <input type="password" class="auth-form-input" id="auth-new-pw2" placeholder="Confirm new password" autocomplete="new-password">
+                <button class="auth-form-btn" id="auth-pw-submit">Update Password</button>
+                <div class="actions" style="margin-top:12px"><button onclick="closeModal()">Cancel</button></div>
+            `);
+
+            document.getElementById('auth-new-pw').focus();
+
+            document.getElementById('auth-pw-submit').addEventListener('click', async () => {
+                const pw = document.getElementById('auth-new-pw').value;
+                const pw2 = document.getElementById('auth-new-pw2').value;
+                const errEl = document.getElementById('auth-error');
+                const btn = document.getElementById('auth-pw-submit');
+                errEl.classList.remove('visible');
+
+                if (!pw || pw.length < 6) {
+                    errEl.textContent = 'Password must be at least 6 characters.';
+                    errEl.classList.add('visible');
+                    return;
+                }
+                if (pw !== pw2) {
+                    errEl.textContent = 'Passwords do not match.';
+                    errEl.classList.add('visible');
+                    return;
+                }
+
+                btn.disabled = true;
+                btn.innerHTML = '<span class="auth-spinner"></span> Updating...';
+
+                try {
+                    await _firebaseUser.updatePassword(pw);
+                    closeModal();
+                    toast('Password updated successfully');
+                } catch (err) {
+                    btn.disabled = false;
+                    btn.textContent = 'Update Password';
+                    if (err.code === 'auth/requires-recent-login') {
+                        errEl.textContent = 'Please sign out and sign back in before changing your password.';
+                    } else {
+                        errEl.textContent = _firebaseErrorMsg(err.code);
+                    }
+                    errEl.classList.add('visible');
+                }
+            });
+
+            modalEl.querySelectorAll('.auth-form-input').forEach(inp => {
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') document.getElementById('auth-pw-submit').click();
+                });
+            });
+        }
+
+        // Listen for auth state changes
+        if (_fbConfigured) {
+            _firebaseAuth.onAuthStateChanged((user) => {
+                const wasLoggedOut = !_firebaseUser;
+                _firebaseUser = user;
+                _updateAuthUI();
+                _updateCloudMenuVisibility();
+                if (user && wasLoggedOut) {
+                    _offerLocalMigration();
+                    // Attach real-time listeners if a cloud project is already open
+                    if (_activeWsCloudId) _attachRealtime(_activeWsCloudId);
+                }
+                if (!user) _detachRealtime();
+            });
+        }
+
+        /* ═══════════════════════════════════════════
+           CLOUD PROJECT CRUD
+           ═══════════════════════════════════════════ */
+        let _activeWsCloudId = null;
+        let _cloudSaveTimer = null;
+        const _CLOUD_SAVE_DEBOUNCE = 800; // 0.8s
+        let _wsReadonly = false; // true when viewing a shared project as readonly
+        let _wsRole = null; // 'owner' | 'contributor' | 'readonly' | null
+
+        /* ── Real-time collaboration state ── */
+        let _rtDataRef = null;      // Firebase ref for data listener
+        let _rtPresenceRef = null;  // Firebase ref for presence listener
+        let _rtLocksRef = null;     // Firebase ref for locks listener
+        let _rtMyPresRef = null;    // My own presence ref (for onDisconnect)
+        let _rtShareRef = null;     // Listener for my sharing entry (revoke detection)
+        let _remoteCursors = {};    // { uid: { x, y, email, color } }
+        let _remoteLocks = {};      // { nodeId: { uid, email } }
+        let _presenceThrottle = 0;  // Last presence write timestamp
+        const _PRESENCE_INTERVAL = 50; // ms between cursor writes
+        let _rtSuppressNextUpdate = false; // Suppress incoming update right after local save
+        const _COLLAB_COLORS = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c', '#e67e22', '#e84393'];
+        let _myCollabColor = _COLLAB_COLORS[Math.floor(Math.random() * _COLLAB_COLORS.length)];
+        let _myLockedNodeId = null; // node currently locked by me for editing
+
+        function _updateCloudMenuVisibility() {
+            const show = !!_firebaseUser;
+            document.getElementById('btn-save-cloud').style.display = show ? '' : 'none';
+            document.getElementById('btn-my-projects').style.display = show ? '' : 'none';
+            document.getElementById('btn-share-project').style.display = (show && _activeWsCloudId) ? '' : 'none';
+            document.getElementById('cloud-menu-sep').style.display = show ? '' : 'none';
+        }
+
+        function _serializeForCloud(ws) {
+            // Strip client-only state: undo/redo, viewport, UI toggles
+            // Store nodes as object keyed by ID (Firebase-friendly)
+            const nodesObj = {};
+            const nodesArr = ws.nodes || [];
+            for (const [id, node] of nodesArr) {
+                nodesObj[id] = node;
+            }
+            return {
+                nodes: nodesObj,
+                nextId: ws.nextId || 1,
+                statuses: ws.statuses || [],
+                name: ws.name || 'Untitled'
+            };
+        }
+
+        async function saveProjectToCloud(wsCloudId) {
+            if (!_firebaseUser || !_fbConfigured) return null;
+            const ws = captureWorkspace();
+            const data = _serializeForCloud(ws);
+            const uid = _firebaseUser.uid;
+
+            if (wsCloudId) {
+                // Update existing project
+                await _firebaseDb.ref('projects/' + wsCloudId + '/data').set(data);
+                await _firebaseDb.ref('projects/' + wsCloudId + '/meta/updatedAt').set(firebase.database.ServerValue.TIMESTAMP);
+                await _firebaseDb.ref('projects/' + wsCloudId + '/meta/name').set(data.name);
+                return wsCloudId;
+            } else {
+                // Create new project
+                const ref = _firebaseDb.ref('projects').push();
+                const projectId = ref.key;
+                await ref.set({
+                    meta: {
+                        ownerId: uid,
+                        name: data.name,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP,
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP
+                    },
+                    data: data
+                });
+                return projectId;
+            }
+        }
+
+        async function loadProjectFromCloud(projectId) {
+            if (!_firebaseUser || !_fbConfigured) return null;
+            const snap = await _firebaseDb.ref('projects/' + projectId).once('value');
+            const proj = snap.val();
+            if (!proj || !proj.data) return null;
+            return proj;
+        }
+
+        function _scheduleCloudSave() {
+            if (!_activeWsCloudId || !_firebaseUser || _wsReadonly) return;
+            clearTimeout(_cloudSaveTimer);
+            _cloudSaveTimer = setTimeout(async () => {
+                try {
+                    _rtSuppressNextUpdate = true;
+                    await saveProjectToCloud(_activeWsCloudId);
+                } catch (err) {
+                    console.error('Cloud auto-save failed:', err);
+                }
+            }, _CLOUD_SAVE_DEBOUNCE);
+        }
+
+        /* ═══════════════════════════════════════════
+           REAL-TIME COLLABORATION
+           ═══════════════════════════════════════════ */
+
+        function _detachRealtime() {
+            if (_rtDataRef) { _rtDataRef.off(); _rtDataRef = null; }
+            if (_rtPresenceRef) { _rtPresenceRef.off(); _rtPresenceRef = null; }
+            if (_rtLocksRef) { _rtLocksRef.off(); _rtLocksRef = null; }
+            if (_rtShareRef) { _rtShareRef.off(); _rtShareRef = null; }
+            if (_rtMyPresRef) { _rtMyPresRef.onDisconnect().cancel(); _rtMyPresRef.remove(); _rtMyPresRef = null; }
+            _remoteCursors = {};
+            _remoteLocks = {};
+            _renderRemoteCursors();
+        }
+
+        function _attachRealtime(projectId) {
+            _detachRealtime();
+            if (!_firebaseUser || !_fbConfigured || !projectId) return;
+            const uid = _firebaseUser.uid;
+            const email = _firebaseUser.email || '';
+
+            // 1. Data listener — sync remote changes
+            _rtDataRef = _firebaseDb.ref('projects/' + projectId + '/data');
+            _rtDataRef.on('value', snap => {
+                if (_rtSuppressNextUpdate) { _rtSuppressNextUpdate = false; return; }
+                const data = snap.val();
+                if (!data) return;
+                // Only apply if this project is still the active one
+                if (_activeWsCloudId !== projectId) return;
+                _applyRemoteData(data);
+            });
+
+            // 2. Presence — write my cursor, listen for others
+            _rtMyPresRef = _firebaseDb.ref('presence/' + projectId + '/' + uid);
+            _rtMyPresRef.set({ email, color: _myCollabColor, x: 0, y: 0, ts: firebase.database.ServerValue.TIMESTAMP });
+            _rtMyPresRef.onDisconnect().remove();
+
+            _rtPresenceRef = _firebaseDb.ref('presence/' + projectId);
+            _rtPresenceRef.on('value', snap => {
+                const all = snap.val() || {};
+                _remoteCursors = {};
+                for (const [pUid, info] of Object.entries(all)) {
+                    if (pUid === uid) continue;
+                    _remoteCursors[pUid] = info;
+                }
+                _renderRemoteCursors();
+            });
+
+            // 3. Locks listener
+            _rtLocksRef = _firebaseDb.ref('locks/' + projectId);
+            _rtLocksRef.on('value', snap => {
+                _remoteLocks = {};
+                const all = snap.val() || {};
+                for (const [nodeId, info] of Object.entries(all)) {
+                    if (info.uid === uid) continue; // skip my own locks
+                    _remoteLocks[nodeId] = info;
+                }
+                scheduleRender();
+            });
+
+            // 4. Sharing changes — detect revoke or role downgrade
+            _rtShareRef = _firebaseDb.ref('sharing/' + projectId + '/' + uid);
+            let _shareInitial = true;
+            _rtShareRef.on('value', snap => {
+                if (_shareInitial) { _shareInitial = false; return; } // skip initial load
+                if (_activeWsCloudId !== projectId) return;
+
+                if (!snap.exists()) {
+                    // Access revoked — kick out
+                    _detachRealtime();
+                    for (const [wsId, ws] of workspaces) {
+                        if (ws.wsCloudId === projectId) {
+                            wsOrder.splice(wsOrder.indexOf(wsId), 1);
+                            workspaces.delete(wsId);
+                            if (wsId === activeWsId) {
+                                activeWsId = null;
+                                if (wsOrder.length > 0) switchWorkspace(wsOrder[0]);
+                                else createWorkspace();
+                            }
+                            break;
+                        }
+                    }
+                    renderTabs();
+                    saveWorkspaces();
+                    toast('Your access to this project has been revoked');
+                    return;
+                }
+
+                // Role changed — check if downgraded to readonly
+                const newRole = snap.val()?.role;
+                if (newRole && newRole !== _wsRole) {
+                    const isReadonly = newRole === 'readonly';
+                    // Force-close any open edit modal and release locks
+                    if (isReadonly) {
+                        closeModal();
+                        _unlockAllMyNodes();
+                    }
+                    _setReadonly(isReadonly, newRole);
+                    updateToolbar();
+                    scheduleRender();
+                    toast(isReadonly ? 'Your role has been changed to Read Only' : 'Your role has been changed to Contributor');
+                }
+            });
+        }
+
+        function _applyRemoteData(data) {
+            // Merge remote state into local — only update if data actually differs
+            const importedNodes = new Map();
+            if (data.nodes) {
+                const entries = typeof data.nodes === 'object' && !Array.isArray(data.nodes)
+                    ? Object.entries(data.nodes) : (Array.isArray(data.nodes) ? data.nodes : []);
+                for (const entry of entries) {
+                    let id, node;
+                    if (Array.isArray(entry)) { [id, node] = entry; }
+                    else { id = entry[0]; node = entry[1]; }
+                    if (!node || typeof node !== 'object') continue;
+                    node.children = Array.isArray(node.children) ? node.children : (node.children ? Object.values(node.children) : []);
+                    node.parentIds = Array.isArray(node.parentIds) ? node.parentIds : (node.parentIds ? Object.values(node.parentIds) : []);
+                    if (!node.parentIds || node.parentIds.length === 0) {
+                        node.parentIds = node.parentId != null ? [node.parentId] : [];
+                    }
+                    delete node.parentId;
+                    if (node.notes === undefined) node.notes = '';
+                    if (node.startDate === undefined) node.startDate = null;
+                    if (node.endDate === undefined) node.endDate = null;
+                    if (node.estimatedHours === undefined) node.estimatedHours = null;
+                    importedNodes.set(id, node);
+                }
+            }
+
+            // Quick diff — avoid re-render if nothing changed
+            const statusesChanged = JSON.stringify(data.statuses || []) !== JSON.stringify(STATUSES);
+            if (!statusesChanged && importedNodes.size === nodes.size) {
+                let same = true;
+                for (const [id, node] of importedNodes) {
+                    const cur = nodes.get(id);
+                    if (!cur || cur.name !== node.name || cur.status !== node.status ||
+                        cur.startDate !== node.startDate || cur.endDate !== node.endDate ||
+                        cur.notes !== node.notes || cur.estimatedHours !== node.estimatedHours ||
+                        JSON.stringify(cur.children) !== JSON.stringify(node.children) ||
+                        JSON.stringify(cur.parentIds) !== JSON.stringify(node.parentIds)) {
+                        same = false; break;
+                    }
+                }
+                if (same) return;
+            }
+
+            nodes.clear();
+            for (const [id, node] of importedNodes) nodes.set(id, node);
+            nextId = data.nextId || nodes.size + 1;
+            if (data.statuses) {
+                STATUSES = JSON.parse(JSON.stringify(data.statuses));
+                rebuildStatusMap();
+            }
+            _markLayoutDirty();
+            _nodeElCache.forEach(el => el.remove()); _nodeElCache.clear();
+            // Update the baseline snapshot but preserve undo/redo stacks
+            undoStack._last = getSnapshot();
+            render();
+            saveWorkspaces(); // persist locally too
+        }
+
+        // Update my cursor position in RTDB (throttled)
+        function _updatePresenceCursor(canvasX, canvasY) {
+            if (!_rtMyPresRef) return;
+            const now = Date.now();
+            if (now - _presenceThrottle < _PRESENCE_INTERVAL) return;
+            _presenceThrottle = now;
+            _rtMyPresRef.update({ x: canvasX, y: canvasY });
+        }
+
+        // Lock a node for editing
+        async function _lockNode(nodeId) {
+            if (!_activeWsCloudId || !_firebaseUser) return true; // no cloud = always allow
+            const uid = _firebaseUser.uid;
+            const ref = _firebaseDb.ref('locks/' + _activeWsCloudId + '/' + nodeId);
+            const snap = await ref.once('value');
+            const existing = snap.val();
+            if (existing && existing.uid !== uid) {
+                toast('🔒 Locked by ' + (existing.email || 'another user'));
+                return false; // cannot lock
+            }
+            await ref.set({ uid, email: _firebaseUser.email || '', ts: firebase.database.ServerValue.TIMESTAMP });
+            ref.onDisconnect().remove();
+            return true;
+        }
+
+        // Unlock a node
+        function _unlockNode(nodeId) {
+            if (!_activeWsCloudId || !_firebaseUser) return;
+            const ref = _firebaseDb.ref('locks/' + _activeWsCloudId + '/' + nodeId);
+            ref.onDisconnect().cancel();
+            ref.remove();
+        }
+
+        // Unlock all nodes I own
+        function _unlockAllMyNodes() {
+            _myLockedNodeId = null;
+            if (!_activeWsCloudId || !_firebaseUser) return;
+            const uid = _firebaseUser.uid;
+            const ref = _firebaseDb.ref('locks/' + _activeWsCloudId);
+            ref.once('value').then(snap => {
+                const all = snap.val() || {};
+                const updates = {};
+                for (const [nodeId, info] of Object.entries(all)) {
+                    if (info.uid === uid) updates[nodeId] = null;
+                }
+                if (Object.keys(updates).length > 0) ref.update(updates);
+            });
+        }
+
+        // Render remote cursors overlay
+        function _renderRemoteCursors() {
+            let container = document.getElementById('remote-cursors');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'remote-cursors';
+                container.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50';
+                document.getElementById('canvas').appendChild(container);
+            }
+            // Update existing cursor elements or create new ones (no innerHTML wipe)
+            const existing = new Map();
+            for (const c of container.children) existing.set(c.dataset.uid, c);
+            const seen = new Set();
+            for (const [uid, info] of Object.entries(_remoteCursors)) {
+                seen.add(uid);
+                let el = existing.get(uid);
+                if (!el) {
+                    el = document.createElement('div');
+                    el.dataset.uid = uid;
+                    el.style.cssText = 'position:absolute;pointer-events:none;z-index:50;transition:left .3s cubic-bezier(.4,0,.2,1),top .3s cubic-bezier(.4,0,.2,1);will-change:left,top';
+                    el.innerHTML = `<svg width="16" height="20" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))"><path d="M0 0L12 10L5 10L0 18Z" fill="${info.color || '#e74c3c'}"/></svg><span style="position:absolute;left:14px;top:14px;font-size:10px;background:${info.color || '#e74c3c'};color:#fff;padding:1px 5px;border-radius:3px;white-space:nowrap;font-weight:600"></span>`;
+                    container.appendChild(el);
+                }
+                el.style.left = info.x + 'px';
+                el.style.top = info.y + 'px';
+                el.querySelector('span').textContent = (info.email || 'user').split('@')[0];
+            }
+            // Remove cursors for users who left
+            for (const [uid, el] of existing) {
+                if (!seen.has(uid)) el.remove();
+            }
+            _renderOnlineAvatars();
+        }
+
+        // Render online user avatars in toolbar
+        function _renderOnlineAvatars() {
+            const container = document.getElementById('online-avatars');
+            if (!container) return;
+            container.innerHTML = '';
+            for (const [uid, info] of Object.entries(_remoteCursors)) {
+                const initial = ((info.email || '?')[0] || '?').toUpperCase();
+                const name = (info.email || 'user').split('@')[0];
+                const el = document.createElement('div');
+                el.className = 'online-avatar';
+                el.style.background = info.color || '#e74c3c';
+                el.title = info.email || 'user';
+                el.innerHTML = `${initial}<div class="online-avatar-tip">${_esc(name)}</div>`;
+                container.appendChild(el);
+            }
+        }
+
+        async function _showMyProjectsModal() {
+            if (!_firebaseUser) return;
+            const uid = _firebaseUser.uid;
+
+            openModal(`
+                <h2>My Projects</h2>
+                <div id="mp-loading" style="text-align:center;padding:20px;color:var(--text-secondary)">
+                    <span class="auth-spinner" style="border-color:var(--border);border-top-color:var(--accent)"></span>
+                    Loading projects...
+                </div>
+                <div id="mp-list" style="display:none;max-height:400px;overflow-y:auto"></div>
+                <div id="mp-empty" style="display:none;text-align:center;padding:20px;color:var(--text-secondary);font-size:13px">
+                    No cloud projects yet. Use <strong>File → Save to Cloud</strong> to save your first project.
+                </div>
+                <div class="actions" style="margin-top:16px"><button onclick="closeModal()">Close</button></div>
+            `);
+
+            try {
+                // Load owned projects
+                const ownedSnap = await _firebaseDb.ref('projects')
+                    .orderByChild('meta/ownerId').equalTo(uid).once('value');
+                const owned = [];
+                ownedSnap.forEach(child => {
+                    const p = child.val();
+                    owned.push({
+                        id: child.key,
+                        name: p.meta?.name || 'Untitled',
+                        updatedAt: p.meta?.updatedAt || 0,
+                        ownerId: p.meta?.ownerId,
+                        isOwned: true
+                    });
+                });
+
+                const allProjects = [...owned].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+                // Load shared-with-me projects
+                const sharedProjects = [];
+                try {
+                    // Scan all sharing entries for this user
+                    const allSharingSnap = await _firebaseDb.ref('sharing').once('value');
+                    const allSharing = allSharingSnap.val() || {};
+                    for (const [pid, users] of Object.entries(allSharing)) {
+                        if (users[uid]) {
+                            // This project is shared with us
+                            try {
+                                const projSnap = await _firebaseDb.ref('projects/' + pid + '/meta').once('value');
+                                const meta = projSnap.val();
+                                if (meta) {
+                                    // Look up owner email
+                                    let ownerEmail = '';
+                                    try {
+                                        const ownerSnap = await _firebaseDb.ref('users/' + meta.ownerId + '/email').once('value');
+                                        ownerEmail = ownerSnap.val() || '';
+                                    } catch { }
+                                    sharedProjects.push({
+                                        id: pid,
+                                        name: meta.name || 'Untitled',
+                                        updatedAt: meta.updatedAt || 0,
+                                        ownerId: meta.ownerId,
+                                        ownerEmail,
+                                        role: users[uid].role,
+                                        isOwned: false
+                                    });
+                                }
+                            } catch { }
+                        }
+                    }
+                } catch { }
+                sharedProjects.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+
+                const combinedProjects = [...allProjects, ...sharedProjects];
+
+                document.getElementById('mp-loading').style.display = 'none';
+
+                if (combinedProjects.length === 0) {
+                    document.getElementById('mp-empty').style.display = 'block';
+                    return;
+                }
+
+                const listEl = document.getElementById('mp-list');
+                listEl.style.display = 'block';
+
+                function _renderProjectItem(p) {
+                    const date = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '';
+                    const alreadyOpen = _isCloudProjectOpen(p.id);
+                    const roleBadge = !p.isOwned ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;margin-left:6px">${_esc(p.role)}</span>` : '';
+                    const ownerInfo = !p.isOwned && p.ownerEmail ? ` · ${_esc(p.ownerEmail)}` : '';
+                    return `
+                        <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;transition:background .1s;cursor:pointer" class="mp-item" data-pid="${p.id}">
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(p.name)}${roleBadge}</div>
+                                <div style="font-size:11px;color:var(--text-secondary)">${date}${ownerInfo}${alreadyOpen ? ' · Already open' : ''}</div>
+                            </div>
+                            <button class="tb-btn mp-open" data-pid="${p.id}" ${alreadyOpen ? 'disabled style="opacity:.5"' : ''}>Open</button>
+                            ${p.isOwned ? '<button class="tb-btn mp-delete" data-pid="' + p.id + '" style="color:var(--danger);border-color:var(--danger)">✕</button>' : ''}
+                        </div>
+                    `;
+                }
+
+                let html = '';
+                if (allProjects.length > 0) {
+                    if (sharedProjects.length > 0) html += '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">My Projects</div>';
+                    html += allProjects.map(_renderProjectItem).join('');
+                }
+                if (sharedProjects.length > 0) {
+                    if (allProjects.length > 0) html += '<div style="margin-top:12px"></div>';
+                    html += '<div style="font-size:12px;font-weight:600;color:var(--text-secondary);margin-bottom:6px">Shared with me</div>';
+                    html += sharedProjects.map(_renderProjectItem).join('');
+                }
+                listEl.innerHTML = html;
+
+                // Wire up open buttons
+                listEl.querySelectorAll('.mp-open').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const pid = btn.dataset.pid;
+                        closeModal();
+                        await _openCloudProject(pid);
+                    });
+                });
+
+                // Wire up delete buttons
+                listEl.querySelectorAll('.mp-delete').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        const pid = btn.dataset.pid;
+                        const proj = combinedProjects.find(p => p.id === pid);
+                        if (!confirm('Delete "' + (proj?.name || 'project') + '" from cloud? This cannot be undone.')) return;
+                        try {
+                            await _firebaseDb.ref('projects/' + pid).remove();
+                            await _firebaseDb.ref('sharing/' + pid).remove();
+                            // If this project is open locally, clear its cloud ID
+                            for (const [wsId, ws] of workspaces) {
+                                if (ws.wsCloudId === pid) {
+                                    ws.wsCloudId = null;
+                                    if (wsId === activeWsId) _activeWsCloudId = null;
+                                }
+                            }
+                            saveWorkspaces();
+                            renderTabs();
+                            toast('Deleted from cloud');
+                            closeModal();
+                            _showMyProjectsModal(); // refresh
+                        } catch (err) {
+                            toast('Delete failed: ' + err.message);
+                        }
+                    });
+                });
+            } catch (err) {
+                document.getElementById('mp-loading').innerHTML = '<span style="color:var(--danger)">Failed to load projects: ' + _esc(err.message) + '</span>';
+            }
+        }
+
+        function _isCloudProjectOpen(cloudId) {
+            for (const [wsId, ws] of workspaces) {
+                if (ws.wsCloudId === cloudId) return true;
+            }
+            // Also check active workspace
+            if (_activeWsCloudId === cloudId) return true;
+            return false;
+        }
+
+        async function _openCloudProject(projectId) {
+            if (_isCloudProjectOpen(projectId)) {
+                // Switch to existing tab
+                for (const [wsId, ws] of workspaces) {
+                    if (ws.wsCloudId === projectId) {
+                        switchWorkspace(wsId);
+                        return;
+                    }
+                }
+                return;
+            }
+
+            toast('Loading project...');
+            try {
+                const proj = await loadProjectFromCloud(projectId);
+                if (!proj) { toast('Project not found'); return; }
+
+                const data = proj.data;
+                const wsId = _genWsId();
+                const importedNodes = [];
+                if (data.nodes) {
+                    // nodes stored as object keyed by ID
+                    const entries = Array.isArray(data.nodes) ? data.nodes : Object.entries(data.nodes);
+                    for (const entry of entries) {
+                        // Handle both [id, node] entries and {id: node} object entries
+                        let id, node;
+                        if (Array.isArray(entry)) {
+                            [id, node] = entry;
+                        } else {
+                            // Firebase may return {0: id, 1: node} objects
+                            id = entry[0]; node = entry[1];
+                        }
+                        if (!node || typeof node !== 'object') continue;
+                        // Normalize Firebase object→array conversions
+                        node.children = Array.isArray(node.children) ? node.children : (node.children ? Object.values(node.children) : []);
+                        node.parentIds = Array.isArray(node.parentIds) ? node.parentIds : (node.parentIds ? Object.values(node.parentIds) : []);
+                        if (!node.parentIds || node.parentIds.length === 0) {
+                            node.parentIds = node.parentId != null ? [node.parentId] : [];
+                        }
+                        delete node.parentId;
+                        if (node.notes === undefined) node.notes = '';
+                        if (node.startDate === undefined) node.startDate = null;
+                        if (node.endDate === undefined) node.endDate = null;
+                        if (node.estimatedHours === undefined) node.estimatedHours = null;
+                        importedNodes.push([id, node]);
+                    }
+                }
+
+                workspaces.set(wsId, {
+                    id: wsId, name: proj.meta?.name || 'Cloud Project',
+                    nodes: importedNodes,
+                    nextId: data.nextId || 1,
+                    statuses: data.statuses ? JSON.parse(JSON.stringify(data.statuses)) : JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
+                    panX: 60, panY: 0, scale: 1,
+                    isVertical: false,
+                    showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
+                    ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
+                    undoStack: [], redoStack: [], lastSnapshot: null,
+                    wsCloudId: projectId
+                });
+                wsOrder.push(wsId);
+                switchWorkspace(wsId);
+                setTimeout(fitView, 50);
+                // Determine role for this cloud project
+                if (_fbConfigured && _firebaseUser) {
+                    _determineProjectRole(projectId).then(({ role, readonly }) => {
+                        _setReadonly(readonly, role);
+                    });
+                }
+                toast('Opened: ' + (proj.meta?.name || 'Cloud Project'));
+            } catch (err) {
+                toast('Failed to load: ' + err.message);
+            }
+        }
+
+        async function _handleSaveToCloud() {
+            if (!_firebaseUser) {
+                toast('Sign in to save to cloud');
+                return;
+            }
+            const ws = captureWorkspace();
+            const cloudId = ws.wsCloudId || _activeWsCloudId;
+
+            const btn = document.getElementById('btn-save-cloud');
+            const origText = btn.innerHTML;
+            btn.innerHTML = '<span class="menu-icon">⏳</span> Saving...';
+
+            try {
+                const projectId = await saveProjectToCloud(cloudId);
+                if (!cloudId) {
+                    // First save — assign cloud ID to current workspace
+                    const currentWs = workspaces.get(activeWsId);
+                    if (currentWs) currentWs.wsCloudId = projectId;
+                    _activeWsCloudId = projectId;
+                    saveWorkspaces();
+                    renderTabs();
+                    _attachRealtime(projectId);
+                    _updateCloudMenuVisibility();
+                }
+                toast('Saved to cloud ✓');
+            } catch (err) {
+                toast('Save failed: ' + err.message);
+            } finally {
+                btn.innerHTML = origText;
+            }
+        }
+
+        function _offerLocalMigration() {
+            // Check if there are local-only projects worth migrating
+            let localCount = 0;
+            for (const [wsId, ws] of workspaces) {
+                if (!ws.wsCloudId && ws.nodes && ws.nodes.length > 0) localCount++;
+            }
+            // Also check active workspace
+            if (activeWsId && !_activeWsCloudId) {
+                const ws = workspaces.get(activeWsId);
+                if (ws && nodes.size > 0 && !ws.wsCloudId) localCount++;
+            }
+            if (localCount === 0) return;
+
+            // Show non-blocking toast-style prompt
+            toast('Tip: Use File → Save to Cloud to backup your projects');
+        }
+
+        /* ═══════════════════════════════════════════
+           SHARING SYSTEM
+           ═══════════════════════════════════════════ */
+        function _setReadonly(readonly, role) {
+            _wsReadonly = readonly;
+            _wsRole = role;
+            document.getElementById('readonly-badge').classList.toggle('visible', readonly);
+            _updateCloudMenuVisibility();
+        }
+
+        async function _showShareModal() {
+            if (!_firebaseUser || !_activeWsCloudId) {
+                toast('Save project to cloud first');
+                return;
+            }
+
+            const projectId = _activeWsCloudId;
+            const uid = _firebaseUser.uid;
+
+            // Check if user is owner or contributor (readonly cannot share)
+            const metaSnap = await _firebaseDb.ref('projects/' + projectId + '/meta/ownerId').once('value');
+            const isOwner = metaSnap.val() === uid;
+            if (!isOwner && _wsRole === 'readonly') {
+                toast('Read-only users cannot manage sharing');
+                return;
+            }
+
+            openModal(`
+                <h2 style="margin-bottom:16px">Share Project</h2>
+                <div class="auth-form-error" id="share-error"></div>
+                <div class="share-section-label">Invite People</div>
+                <div class="field">
+                    <input type="text" id="share-email" placeholder="Enter email address">
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:20px">
+                    <select id="share-role" style="height:38px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:12px;background:var(--surface);color:var(--text);cursor:pointer;flex-shrink:0">
+                        <option value="contributor">Contributor</option>
+                        <option value="readonly">Read Only</option>
+                    </select>
+                    <button class="auth-form-btn" id="share-add-btn" style="width:auto;padding:0 20px;margin-bottom:0;flex-shrink:0;border-radius:8px;flex:1;height:38px">Invite</button>
+                </div>
+                <div class="share-section-label">Collaborators</div>
+                <div id="share-collabs-loading" style="text-align:center;padding:16px;color:var(--text-secondary)">
+                    <span class="auth-spinner" style="border-color:var(--border);border-top-color:var(--accent)"></span>
+                </div>
+                <div id="share-collabs" style="display:none"></div>
+                <div class="actions" style="margin-top:20px"><button onclick="closeModal()" style="padding:8px 24px">Close</button></div>
+            `);
+
+            document.getElementById('share-email').focus();
+
+            // Wire invite button
+            document.getElementById('share-add-btn').addEventListener('click', () => _handleShareInvite(projectId));
+            document.getElementById('share-email').addEventListener('keydown', e => {
+                if (e.key === 'Enter') _handleShareInvite(projectId);
+            });
+
+            // Load existing collaborators
+            _refreshShareCollabs(projectId, isOwner);
+        }
+
+        async function _handleShareInvite(projectId) {
+            const emailInput = document.getElementById('share-email');
+            const email = emailInput.value.trim().toLowerCase();
+            const role = document.getElementById('share-role').value;
+            const errEl = document.getElementById('share-error');
+            const btn = document.getElementById('share-add-btn');
+            errEl.classList.remove('visible');
+
+            if (!email) {
+                errEl.textContent = 'Enter an email address.';
+                errEl.classList.add('visible');
+                return;
+            }
+
+            if (email === _firebaseUser.email.toLowerCase()) {
+                errEl.textContent = 'You cannot share with yourself.';
+                errEl.classList.add('visible');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '...';
+
+            try {
+                // Look up user by email
+                const sanitizedEmail = email.replace(/\./g, ',');
+                const uidSnap = await _firebaseDb.ref('emailIndex/' + sanitizedEmail).once('value');
+                const targetUid = uidSnap.val();
+
+                if (!targetUid) {
+                    errEl.textContent = 'No account found with this email. They must sign up first.';
+                    errEl.classList.add('visible');
+                    btn.disabled = false;
+                    btn.textContent = 'Invite';
+                    return;
+                }
+
+                // Write sharing entry
+                await _firebaseDb.ref('sharing/' + projectId + '/' + targetUid).set({
+                    role: role,
+                    addedAt: firebase.database.ServerValue.TIMESTAMP,
+                    addedBy: _firebaseUser.uid
+                });
+
+                emailInput.value = '';
+                toast('Shared with ' + email + ' as ' + role);
+                _refreshShareCollabs(projectId);
+            } catch (err) {
+                errEl.textContent = 'Failed to share: ' + err.message;
+                errEl.classList.add('visible');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Invite';
+            }
+        }
+
+        async function _refreshShareCollabs(projectId, isOwner) {
+            const loadingEl = document.getElementById('share-collabs-loading');
+            const collabsEl = document.getElementById('share-collabs');
+            if (!loadingEl || !collabsEl) return;
+
+            // Determine ownership if not passed
+            if (isOwner === undefined) {
+                try {
+                    const metaSnap = await _firebaseDb.ref('projects/' + projectId + '/meta/ownerId').once('value');
+                    isOwner = metaSnap.val() === _firebaseUser.uid;
+                } catch { isOwner = false; }
+            }
+
+            try {
+                const snap = await _firebaseDb.ref('sharing/' + projectId).once('value');
+                const sharingData = snap.val() || {};
+                const entries = Object.entries(sharingData);
+
+                loadingEl.style.display = 'none';
+                collabsEl.style.display = 'block';
+
+                if (entries.length === 0) {
+                    collabsEl.innerHTML = '<div style="font-size:12px;color:var(--text-secondary);text-align:center;padding:20px 8px">No collaborators yet. Invite someone above to start collaborating.</div>';
+                    return;
+                }
+
+                // Fetch user emails for each uid
+                const rows = [];
+                for (const [uid, info] of entries) {
+                    let email = uid;
+                    try {
+                        const userSnap = await _firebaseDb.ref('users/' + uid + '/email').once('value');
+                        if (userSnap.val()) email = userSnap.val();
+                    } catch { }
+                    rows.push({ uid, email, role: info.role, addedAt: info.addedAt });
+                }
+
+                const myUid = _firebaseUser.uid;
+                collabsEl.innerHTML = rows.map(r => {
+                    const isSelf = r.uid === myUid;
+                    return `
+                    <div class="share-collab-row">
+                        <div class="share-collab-avatar">${(r.email[0] || '?').toUpperCase()}</div>
+                        <div class="share-collab-info">
+                            <div class="share-collab-email">${_esc(r.email)}${isSelf ? ' <span style="font-size:10px;color:var(--text-secondary)">(you)</span>' : ''}</div>
+                            <div class="share-collab-role">${r.role === 'readonly' ? 'Read Only' : 'Contributor'}</div>
+                        </div>
+                        ${isSelf ? '' : '<div class="share-collab-actions">' +
+                            '<select class="share-role-select" data-uid="' + r.uid + '" style="height:32px;border:1px solid var(--border);border-radius:8px;padding:0 8px;font-size:12px;background:var(--surface);color:var(--text);cursor:pointer">' +
+                            '<option value="contributor" ' + (r.role === 'contributor' ? 'selected' : '') + '>Contributor</option>' +
+                            '<option value="readonly" ' + (r.role === 'readonly' ? 'selected' : '') + '>Read Only</option>' +
+                            '</select>' +
+                            (isOwner ? '<button class="tb-btn share-transfer" data-uid="' + r.uid + '" data-email="' + _esc(r.email) + '" style="font-size:11px;height:32px;padding:0 10px;border-radius:8px" title="Transfer ownership">\ud83d\udc51</button>' : '') +
+                            '<button class="tb-btn share-revoke" data-uid="' + r.uid + '" style="color:var(--danger);border-color:var(--danger);font-size:11px;height:32px;padding:0 12px;border-radius:8px">Revoke</button>' +
+                            '</div>'}
+                    </div>`;
+                }).join('');
+
+                // Wire role change
+                collabsEl.querySelectorAll('.share-role-select').forEach(sel => {
+                    sel.addEventListener('change', async () => {
+                        try {
+                            await _firebaseDb.ref('sharing/' + projectId + '/' + sel.dataset.uid + '/role').set(sel.value);
+                            toast('Role updated');
+                        } catch (err) {
+                            toast('Failed: ' + err.message);
+                        }
+                    });
+                });
+
+                // Wire revoke
+                collabsEl.querySelectorAll('.share-revoke').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        if (!confirm('Revoke access for this user?')) return;
+                        try {
+                            await _firebaseDb.ref('sharing/' + projectId + '/' + btn.dataset.uid).remove();
+                            // Clean up locks and presence
+                            await _firebaseDb.ref('presence/' + projectId + '/' + btn.dataset.uid).remove();
+                            const locksSnap = await _firebaseDb.ref('locks/' + projectId).once('value');
+                            const locks = locksSnap.val() || {};
+                            for (const [nodeId, lock] of Object.entries(locks)) {
+                                if (lock.uid === btn.dataset.uid) {
+                                    await _firebaseDb.ref('locks/' + projectId + '/' + nodeId).remove();
+                                }
+                            }
+                            toast('Access revoked');
+                            _refreshShareCollabs(projectId, isOwner);
+                        } catch (err) {
+                            toast('Failed: ' + err.message);
+                        }
+                    });
+                });
+
+                // Wire transfer ownership (owner only)
+                if (isOwner) {
+                    collabsEl.querySelectorAll('.share-transfer').forEach(btn => {
+                        btn.addEventListener('click', async () => {
+                            const targetUid = btn.dataset.uid;
+                            const targetEmail = btn.dataset.email;
+                            if (!confirm('Transfer ownership to ' + targetEmail + '? You will become a Contributor.')) return;
+                            try {
+                                const myUid = _firebaseUser.uid;
+                                // Set new owner
+                                await _firebaseDb.ref('projects/' + projectId + '/meta/ownerId').set(targetUid);
+                                // Remove new owner from sharing (they're now the owner)
+                                await _firebaseDb.ref('sharing/' + projectId + '/' + targetUid).remove();
+                                // Add old owner (me) as contributor
+                                await _firebaseDb.ref('sharing/' + projectId + '/' + myUid).set({
+                                    role: 'contributor',
+                                    addedAt: firebase.database.ServerValue.TIMESTAMP,
+                                    addedBy: myUid
+                                });
+                                toast('Ownership transferred to ' + targetEmail);
+                                _wsRole = 'contributor';
+                                closeModal();
+                            } catch (err) {
+                                toast('Failed: ' + err.message);
+                            }
+                        });
+                    });
+                }
+            } catch (err) {
+                loadingEl.style.display = 'none';
+                collabsEl.style.display = 'block';
+                collabsEl.innerHTML = '<div style="color:var(--danger);font-size:12px">Failed to load collaborators</div>';
+            }
+        }
+
+        async function _determineProjectRole(projectId) {
+            if (!_firebaseUser || !projectId) return { role: null, readonly: false };
+            const uid = _firebaseUser.uid;
+
+            // Check if owner
+            const ownerSnap = await _firebaseDb.ref('projects/' + projectId + '/meta/ownerId').once('value');
+            if (ownerSnap.val() === uid) return { role: 'owner', readonly: false };
+
+            // Check sharing
+            const shareSnap = await _firebaseDb.ref('sharing/' + projectId + '/' + uid + '/role').once('value');
+            const role = shareSnap.val();
+            if (role === 'contributor') return { role: 'contributor', readonly: false };
+            if (role === 'readonly') return { role: 'readonly', readonly: true };
+
+            return { role: null, readonly: true }; // no access defaults to readonly
+        }
+
         /* ═══════════════════════════════════════════
            DATA MODEL  (DAG — nodes can have multiple parents)
            ═══════════════════════════════════════════ */
@@ -2007,6 +3681,7 @@
             return {
                 id: activeWsId,
                 name: workspaces.has(activeWsId) ? workspaces.get(activeWsId).name : 'Project 1',
+                wsCloudId: workspaces.has(activeWsId) ? (workspaces.get(activeWsId).wsCloudId || null) : null,
                 nodes: [...nodes.entries()],
                 nextId,
                 statuses: JSON.parse(JSON.stringify(STATUSES)),
@@ -2057,6 +3732,9 @@
             filterStatus = new Set();
             _markLayoutDirty();
             _nodeElCache.forEach(el => el.remove()); _nodeElCache.clear();
+            // Track cloud ID
+            if (ws.wsCloudId) _activeWsCloudId = ws.wsCloudId;
+            else _activeWsCloudId = null;
         }
 
         /* Persist entire workspace registry to localStorage */
@@ -2139,7 +3817,8 @@
                     isVertical: false,
                     showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
                     ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
-                    undoStack: [], redoStack: [], lastSnapshot: null
+                    undoStack: [], redoStack: [], lastSnapshot: null,
+                    wsCloudId: null
                 });
                 wsOrder = [wsId];
                 activeWsId = wsId;
@@ -2174,30 +3853,73 @@
             undoStack._last = snap;
             redoStack.length = 0;
             saveWorkspaces();
+            _scheduleCloudSave();
+        }
+
+        function _isUndoRedoValid(snapshotJson) {
+            // Check that the snapshot doesn't remove nodes that were added/modified by remote users
+            // by comparing the target snapshot against the current state
+            if (!_activeWsCloudId) return true; // local projects always valid
+            const current = getSnapshot();
+            if (undoStack._last === current) return true; // no remote changes since last local action
+            // Remote changes happened — check if any nodes in current state are missing from target
+            const target = JSON.parse(snapshotJson);
+            const targetIds = new Set(target.nodes.map(([id]) => id));
+            const currentData = JSON.parse(current);
+            for (const [id] of currentData.nodes) {
+                if (!targetIds.has(id)) {
+                    // A node exists now that doesn't exist in the undo target
+                    // Check if it was in our last known state — if not, it was added remotely
+                    const lastData = JSON.parse(undoStack._last);
+                    const lastIds = new Set(lastData.nodes.map(([lid]) => lid));
+                    if (!lastIds.has(id)) {
+                        return false; // would delete a remotely-added node
+                    }
+                }
+            }
+            return true;
         }
 
         function undo() {
             if (undoStack.length === 0) return;
+            const prev = undoStack[undoStack.length - 1];
+            if (!_isUndoRedoValid(prev)) {
+                toast('Cannot undo — remote changes conflict');
+                undoStack.length = 0;
+                redoStack.length = 0;
+                undoStack._last = getSnapshot();
+                return;
+            }
             redoStack.push(undoStack._last);
             if (redoStack.length > MAX_HISTORY) redoStack.shift();
-            const prev = undoStack.pop();
+            undoStack.pop();
             undoStack._last = prev;
             restoreSnapshot(prev);
             saveWorkspaces();
             selectedId = null;
             render();
+            _scheduleCloudSave();
         }
 
         function redo() {
             if (redoStack.length === 0) return;
+            const next = redoStack[redoStack.length - 1];
+            if (!_isUndoRedoValid(next)) {
+                toast('Cannot redo — remote changes conflict');
+                undoStack.length = 0;
+                redoStack.length = 0;
+                undoStack._last = getSnapshot();
+                return;
+            }
             undoStack.push(undoStack._last);
             if (undoStack.length > MAX_HISTORY) undoStack.shift();
-            const next = redoStack.pop();
+            redoStack.pop();
             undoStack._last = next;
             restoreSnapshot(next);
             saveWorkspaces();
             selectedId = null;
             render();
+            _scheduleCloudSave();
         }
 
         /* ═══════════════════════════════════════════
@@ -2288,6 +4010,7 @@
         }
 
         function deleteNode(id) {
+            if (_remoteLocks[id]) { toast('🔒 Locked by ' + (_remoteLocks[id].email || 'another user')); return; }
             const node = nodes.get(id);
             if (!node) return;
             _batch = true;
@@ -2751,7 +4474,9 @@
                 ? `<span class="dep-badge" title="${node.parentIds.length} dependencies">${node.parentIds.length}</span>` : '';
             const depWarnings = showDepWarnings ? getDepWarnings(id) : [];
             const warnBadge = depWarnings.length > 0 ? `<span class="warn-badge" title="${depWarnings.join('\\n')}">⚠</span>` : '';
-            return `${badge}${warnBadge}<div class="node-name" title="${esc(node.name)}">${esc(node.name)}</div><div class="node-status-row"><span class="node-status-dot ${node.status}" style="background:${st.color}">${st.icon}</span><span class="node-status-label">${st.label}</span></div><button class="node-status-btn" title="Change status">▾</button>`;
+            const lockInfo = _remoteLocks[id];
+            const lockBadge = lockInfo ? `<span class="lock-badge" title="Editing: ${_esc(lockInfo.email || 'user')}" style="border-color:${lockInfo.color || 'var(--accent)'}">🔒 ${_esc((lockInfo.email || 'user').split('@')[0])}</span>` : '';
+            return `${badge}${warnBadge}${lockBadge}<div class="node-name" title="${esc(node.name)}">${esc(node.name)}</div><div class="node-status-row"><span class="node-status-dot ${node.status}" style="background:${st.color}">${st.icon}</span><span class="node-status-label">${st.label}</span></div><button class="node-status-btn" title="Change status">▾</button>`;
         }
 
         function renderNodes() {
@@ -2769,6 +4494,7 @@
                 if (id === selectedId) cls += ' selected';
                 if (multiSelectedIds.has(id)) cls += ' multi-selected';
                 if (showUndated && !node.startDate && !node.endDate) cls += ' undated';
+                if (_remoteLocks[id]) cls += ' remote-locked';
 
                 let el = _nodeElCache.get(id);
                 if (el) {
@@ -3302,16 +5028,39 @@
 
         function updateToolbar() {
             const hasSel = !!selectedId;
-            _tbBtns['btn-add-child'].disabled = !hasSel;
-            _tbBtns['btn-link'].disabled = !hasSel;
-            _tbBtns['btn-link-parent'].disabled = !hasSel;
-            _tbBtns['btn-insert-before'].disabled = !hasSel;
-            _tbBtns['btn-edit'].disabled = !hasSel;
-            _tbBtns['btn-delete'].disabled = !hasSel;
-            _tbBtns['btn-undo'].disabled = undoStack.length === 0;
-            _tbBtns['btn-redo'].disabled = redoStack.length === 0;
-            _qbUndo.disabled = undoStack.length === 0;
-            _qbRedo.disabled = redoStack.length === 0;
+            const ro = _wsReadonly;
+            _tbBtns['btn-add-child'].disabled = !hasSel || ro;
+            _tbBtns['btn-link'].disabled = !hasSel || ro;
+            _tbBtns['btn-link-parent'].disabled = !hasSel || ro;
+            _tbBtns['btn-insert-before'].disabled = !hasSel || ro;
+            _tbBtns['btn-edit'].disabled = !hasSel || ro;
+            _tbBtns['btn-delete'].disabled = !hasSel || ro;
+            _tbBtns['btn-undo'].disabled = undoStack.length === 0 || ro;
+            _tbBtns['btn-redo'].disabled = redoStack.length === 0 || ro;
+            _qbUndo.disabled = undoStack.length === 0 || ro;
+            _qbRedo.disabled = redoStack.length === 0 || ro;
+            document.getElementById('qb-add').disabled = ro;
+            document.getElementById('btn-add-node').disabled = ro;
+            document.getElementById('btn-clear').disabled = ro;
+            document.getElementById('btn-add-node-empty').disabled = ro;
+            // Status customizer lock indicator
+            const statusLocked = ro || !!_remoteLocks['_statuses'];
+            const custBtn = document.getElementById('btn-customize');
+            const custLegBtn = document.getElementById('btn-customize-legend');
+            const statusBanner = document.getElementById('status-lock-banner');
+            custBtn.disabled = statusLocked;
+            custLegBtn.disabled = statusLocked;
+            if (_remoteLocks['_statuses']) {
+                const locker = (_remoteLocks['_statuses'].email || 'user').split('@')[0];
+                custBtn.title = '🔒 Being edited by ' + locker;
+                custLegBtn.title = '🔒 Being edited by ' + locker;
+                statusBanner.style.display = '';
+                document.getElementById('status-lock-user').textContent = locker;
+            } else {
+                custBtn.title = '';
+                custLegBtn.title = 'Customize Statuses';
+                statusBanner.style.display = 'none';
+            }
         }
 
         /* ── Legend (dynamic from STATUSES) ── */
@@ -3560,7 +5309,11 @@
             if (inp) { inp.focus(); inp.select(); }
         }
 
-        function closeModal() { modalOverlay.classList.remove('open'); }
+        function closeModal() {
+            modalOverlay.classList.remove('open');
+            // Unlock any node I had locked for editing
+            if (_myLockedNodeId) { _unlockNode(_myLockedNodeId); _myLockedNodeId = null; }
+        }
 
         /* ── Markdown Help Modal (sticky, independent) ── */
         const _mdHelpModal = document.getElementById('md-help-modal');
@@ -3595,8 +5348,14 @@
         });
 
         /* ── Node Create / Edit Modal ── */
-        function showNodeModal(opts) {
+        async function showNodeModal(opts) {
             const { title, name = '', onSave, editId = null } = opts;
+            // Lock the node if editing an existing node in a cloud project
+            if (editId && _activeWsCloudId) {
+                const locked = await _lockNode(editId);
+                if (!locked) return;
+                _myLockedNodeId = editId;
+            }
             const status = opts.status || STATUSES[0].id;
             const existingNode = editId ? nodes.get(editId) : null;
             const notes = opts.notes || (existingNode ? existingNode.notes : '') || '';
@@ -3711,6 +5470,11 @@
     </div>
   `);
             document.getElementById('m-confirm').addEventListener('click', () => { onConfirm(); closeModal(); });
+            document.getElementById('m-confirm').focus();
+            document.addEventListener('keydown', function _confirmKey(e) {
+                if (e.key === 'Enter') { e.preventDefault(); document.removeEventListener('keydown', _confirmKey); onConfirm(); closeModal(); }
+                if (e.key === 'Escape') document.removeEventListener('keydown', _confirmKey);
+            });
         }
 
         /* ── Delete Modal ── */
@@ -3741,7 +5505,19 @@
         /* ═══════════════════════════════════════════
            STATUS CUSTOMIZATION
            ═══════════════════════════════════════════ */
-        function showStatusCustomizer() {
+        async function showStatusCustomizer() {
+            if (_wsReadonly) return;
+            // Check if statuses are locked by another user
+            if (_remoteLocks['_statuses']) {
+                toast('🔒 Statuses being edited by ' + (_remoteLocks['_statuses'].email || 'another user'));
+                return;
+            }
+            // Acquire status lock
+            if (_activeWsCloudId) {
+                const locked = await _lockNode('_statuses');
+                if (!locked) return;
+                _myLockedNodeId = '_statuses';
+            }
             let draft = JSON.parse(JSON.stringify(STATUSES));
 
             function renderEditor() {
@@ -3819,6 +5595,8 @@
 
         function showStatusDropdown(nodeId, btnEl) {
             closeStatusDropdown();
+            if (_wsReadonly) return;
+            if (_remoteLocks[nodeId]) { toast('🔒 Locked by ' + (_remoteLocks[nodeId].email || 'another user')); return; }
             const node = nodes.get(nodeId);
             if (!node) return;
 
@@ -3994,12 +5772,17 @@
         });
 
         /* ── Double-click to edit ── */
-        canvasEl.addEventListener('dblclick', e => {
+        canvasEl.addEventListener('dblclick', async e => {
             clearTimeout(clickTimer);
-            if (linkMode) return;
+            if (linkMode || _wsReadonly) return;
             const nodeEl = e.target.closest('.node');
             if (!nodeEl) return;
             const id = nodeEl.dataset.id;
+            // Check for remote lock
+            if (_remoteLocks[id]) {
+                toast('🔒 Locked by ' + (_remoteLocks[id].email || 'another user'));
+                return;
+            }
             const node = nodes.get(id);
             showNodeModal({
                 title: 'Edit Node',
@@ -4019,6 +5802,18 @@
             const id = nodeEl.dataset.id;
             selectedId = id;
             scheduleRender();
+
+            if (_wsReadonly) {
+                // No context menu actions in readonly mode
+                hideCtxMenu();
+                return;
+            }
+
+            if (_remoteLocks[id]) {
+                toast('🔒 Locked by ' + (_remoteLocks[id].email || 'another user'));
+                hideCtxMenu();
+                return;
+            }
 
             const node = nodes.get(id);
             const items = [
@@ -4160,6 +5955,14 @@
             applyTransform();
         });
         window.addEventListener('mouseup', () => { isPanning = false; wrapEl.classList.remove('grabbing'); });
+
+        // Track cursor for real-time presence
+        wrapEl.addEventListener('mousemove', e => {
+            const rect = wrapEl.getBoundingClientRect();
+            const cx = (e.clientX - rect.left - panX) / scale;
+            const cy = (e.clientY - rect.top - panY) / scale;
+            _updatePresenceCursor(Math.round(cx), Math.round(cy));
+        });
 
         /* ── Zoom ── */
         wrapEl.addEventListener('wheel', e => {
@@ -4420,7 +6223,8 @@
                             isVertical: false,
                             showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
                             ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
-                            undoStack: [], redoStack: [], lastSnapshot: null
+                            undoStack: [], redoStack: [], lastSnapshot: null,
+                            wsCloudId: null
                         });
                         wsOrder.push(wsId);
                         switchWorkspace(wsId);
@@ -4448,11 +6252,15 @@
             toast('Exported');
         });
 
+        document.getElementById('btn-save-cloud').addEventListener('click', () => _handleSaveToCloud());
+        document.getElementById('btn-my-projects').addEventListener('click', () => _showMyProjectsModal());
+        document.getElementById('btn-share-project').addEventListener('click', () => _showShareModal());
+
         /* ── Keyboard Shortcuts ── */
         document.addEventListener('keydown', e => {
             if (modalOverlay.classList.contains('open')) return;
-            if (e.key === 'Delete' && selectedId) showDeleteModal(selectedId);
-            if (e.key === 'F2' && selectedId) {
+            if (e.key === 'Delete' && selectedId && !_wsReadonly) showDeleteModal(selectedId);
+            if (e.key === 'F2' && selectedId && !_wsReadonly) {
                 const node = nodes.get(selectedId);
                 showNodeModal({
                     title: 'Edit Node', name: node.name, status: node.status,
@@ -4460,8 +6268,8 @@
                     onSave(n, s, extras) { renameNode(selectedId, n); setNodeStatus(selectedId, s); const nd = nodes.get(selectedId); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; saveState(); render(); }
                 });
             }
-            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (!_wsReadonly) undo(); }
+            if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); if (!_wsReadonly) redo(); }
             if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); toggleSearch(true); }
             if (e.key === 'Escape' && searchOpen) toggleSearch(false);
             if (e.key === 'Escape' && !searchOpen && (selectedId || multiSelectedIds.size > 0)) {
@@ -4670,7 +6478,8 @@
                 tab.className = 'tab' + (wsId === activeWsId ? ' active' : '');
                 tab.dataset.wsId = wsId;
                 tab.draggable = true;
-                tab.innerHTML = `<span class="tab-label">${esc(ws.name)}</span><button class="tab-close" title="Close tab">\u00d7</button>`;
+                const cloudIcon = ws.wsCloudId ? '<span class="tab-cloud" title="Cloud project">☁</span>' : '';
+                tab.innerHTML = `${cloudIcon}<span class="tab-label">${esc(ws.name)}</span><button class="tab-close" title="Close tab">\u00d7</button>`;
                 tabBar.insertBefore(tab, tabAddBtn);
             }
             // Update page title
@@ -4681,11 +6490,24 @@
         function switchWorkspace(wsId) {
             if (wsId === activeWsId) return;
             if (!workspaces.has(wsId)) return;
+            // Detach real-time listeners from old project
+            _unlockAllMyNodes();
+            _detachRealtime();
             // Save current workspace state
             if (activeWsId) workspaces.set(activeWsId, captureWorkspace());
             activeWsId = wsId;
             const ws = workspaces.get(wsId);
             restoreWorkspace(ws);
+            // Reset readonly state for local projects, determine for cloud
+            if (ws.wsCloudId && _fbConfigured && _firebaseUser) {
+                _attachRealtime(ws.wsCloudId);
+                _determineProjectRole(ws.wsCloudId).then(({ role, readonly }) => {
+                    _setReadonly(readonly, role);
+                    updateToolbar();
+                });
+            } else {
+                _setReadonly(false, null);
+            }
             // Update UI
             updateViewChecks();
             updateOrientBtn();
@@ -4711,7 +6533,8 @@
                 isVertical: false,
                 showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
                 ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
-                undoStack: [], redoStack: [], lastSnapshot: null
+                undoStack: [], redoStack: [], lastSnapshot: null,
+                wsCloudId: null
             });
             wsOrder.push(wsId);
             switchWorkspace(wsId);
@@ -4728,6 +6551,11 @@
             if (wsOrder.length <= 1 && liveNodes === 0) return;
 
             function doClose() {
+                // Clean up real-time listeners if closing an active cloud project
+                if (wsId === activeWsId) {
+                    _unlockAllMyNodes();
+                    _detachRealtime();
+                }
                 const idx = wsOrder.indexOf(wsId);
                 wsOrder.splice(idx, 1);
                 workspaces.delete(wsId);
@@ -5234,10 +7062,12 @@
         });
 
         ganttBody.addEventListener('dblclick', e => {
+            if (_wsReadonly) return;
             const el = e.target.closest('[data-gantt-id]');
             if (!el) return;
             clearTimeout(_ganttClickTimer);
             const id = el.dataset.ganttId;
+            if (_remoteLocks[id]) { toast('🔒 Locked by ' + (_remoteLocks[id].email || 'another user')); return; }
             const node = nodes.get(id);
             if (!node) return;
             selectedId = id;
@@ -5254,7 +7084,9 @@
             const el = e.target.closest('[data-gantt-id]');
             if (!el) return;
             e.preventDefault();
+            if (_wsReadonly) return;
             const id = el.dataset.ganttId;
+            if (_remoteLocks[id]) { toast('🔒 Locked by ' + (_remoteLocks[id].email || 'another user')); return; }
             const node = nodes.get(id);
             if (!node) return;
             const menu = document.createElement('div');
@@ -5279,10 +7111,12 @@
             if (!handle) return;
             e.preventDefault();
             e.stopPropagation();
+            if (_wsReadonly) return;
             clearTimeout(_ganttClickTimer);
             const el = handle.closest('[data-gantt-id]');
             if (!el) return;
             const id = el.dataset.ganttId;
+            if (_remoteLocks[id]) { toast('🔒 Locked by ' + (_remoteLocks[id].email || 'another user')); return; }
             const node = nodes.get(id);
             if (!node) return;
             const side = handle.classList.contains('gantt-handle-l') ? 'left' : 'right';
@@ -5358,22 +7192,6 @@
         /* ═══════════════════════════════════════════
            SHAREABLE LINKS (URL HASH)
            ═══════════════════════════════════════════ */
-        document.getElementById('btn-share').addEventListener('click', () => {
-            const ws = workspaces.get(activeWsId);
-            const wsName = ws ? ws.name : 'Project';
-            const data = { name: wsName, nodes: [...nodes.entries()], statuses: STATUSES, nextId };
-            try {
-                const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(data))));
-                window.location.hash = encoded;
-                if (navigator.clipboard) {
-                    navigator.clipboard.writeText(window.location.href).then(() => toast('Link copied to clipboard'));
-                } else {
-                    toast('Share link updated in address bar');
-                }
-            } catch (err) {
-                toast('Failed to create share link');
-            }
-        });
 
         function loadFromHash() {
             const hash = window.location.hash.slice(1);
@@ -5403,7 +7221,8 @@
                     isVertical: false,
                     showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
                     ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
-                    undoStack: [], redoStack: [], lastSnapshot: null
+                    undoStack: [], redoStack: [], lastSnapshot: null,
+                    wsCloudId: null
                 });
                 wsOrder.push(wsId);
                 activeWsId = wsId;

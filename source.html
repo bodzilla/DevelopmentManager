@@ -2131,11 +2131,13 @@
                     <button class="menu-entry" id="btn-link-parent" disabled><span class="menu-icon">🔗</span> Link
                         Existing
                         Parent</button>
+                    <button class="menu-entry" id="btn-detach" disabled><span class="menu-icon">⛓️‍💥</span> Detach
+                    </button>
                     <div class="menu-sep"></div>
                     <button class="menu-entry" id="btn-edit" disabled><span class="menu-icon">✎</span> Edit Node<span
                             class="menu-shortcut">F2</span></button>
                     <button class="menu-entry danger" id="btn-delete" disabled><span class="menu-icon">✕</span>
-                        Delete<span class="menu-shortcut">Del</span></button>
+                        Delete Node<span class="menu-shortcut">Del</span></button>
                     <div class="menu-sep"></div>
                     <button class="menu-entry" id="btn-undo" disabled><span class="menu-icon">↩</span> Undo<span
                             class="menu-shortcut">Ctrl+Z</span></button>
@@ -3979,6 +3981,16 @@
             saveState();
         }
 
+        function detachNode(id) {
+            const node = nodes.get(id);
+            if (!node || node.parentIds.length === 0) return;
+            _batch = true;
+            for (const pid of [...node.parentIds]) removeLink(pid, id);
+            _batch = false;
+            _markLayoutDirty();
+            saveState();
+        }
+
         function insertBefore(childId, name, status = 'not-started', extras = {}) {
             const child = nodes.get(childId);
             if (!child) return;
@@ -5008,7 +5020,7 @@
 
         // Cached toolbar button references (menu entries + quick buttons)
         const _tbBtns = {};
-        const _tbIds = ['btn-add-child', 'btn-link', 'btn-link-parent', 'btn-insert-before', 'btn-edit', 'btn-delete', 'btn-undo', 'btn-redo'];
+        const _tbIds = ['btn-add-child', 'btn-link', 'btn-link-parent', 'btn-insert-before', 'btn-edit', 'btn-detach', 'btn-delete', 'btn-undo', 'btn-redo'];
         for (const id of _tbIds) _tbBtns[id] = document.getElementById(id);
 
         // Quick-action icon buttons
@@ -5023,6 +5035,7 @@
             _tbBtns['btn-link-parent'].disabled = !hasSel || ro;
             _tbBtns['btn-insert-before'].disabled = !hasSel || ro;
             _tbBtns['btn-edit'].disabled = !hasSel || ro;
+            _tbBtns['btn-detach'].disabled = !hasSel || ro || (hasSel && nodes.get(selectedId)?.parentIds.length === 0);
             _tbBtns['btn-delete'].disabled = !hasSel || ro;
             _tbBtns['btn-undo'].disabled = undoStack.length === 0 || ro;
             _tbBtns['btn-redo'].disabled = redoStack.length === 0 || ro;
@@ -5826,6 +5839,7 @@
                         addAdditionalParent(id);
                     }
                 },
+                { label: 'Detach', icon: '⛓️‍💥', action: 'detach', disabled: node.parentIds.length === 0, handler() { detachNode(id); render(); toast('Node detached — now a root node'); } },
                 { divider: true },
                 {
                     label: 'Edit', icon: '✎', action: 'edit', handler() {
@@ -6065,6 +6079,13 @@
         document.getElementById('btn-insert-before').addEventListener('click', () => {
             if (!selectedId) return;
             showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(selectedId, n, s, extras); render(); } });
+        });
+
+        document.getElementById('btn-detach').addEventListener('click', () => {
+            if (!selectedId) return;
+            detachNode(selectedId);
+            render();
+            toast('Node detached — now a root node');
         });
 
         document.getElementById('btn-edit').addEventListener('click', () => {
@@ -7370,7 +7391,7 @@
 <li><strong>Quick status cycle</strong> — Click the <strong>▾</strong> button on any node to quickly change its status without opening the edit dialog.</li>
 <li><strong>Arrow key navigation</strong> — When a node is selected, use arrow keys to traverse to neighbouring nodes. Up/Down moves between depth layers; Left/Right moves within the same layer.</li>
 </ul>
-<div class="help-tip">💡 Right-click any node to access a context menu with options to add a child, link as dependency, insert a parent above, edit, or delete.</div>
+<div class="help-tip">💡 Right-click any node to access a context menu with options to add a child, link as dependency, insert a parent above, detach, edit, or delete.</div>
 </div>
 
 <div class="help-section"><h3>🔗 Dependencies &amp; Linking</h3>
@@ -7380,6 +7401,7 @@
 <li><strong>Add Parent</strong> — Inserts a new node as a parent of the selected node.</li>
 <li><strong>Link Existing Child</strong> — Creates a dependency link between two existing nodes. Select a node, choose <em>Link Existing Child</em>, then click the target node. This allows one node to have multiple parents.</li>
 <li><strong>Link Existing Parent</strong> — The reverse of the above. Select a child node, choose <em>Link Existing Parent</em>, then click an existing node on the canvas to make it an additional parent dependency.</li>
+<li><strong>Detach</strong> — Removes all parent links from a node, turning it into a root node. Available via <em>Edit → Detach</em> or the right-click context menu. The node keeps its children — only the incoming dependencies are removed.</li>
 <li><strong>Delete</strong> — When deleting a node, you can choose to <em>reconnect children</em> to the deleted node's parent, or <em>remove the entire subtree</em>.</li>
 </ul>
 <div class="help-tip">💡 The dependency badge (e.g. <strong>2</strong>) on a node indicates how many parent dependencies it has. Hover to see details.</div>

@@ -2113,7 +2113,6 @@
                             class="menu-icon">📁</span> My Projects</button>
                     <button class="menu-entry" id="btn-share-project" style="display:none"><span
                             class="menu-icon">👥</span> Share Project</button>
-                    <div class="menu-sep" id="cloud-menu-sep" style="display:none"></div>
                     <div class="menu-sep"></div>
                     <button class="menu-entry danger" id="btn-clear"><span class="menu-icon">✕</span> Clear
                         All</button>
@@ -2702,10 +2701,16 @@
 
         function _updateCloudMenuVisibility() {
             const show = !!_firebaseUser;
-            document.getElementById('btn-save-cloud').style.display = show ? '' : 'none';
-            document.getElementById('btn-my-projects').style.display = show ? '' : 'none';
-            document.getElementById('btn-share-project').style.display = (show && _activeWsCloudId) ? '' : 'none';
-            document.getElementById('cloud-menu-sep').style.display = show ? '' : 'none';
+            const els = {
+                'btn-save-cloud': show,
+                'btn-my-projects': show,
+                'btn-share-project': show && _activeWsCloudId,
+                'cloud-menu-sep': show
+            };
+            for (const [id, visible] of Object.entries(els)) {
+                const el = document.getElementById(id);
+                if (el) el.style.display = visible ? '' : 'none';
+            }
         }
 
         function _serializeForCloud(ws) {
@@ -2731,10 +2736,13 @@
             const uid = _firebaseUser.uid;
 
             if (wsCloudId) {
-                // Update existing project
-                await _firebaseDb.ref('projects/' + wsCloudId + '/data').set(data);
-                await _firebaseDb.ref('projects/' + wsCloudId + '/meta/updatedAt').set(firebase.database.ServerValue.TIMESTAMP);
-                await _firebaseDb.ref('projects/' + wsCloudId + '/meta/name').set(data.name);
+                // Single multi-path update instead of 3 sequential writes
+                const p = 'projects/' + wsCloudId;
+                await _firebaseDb.ref().update({
+                    [p + '/data']: data,
+                    [p + '/meta/updatedAt']: firebase.database.ServerValue.TIMESTAMP,
+                    [p + '/meta/name']: data.name
+                });
                 return wsCloudId;
             } else {
                 // Create new project
@@ -2879,27 +2887,48 @@
             });
         }
 
+        // Normalize a Firebase node object (handles object→array conversions and defaults)
+        function _normalizeNode(node) {
+            node.children = Array.isArray(node.children) ? node.children : (node.children ? Object.values(node.children) : []);
+            node.parentIds = Array.isArray(node.parentIds) ? node.parentIds : (node.parentIds ? Object.values(node.parentIds) : []);
+            if (!node.parentIds || node.parentIds.length === 0) {
+                node.parentIds = node.parentId != null ? [node.parentId] : [];
+            }
+            delete node.parentId;
+            if (node.notes === undefined) node.notes = '';
+            if (node.startDate === undefined) node.startDate = null;
+            if (node.endDate === undefined) node.endDate = null;
+            if (node.estimatedHours === undefined) node.estimatedHours = null;
+            return node;
+        }
+
+        // Fast shallow array equality (avoids JSON.stringify overhead)
+        function _arrEq(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+            return true;
+        }
+
+        // Parse Firebase entries into [id, node] pairs
+        function _parseFirebaseEntries(rawNodes) {
+            const entries = typeof rawNodes === 'object' && !Array.isArray(rawNodes)
+                ? Object.entries(rawNodes) : (Array.isArray(rawNodes) ? rawNodes : []);
+            const result = [];
+            for (const entry of entries) {
+                let id, node;
+                if (Array.isArray(entry)) { [id, node] = entry; }
+                else { id = entry[0]; node = entry[1]; }
+                if (!node || typeof node !== 'object') continue;
+                result.push([id, _normalizeNode(node)]);
+            }
+            return result;
+        }
+
         function _applyRemoteData(data) {
             // Merge remote state into local — only update if data actually differs
             const importedNodes = new Map();
             if (data.nodes) {
-                const entries = typeof data.nodes === 'object' && !Array.isArray(data.nodes)
-                    ? Object.entries(data.nodes) : (Array.isArray(data.nodes) ? data.nodes : []);
-                for (const entry of entries) {
-                    let id, node;
-                    if (Array.isArray(entry)) { [id, node] = entry; }
-                    else { id = entry[0]; node = entry[1]; }
-                    if (!node || typeof node !== 'object') continue;
-                    node.children = Array.isArray(node.children) ? node.children : (node.children ? Object.values(node.children) : []);
-                    node.parentIds = Array.isArray(node.parentIds) ? node.parentIds : (node.parentIds ? Object.values(node.parentIds) : []);
-                    if (!node.parentIds || node.parentIds.length === 0) {
-                        node.parentIds = node.parentId != null ? [node.parentId] : [];
-                    }
-                    delete node.parentId;
-                    if (node.notes === undefined) node.notes = '';
-                    if (node.startDate === undefined) node.startDate = null;
-                    if (node.endDate === undefined) node.endDate = null;
-                    if (node.estimatedHours === undefined) node.estimatedHours = null;
+                for (const [id, node] of _parseFirebaseEntries(data.nodes)) {
                     importedNodes.set(id, node);
                 }
             }
@@ -2913,8 +2942,8 @@
                     if (!cur || cur.name !== node.name || cur.status !== node.status ||
                         cur.startDate !== node.startDate || cur.endDate !== node.endDate ||
                         cur.notes !== node.notes || cur.estimatedHours !== node.estimatedHours ||
-                        JSON.stringify(cur.children) !== JSON.stringify(node.children) ||
-                        JSON.stringify(cur.parentIds) !== JSON.stringify(node.parentIds)) {
+                        !_arrEq(cur.children, node.children) ||
+                        !_arrEq(cur.parentIds, node.parentIds)) {
                         same = false; break;
                     }
                 }
@@ -3071,37 +3100,50 @@
 
                 const allProjects = [...owned].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
-                // Load shared-with-me projects
+                // Load shared-with-me projects (parallel fetches)
                 const sharedProjects = [];
                 try {
-                    // Scan all sharing entries for this user
                     const allSharingSnap = await _firebaseDb.ref('sharing').once('value');
                     const allSharing = allSharingSnap.val() || {};
+                    // Collect shared project IDs in one pass
+                    const sharedPids = [];
                     for (const [pid, users] of Object.entries(allSharing)) {
-                        if (users[uid]) {
-                            // This project is shared with us
-                            try {
-                                const projSnap = await _firebaseDb.ref('projects/' + pid + '/meta').once('value');
-                                const meta = projSnap.val();
-                                if (meta) {
-                                    // Look up owner email
-                                    let ownerEmail = '';
-                                    try {
-                                        const ownerSnap = await _firebaseDb.ref('users/' + meta.ownerId + '/email').once('value');
-                                        ownerEmail = ownerSnap.val() || '';
-                                    } catch { }
-                                    sharedProjects.push({
-                                        id: pid,
-                                        name: meta.name || 'Untitled',
-                                        updatedAt: meta.updatedAt || 0,
-                                        ownerId: meta.ownerId,
-                                        ownerEmail,
-                                        role: users[uid].role,
-                                        isOwned: false
-                                    });
-                                }
-                            } catch { }
-                        }
+                        if (users[uid]) sharedPids.push({ pid, role: users[uid].role });
+                    }
+                    // Fetch all project metas in parallel
+                    const metaResults = await Promise.all(
+                        sharedPids.map(({ pid }) => _firebaseDb.ref('projects/' + pid + '/meta').once('value').catch(() => null))
+                    );
+                    // Collect unique owner IDs and fetch emails in parallel
+                    const ownerIds = new Set();
+                    const validProjects = [];
+                    for (let i = 0; i < sharedPids.length; i++) {
+                        const snap = metaResults[i];
+                        if (!snap) continue;
+                        const meta = snap.val();
+                        if (!meta) continue;
+                        if (meta.ownerId) ownerIds.add(meta.ownerId);
+                        validProjects.push({ pid: sharedPids[i].pid, role: sharedPids[i].role, meta });
+                    }
+                    const ownerEmails = new Map();
+                    if (ownerIds.size > 0) {
+                        const emailResults = await Promise.all(
+                            [...ownerIds].map(oid => _firebaseDb.ref('users/' + oid + '/email').once('value').catch(() => null))
+                        );
+                        [...ownerIds].forEach((oid, i) => {
+                            if (emailResults[i]) ownerEmails.set(oid, emailResults[i].val() || '');
+                        });
+                    }
+                    for (const { pid, role, meta } of validProjects) {
+                        sharedProjects.push({
+                            id: pid,
+                            name: meta.name || 'Untitled',
+                            updatedAt: meta.updatedAt || 0,
+                            ownerId: meta.ownerId,
+                            ownerEmail: ownerEmails.get(meta.ownerId) || '',
+                            role,
+                            isOwned: false
+                        });
                     }
                 } catch { }
                 sharedProjects.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
@@ -3217,34 +3259,7 @@
 
                 const data = proj.data;
                 const wsId = _genWsId();
-                const importedNodes = [];
-                if (data.nodes) {
-                    // nodes stored as object keyed by ID
-                    const entries = Array.isArray(data.nodes) ? data.nodes : Object.entries(data.nodes);
-                    for (const entry of entries) {
-                        // Handle both [id, node] entries and {id: node} object entries
-                        let id, node;
-                        if (Array.isArray(entry)) {
-                            [id, node] = entry;
-                        } else {
-                            // Firebase may return {0: id, 1: node} objects
-                            id = entry[0]; node = entry[1];
-                        }
-                        if (!node || typeof node !== 'object') continue;
-                        // Normalize Firebase object→array conversions
-                        node.children = Array.isArray(node.children) ? node.children : (node.children ? Object.values(node.children) : []);
-                        node.parentIds = Array.isArray(node.parentIds) ? node.parentIds : (node.parentIds ? Object.values(node.parentIds) : []);
-                        if (!node.parentIds || node.parentIds.length === 0) {
-                            node.parentIds = node.parentId != null ? [node.parentId] : [];
-                        }
-                        delete node.parentId;
-                        if (node.notes === undefined) node.notes = '';
-                        if (node.startDate === undefined) node.startDate = null;
-                        if (node.endDate === undefined) node.endDate = null;
-                        if (node.estimatedHours === undefined) node.estimatedHours = null;
-                        importedNodes.push([id, node]);
-                    }
-                }
+                const importedNodes = data.nodes ? _parseFirebaseEntries(data.nodes) : [];
 
                 workspaces.set(wsId, {
                     id: wsId, name: proj.meta?.name || 'Cloud Project',
@@ -3465,16 +3480,16 @@
                     return;
                 }
 
-                // Fetch user emails for each uid
-                const rows = [];
-                for (const [uid, info] of entries) {
-                    let email = uid;
-                    try {
-                        const userSnap = await _firebaseDb.ref('users/' + uid + '/email').once('value');
-                        if (userSnap.val()) email = userSnap.val();
-                    } catch { }
-                    rows.push({ uid, email, role: info.role, addedAt: info.addedAt });
-                }
+                // Fetch user emails in parallel
+                const emailResults = await Promise.all(
+                    entries.map(([uid]) => _firebaseDb.ref('users/' + uid + '/email').once('value').catch(() => null))
+                );
+                const rows = entries.map(([uid, info], i) => ({
+                    uid,
+                    email: (emailResults[i] && emailResults[i].val()) || uid,
+                    role: info.role,
+                    addedAt: info.addedAt
+                }));
 
                 const myUid = _firebaseUser.uid;
                 collabsEl.innerHTML = rows.map(r => {
@@ -3514,16 +3529,18 @@
                     btn.addEventListener('click', async () => {
                         if (!confirm('Revoke access for this user?')) return;
                         try {
-                            await _firebaseDb.ref('sharing/' + projectId + '/' + btn.dataset.uid).remove();
-                            // Clean up locks and presence
-                            await _firebaseDb.ref('presence/' + projectId + '/' + btn.dataset.uid).remove();
+                            const revokedUid = btn.dataset.uid;
+                            // Batch cleanup: sharing + presence + locks in one multi-path update
                             const locksSnap = await _firebaseDb.ref('locks/' + projectId).once('value');
                             const locks = locksSnap.val() || {};
+                            const cleanup = {
+                                ['sharing/' + projectId + '/' + revokedUid]: null,
+                                ['presence/' + projectId + '/' + revokedUid]: null
+                            };
                             for (const [nodeId, lock] of Object.entries(locks)) {
-                                if (lock.uid === btn.dataset.uid) {
-                                    await _firebaseDb.ref('locks/' + projectId + '/' + nodeId).remove();
-                                }
+                                if (lock.uid === revokedUid) cleanup['locks/' + projectId + '/' + nodeId] = null;
                             }
+                            await _firebaseDb.ref().update(cleanup);
                             toast('Access revoked');
                             _refreshShareCollabs(projectId, isOwner);
                         } catch (err) {
@@ -3541,15 +3558,15 @@
                             if (!confirm('Transfer ownership to ' + targetEmail + '? You will become a Contributor.')) return;
                             try {
                                 const myUid = _firebaseUser.uid;
-                                // Set new owner
-                                await _firebaseDb.ref('projects/' + projectId + '/meta/ownerId').set(targetUid);
-                                // Remove new owner from sharing (they're now the owner)
-                                await _firebaseDb.ref('sharing/' + projectId + '/' + targetUid).remove();
-                                // Add old owner (me) as contributor
-                                await _firebaseDb.ref('sharing/' + projectId + '/' + myUid).set({
-                                    role: 'contributor',
-                                    addedAt: firebase.database.ServerValue.TIMESTAMP,
-                                    addedBy: myUid
+                                // Single atomic update: transfer owner, remove new owner from sharing, add old owner as contributor
+                                await _firebaseDb.ref().update({
+                                    ['projects/' + projectId + '/meta/ownerId']: targetUid,
+                                    ['sharing/' + projectId + '/' + targetUid]: null,
+                                    ['sharing/' + projectId + '/' + myUid]: {
+                                        role: 'contributor',
+                                        addedAt: firebase.database.ServerValue.TIMESTAMP,
+                                        addedBy: myUid
+                                    }
                                 });
                                 toast('Ownership transferred to ' + targetEmail);
                                 _wsRole = 'contributor';
@@ -3820,23 +3837,22 @@
 
         function _isUndoRedoValid(snapshotJson) {
             // Check that the snapshot doesn't remove nodes that were added/modified by remote users
-            // by comparing the target snapshot against the current state
             if (!_activeWsCloudId) return true; // local projects always valid
             const current = getSnapshot();
             if (undoStack._last === current) return true; // no remote changes since last local action
-            // Remote changes happened — check if any nodes in current state are missing from target
+            // Build target ID set from snapshot without full parse — use current nodes directly
             const target = JSON.parse(snapshotJson);
             const targetIds = new Set(target.nodes.map(([id]) => id));
-            const currentData = JSON.parse(current);
-            for (const [id] of currentData.nodes) {
+            // Use live nodes Map directly instead of JSON.parse(getSnapshot())
+            let lastIds = null; // lazy-init
+            for (const id of nodes.keys()) {
                 if (!targetIds.has(id)) {
-                    // A node exists now that doesn't exist in the undo target
-                    // Check if it was in our last known state — if not, it was added remotely
-                    const lastData = JSON.parse(undoStack._last);
-                    const lastIds = new Set(lastData.nodes.map(([lid]) => lid));
-                    if (!lastIds.has(id)) {
-                        return false; // would delete a remotely-added node
+                    // Lazy-parse baseline only once, only if needed
+                    if (!lastIds) {
+                        const lastData = JSON.parse(undoStack._last);
+                        lastIds = new Set(lastData.nodes.map(([lid]) => lid));
                     }
+                    if (!lastIds.has(id)) return false;
                 }
             }
             return true;
@@ -4486,7 +4502,11 @@
 
         function renderConnectors() {
             svgEl.innerHTML = '';
-            if (layoutCache.size === 0) return;
+            if (layoutCache.size === 0) {
+                svgEl.setAttribute('width', 0);
+                svgEl.setAttribute('height', 0);
+                return;
+            }
 
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             const PAD = 6;
@@ -6441,7 +6461,7 @@
                 tab.dataset.wsId = wsId;
                 tab.draggable = true;
                 const cloudIcon = ws.wsCloudId ? '<span class="tab-cloud" title="Cloud project">☁</span>' : '';
-                tab.innerHTML = `${cloudIcon}<span class="tab-label">${esc(ws.name)}</span><button class="tab-close" title="Close tab">\u00d7</button>`;
+                tab.innerHTML = `${cloudIcon}<span class="tab-label">${esc(ws.name)}</span><button class="tab-close" title="Close project">\u00d7</button>`;
                 tabBar.insertBefore(tab, tabAddBtn);
             }
             // Update page title
@@ -6536,7 +6556,7 @@
             }
 
             if (liveNodes > 0) {
-                showConfirm(`Close tab "${esc(ws ? ws.name : '')}"? Remember to save your changes before closing.`, doClose, 'Close Tab', 'danger');
+                showConfirm(`Close project "${esc(ws ? ws.name : '')}"?`, doClose, 'Close Project', 'danger');
             } else {
                 doClose();
             }

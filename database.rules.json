@@ -1,0 +1,69 @@
+{
+    "rules": {
+        "users": {
+            "$uid": {
+                ".read": "auth != null",
+                ".write": "auth != null && auth.uid === $uid"
+            }
+        },
+        "emailIndex": {
+            "$email": {
+                ".read": "auth != null",
+                ".write": "auth != null && (!data.exists() || data.val() === auth.uid)"
+            }
+        },
+        "projects": {
+            ".read": "auth != null && query.orderByChild === 'meta/ownerId' && query.equalTo === auth.uid",
+            ".indexOn": [
+                "meta/ownerId"
+            ],
+            "$projectId": {
+                ".read": "auth != null && (data.child('meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid).exists())",
+                ".write": "auth != null && ((!data.exists() && newData.child('meta/ownerId').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('meta/ownerId').val() === auth.uid))",
+                "data": {
+                    ".write": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor')"
+                },
+                "meta": {
+                    "ownerId": {
+                        ".write": "auth != null && (data.val() === auth.uid || !data.exists())"
+                    },
+                    "name": {
+                        ".write": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor')"
+                    },
+                    "updatedAt": {
+                        ".write": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor')"
+                    },
+                    "createdAt": {
+                        ".write": "auth != null && !data.exists()"
+                    }
+                }
+            }
+        },
+        "sharing": {
+            ".read": "auth != null",
+            "$projectId": {
+                ".write": "auth != null && root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid && !newData.exists()",
+                "$uid": {
+                    ".write": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || (root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor' && $uid !== auth.uid))"
+                }
+            }
+        },
+        "presence": {
+            "$projectId": {
+                ".read": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid).exists())",
+                "$uid": {
+                    ".write": "auth != null && (auth.uid === $uid || root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor')"
+                }
+            }
+        },
+        "locks": {
+            "$projectId": {
+                ".read": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid).exists())",
+                "$nodeId": {
+                    ".write": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor')",
+                    ".validate": "!newData.exists() || newData.child('uid').val() === auth.uid"
+                }
+            }
+        }
+    }
+}

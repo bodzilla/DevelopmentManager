@@ -3621,7 +3621,7 @@
         let isVertical = false;
 
         /* theme */
-        let isDark = localStorage.getItem('tree-graph-theme') === 'dark';
+        let isDark = localStorage.getItem('theme') === 'dark';
         if (isDark) document.documentElement.setAttribute('data-theme', 'dark');
 
         /* linking mode */
@@ -3662,7 +3662,7 @@
         /* ═══════════════════════════════════════════
            PERSISTENCE (Workspace-based localStorage)
            ═══════════════════════════════════════════ */
-        const WS_STORAGE_KEY = 'tree-graph-workspaces';
+        const WS_STORAGE_KEY = 'projects';
         const MAX_HISTORY = 50;
         const undoStack = [];
         const redoStack = [];
@@ -3749,7 +3749,7 @@
             try { localStorage.setItem(WS_STORAGE_KEY, JSON.stringify(data)); } catch { }
         }
 
-        /* Load workspace registry from localStorage, with migration from legacy format */
+        /* Load workspace registry from localStorage */
         function loadWorkspaces() {
             try {
                 const raw = localStorage.getItem(WS_STORAGE_KEY);
@@ -3760,43 +3760,6 @@
                     wsOrder = data.wsOrder || [...workspaces.keys()];
                     activeWsId = data.activeWsId || wsOrder[0];
                     _wsNextNum = wsOrder.length + 1;
-                    return true;
-                }
-            } catch { }
-
-            // Migration: check for legacy single-workspace data
-            try {
-                const legacyData = localStorage.getItem('tree-graph-manager-data');
-                if (legacyData) {
-                    const parsed = JSON.parse(legacyData);
-                    const wsId = _genWsId();
-                    const legacyStatuses = localStorage.getItem('tree-graph-statuses');
-
-                    workspaces.set(wsId, {
-                        id: wsId, name: 'Project 1',
-                        nodes: parsed.nodes || [],
-                        nextId: parsed.nextId || 1,
-                        statuses: legacyStatuses ? JSON.parse(legacyStatuses) : JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
-                        panX: 60, panY: 0, scale: 1,
-                        isVertical: localStorage.getItem('tree-graph-orientation') === 'vertical',
-                        showGantt: localStorage.getItem('tree-graph-gantt') === 'true',
-                        animateEdges: localStorage.getItem('tree-graph-animate') === 'true',
-                        showDepWarnings: localStorage.getItem('tree-graph-dep-warn') !== 'false',
-                        showUndated: localStorage.getItem('tree-graph-undated') === 'true',
-                        ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
-                        undoStack: [], redoStack: [], lastSnapshot: null
-                    });
-                    wsOrder = [wsId];
-                    activeWsId = wsId;
-                    _wsNextNum = 2;
-                    // Clean up legacy keys
-                    localStorage.removeItem('tree-graph-manager-data');
-                    localStorage.removeItem('tree-graph-statuses');
-                    localStorage.removeItem('tree-graph-orientation');
-                    localStorage.removeItem('tree-graph-gantt');
-                    localStorage.removeItem('tree-graph-animate');
-                    localStorage.removeItem('tree-graph-dep-warn');
-                    localStorage.removeItem('tree-graph-undated');
                     return true;
                 }
             } catch { }
@@ -6127,7 +6090,7 @@
             isDark = !isDark;
             _hlLight = null; _hlDark = null; // invalidate highlight cache
             document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
-            localStorage.setItem('tree-graph-theme', isDark ? 'dark' : 'light');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
             updateThemeBtn();
         });
 
@@ -7403,7 +7366,7 @@
 <li><strong>Pan</strong> — Click and drag on empty space within the Gantt body to pan the timeline. Works just like the main canvas.</li>
 <li><strong>Zoom</strong> — Use the mouse wheel to zoom in and out of the timeline. The zoom centres on your cursor position. On first open, the chart auto-fits to show all your data.</li>
 <li><strong>Touch</strong> — Pinch with two fingers to zoom in/out on touch devices.</li>
-<li><strong>Drag bars to reschedule</strong> — Drag the left or right edge of any Gantt bar to adjust a node's start or end date.</li>
+<li><strong>Drag bars to reschedule</strong> — Drag the left or right edge of any Gantt bar to adjust a node's start or end date. Not available for remotely locked or read-only nodes.</li>
 <li><strong>Click a bar</strong> — Selects the corresponding node on the canvas and scrolls it into view.</li>
 <li><strong>Double-click a bar</strong> — Opens the node's edit dialog directly.</li>
 </ul>
@@ -7428,16 +7391,53 @@
 <li><strong>Reorder</strong> — Drag and drop tabs to rearrange their order.</li>
 <li><strong>Duplicate / Close</strong> — Right-click a tab for options to duplicate or close it.</li>
 </ul>
-<div class="help-tip">💡 The tab name becomes the project identity — it's used as the filename when exporting and included in shared links.</div>
+<div class="help-tip">💡 The tab name becomes the project identity — it's used as the filename when exporting and as the project name in the cloud.</div>
 </div>
 
 <div class="help-section"><h3>📁 File Operations</h3>
 <ul>
 <li><strong>Export</strong> — <em>File → Export</em> saves the current project as a JSON file, named after your tab.</li>
 <li><strong>Import</strong> — <em>File → Import</em> loads a JSON file as a <em>new tab</em>, preserving your existing projects.</li>
-<li><strong>Share Link</strong> — <em>File → Share Link</em> encodes the current project into the URL. Anyone with the link can open it as a new tab.</li>
+<li><strong>Save to Cloud</strong> — <em>File → Save to Cloud</em> saves the project to your cloud account. Subsequent edits are auto-saved. Requires sign-in.</li>
+<li><strong>My Projects</strong> — <em>File → My Projects</em> lists all your owned and shared cloud projects. Open any project as a new tab.</li>
+<li><strong>Share Project</strong> — <em>File → Share Project</em> invites collaborators by email. Appears after the project has been saved to the cloud.</li>
 <li><strong>Clear All</strong> — Removes all nodes from the current tab (with confirmation).</li>
 </ul>
+</div>
+
+<div class="help-section"><h3>👤 Accounts &amp; Authentication</h3>
+<p>Click the user icon in the top-right corner to sign in or manage your account.</p>
+<ul>
+<li><strong>Sign In / Sign Up</strong> — Create an account or sign in with your email and password.</li>
+<li><strong>Change Password</strong> — Update your password from the account menu.</li>
+<li><strong>Forgot Password</strong> — Request a password reset link from the sign-in screen.</li>
+<li><strong>My Projects</strong> — Quick access to all your cloud projects from the account menu.</li>
+</ul>
+<div class="help-tip">💡 Signing in unlocks cloud saving, sharing, and real-time collaboration features.</div>
+</div>
+
+<div class="help-section"><h3>👥 Sharing &amp; Collaboration</h3>
+<p>Share cloud projects with other users by inviting them via email. Each collaborator is assigned a role.</p>
+<ul>
+<li><strong>Contributor</strong> — Can edit nodes, change statuses, update dates, and manage the Gantt timeline. Contributors can also invite or revoke other collaborators.</li>
+<li><strong>Read Only</strong> — Can view the project and its Gantt timeline but cannot make any changes.</li>
+<li><strong>Owner</strong> — Full control including the ability to delete the project, transfer ownership (👑), and manage all collaborators.</li>
+</ul>
+<p>Role changes take effect immediately — if a contributor is downgraded to read-only, any open edit dialogs are closed and editing is disabled instantly.</p>
+<div class="help-tip">💡 Revoking a collaborator's access immediately closes the project in their browser and removes their cursor and locks.</div>
+</div>
+
+<div class="help-section"><h3>🔴 Real-Time Collaboration</h3>
+<p>When multiple users have the same cloud project open, changes sync in real time.</p>
+<ul>
+<li><strong>Live cursors</strong> — See other users' cursor positions on the canvas, each with a unique colour and name label.</li>
+<li><strong>Online avatars</strong> — Coloured circles in the toolbar show who is currently viewing the project. Hover for their name.</li>
+<li><strong>Node locking</strong> — When someone opens a node for editing, it is locked with a <strong>🔒 username</strong> badge. Other users cannot edit that node until the lock is released (when the editor is closed).</li>
+<li><strong>Status customiser locking</strong> — Only one user can edit status definitions at a time. A banner appears in the status panel when another user is editing statuses.</li>
+<li><strong>Auto-save</strong> — Local changes are automatically saved to the cloud within less than a second. Incoming remote changes merge seamlessly.</li>
+<li><strong>Undo/Redo</strong> — Undo and redo are cloud-aware. If a remote change conflicts with an undo/redo action, you'll be notified and the stacks are reset to prevent data loss.</li>
+</ul>
+<div class="help-tip">💡 Locks and cursors are automatically cleaned up if a user disconnects or closes their browser.</div>
 </div>
 
 <div class="help-section"><h3>🎨 View &amp; Appearance</h3>
@@ -7460,7 +7460,7 @@
 </div>
 
 <div class="help-section"><h3>⚙ Customize Statuses</h3>
-<p>Open <em>Tools → Customize Statuses</em> to add, edit, remove, or reorder the available statuses. Each status has a label, colour, and icon. Changes are saved per workspace.</p>
+<p>Open <em>Tools → Customize Statuses</em> to add, edit, remove, or reorder the available statuses. Each status has a label, colour, and icon. Changes are saved per workspace. In a shared cloud project, only one user can edit statuses at a time — a lock banner will appear if another user is already editing.</p>
 </div>
 
 <div class="help-section"><h3>📝 Node Notes</h3>
@@ -7501,7 +7501,7 @@
             const aboutHTML = `
 <div class="help-about-header">
 <h3>Development Manager</h3>
-<p>Dependency-first project planning &amp; visualisation</p>
+<p>Collaborative, dependency-first project planning &amp; visualisation</p>
 </div>
 <div class="help-section">
 <h3>Purpose</h3>
@@ -7515,7 +7515,8 @@
 <li><strong>Effortless restructuring</strong> — Add, remove, or remap dependencies without worrying about manual layout. The graph re-arranges itself automatically, so you can focus on <em>what</em> needs doing, not <em>where</em> to place it on screen.</li>
 <li><strong>Estimation &amp; scheduling</strong> — The built-in Gantt timeline lets you assign dates to tasks and visualise overlaps, gaps, and scheduling conflicts across the project's timeline.</li>
 <li><strong>Progress tracking</strong> — The status panel provides at-a-glance completion metrics. Filter the graph by status, multi-select nodes for bulk updates, and customise statuses to match your workflow.</li>
-<li><strong>Multiple projects</strong> — Workspace tabs keep separate projects independent. Each tab has its own nodes, statuses, and settings — export, import, or share them individually.</li>
+<li><strong>Real-time collaboration</strong> — Save projects to the cloud and invite collaborators by email. See live cursors, online avatars, and node-level locks — everyone stays in sync with changes merging automatically.</li>
+<li><strong>Multiple projects</strong> — Workspace tabs keep separate projects independent. Each tab has its own nodes, statuses, and settings — export, import, or save them to the cloud individually.</li>
 </ul>
 </div>
 <div class="help-section">
@@ -7553,7 +7554,7 @@
         /* ═══════════════════════════════════════════
            INIT
            ═══════════════════════════════════════════ */
-        const _isFirstVisit = !localStorage.getItem(WS_STORAGE_KEY) && !localStorage.getItem('tree-graph-manager-data') && !window.location.hash.slice(1);
+        const _isFirstVisit = !localStorage.getItem(WS_STORAGE_KEY) && !window.location.hash.slice(1);
         loadWorkspaces();
         loadFromHash();
         ensureWorkspace();

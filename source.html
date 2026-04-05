@@ -2779,6 +2779,7 @@
                     _rtSuppressNextUpdate = true;
                     await saveProjectToCloud(_activeWsCloudId);
                 } catch (err) {
+                    _rtSuppressNextUpdate = false;
                     console.error('Cloud auto-save failed:', err);
                 }
             }, _CLOUD_SAVE_DEBOUNCE);
@@ -3948,11 +3949,14 @@
 
         function addChild(parentId, name, status = 'not-started', extras = {}) {
             _batch = true;
-            const id = createNode(name, status, extras);
-            addLink(parentId, id);
-            _batch = false;
-            saveState();
-            return id;
+            try {
+                const id = createNode(name, status, extras);
+                addLink(parentId, id);
+                return id;
+            } finally {
+                _batch = false;
+                saveState();
+            }
         }
 
         function addLink(parentId, childId) {
@@ -3985,8 +3989,11 @@
             const node = nodes.get(id);
             if (!node || node.parentIds.length === 0) return;
             _batch = true;
-            for (const pid of [...node.parentIds]) removeLink(pid, id);
-            _batch = false;
+            try {
+                for (const pid of [...node.parentIds]) removeLink(pid, id);
+            } finally {
+                _batch = false;
+            }
             _markLayoutDirty();
             saveState();
         }
@@ -3995,15 +4002,18 @@
             const child = nodes.get(childId);
             if (!child) return;
             _batch = true;
-            const newId = createNode(name, status, extras);
-            for (const pid of [...child.parentIds]) {
-                removeLink(pid, childId);
-                addLink(pid, newId);
+            try {
+                const newId = createNode(name, status, extras);
+                for (const pid of [...child.parentIds]) {
+                    removeLink(pid, childId);
+                    addLink(pid, newId);
+                }
+                addLink(newId, childId);
+                return newId;
+            } finally {
+                _batch = false;
+                saveState();
             }
-            addLink(newId, childId);
-            _batch = false;
-            saveState();
-            return newId;
         }
 
         function deleteNode(id) {
@@ -4011,16 +4021,20 @@
             const node = nodes.get(id);
             if (!node) return;
             _batch = true;
-            for (const pid of [...node.parentIds]) {
-                removeLink(pid, id);
-                for (const cid of node.children) {
-                    if (!nodes.get(cid).parentIds.includes(pid)) addLink(pid, cid);
+            try {
+                for (const pid of [...node.parentIds]) {
+                    removeLink(pid, id);
+                    for (const cid of node.children) {
+                        const cn = nodes.get(cid);
+                        if (cn && !cn.parentIds.includes(pid)) addLink(pid, cid);
+                    }
                 }
+                for (const cid of [...node.children]) removeLink(id, cid);
+                nodes.delete(id);
+                if (selectedId === id) selectedId = null;
+            } finally {
+                _batch = false;
             }
-            for (const cid of [...node.children]) removeLink(id, cid);
-            nodes.delete(id);
-            if (selectedId === id) selectedId = null;
-            _batch = false;
             _markLayoutDirty();
             saveState();
         }
@@ -4439,7 +4453,13 @@
         function render() {
             if (_layoutDirty) {
                 _layoutDirty = false;
-                computeLayout();
+                try {
+                    computeLayout();
+                } catch (e) {
+                    console.error('Layout error:', e);
+                    _layoutDirty = true;
+                    return;
+                }
                 renderConnectors();
             } else {
                 updateConnectorHighlights();
@@ -6500,8 +6520,12 @@
         function switchWorkspace(wsId) {
             if (wsId === activeWsId) return;
             if (!workspaces.has(wsId)) return;
+            // Cancel any pending cloud save for the old workspace
+            clearTimeout(_cloudSaveTimer);
+            _cloudSaveTimer = null;
             // Detach real-time listeners from old project
             _unlockAllMyNodes();
+            _myLockedNodeId = null;
             _detachRealtime();
             // Save current workspace state
             if (activeWsId) workspaces.set(activeWsId, captureWorkspace());

@@ -4462,7 +4462,12 @@
         function setNodeStatus(id, status) {
             const n = nodes.get(id);
             if (!n) return;
-            const oldComplete = statusMap.get(n.status)?.complete;
+            const oldSt = statusMap.get(n.status);
+            const newSt = statusMap.get(status);
+            const oldComplete = oldSt?.complete;
+            if (n.status !== status) {
+                _auditLog('Status', `Changed '${n.name}' from '${oldSt ? oldSt.label : n.status}' to '${newSt ? newSt.label : status}'`);
+            }
             n.status = status;
             _markGanttDirty();
             const newComplete = statusMap.get(status)?.complete;
@@ -6103,6 +6108,25 @@
                     }
                     // Assign stable IDs
                     draft.forEach((s, i) => { if (!s.id) s.id = 'status-' + i; });
+                    // Audit log status customization changes
+                    const oldMap = new Map(STATUSES.map(s => [s.id, s]));
+                    const newMap = new Map(draft.map(s => [s.id, s]));
+                    for (const s of draft) {
+                        const old = oldMap.get(s.id);
+                        if (!old) {
+                            _auditLog('Add Status', `Added status '${s.label}' (${s.icon || 'no icon'}, ${s.color})`);
+                        } else {
+                            const changes = [];
+                            if (old.label !== s.label) changes.push(`label '${old.label}' → '${s.label}'`);
+                            if (old.color !== s.color) changes.push(`color ${old.color} → ${s.color}`);
+                            if ((old.icon || '') !== (s.icon || '')) changes.push(`icon '${old.icon || ''}' → '${s.icon || ''}'`);
+                            if (!!old.complete !== !!s.complete) changes.push(s.complete ? 'marked as done' : 'unmarked as done');
+                            if (changes.length) _auditLog('Update Status', `Updated '${s.label}': ${changes.join(', ')}`);
+                        }
+                    }
+                    for (const s of STATUSES) {
+                        if (!newMap.has(s.id)) _auditLog('Remove Status', `Removed status '${s.label}'`);
+                    }
                     STATUSES = draft;
                     saveStatuses();
                     rebuildStatusMap();
@@ -6151,10 +6175,7 @@
             dd.querySelectorAll('.sd-item').forEach(el => {
                 el.addEventListener('click', (ev) => {
                     ev.stopPropagation();
-                    const nodeName = nodes.get(nodeId)?.name || nodeId;
-                    const newSt = statusMap.get(el.dataset.status);
                     setNodeStatus(nodeId, el.dataset.status);
-                    _auditLog('Status', `Changed status of '${nodeName}' to '${newSt ? newSt.label : el.dataset.status}'`);
                     saveState();
                     closeStatusDropdown();
                     render();

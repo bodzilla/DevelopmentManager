@@ -579,22 +579,13 @@
         #legend {
             position: fixed;
             bottom: 16px;
-            right: 16px;
+            right: var(--sp-r, 16px);
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 14px 18px;
             z-index: 90;
-            box-shadow: var(--shadow);
-            transition: right .2s ease
-        }
-
-        #legend.panel-open {
-            right: 316px
-        }
-
-        #legend.panel-minimized {
-            right: 52px
+            box-shadow: var(--shadow)
         }
 
         #legend.legend-collapsed #legend-rows,
@@ -916,6 +907,194 @@
 
         #md-help-body {
             padding: 10px 14px
+        }
+
+        /* ─── AUDIT LOG PANEL (left side) ─── */
+        #audit-log-panel {
+            position: fixed;
+            top: 72px;
+            left: 0;
+            bottom: var(--gantt-h, 0px);
+            width: 580px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            z-index: 90;
+            transform: translateX(-100%);
+            transition: transform .2s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: 12px;
+            color: var(--text-secondary)
+        }
+
+        #audit-log-panel.open {
+            transform: translateX(0)
+        }
+
+        #audit-log-panel.minimized {
+            width: 36px !important;
+            min-width: 36px
+        }
+
+        #audit-log-panel.minimized #audit-log-body {
+            display: none
+        }
+
+        #audit-log-panel.minimized .ap-header h3 {
+            display: none
+        }
+
+        #audit-log-panel.minimized .ap-min-label {
+            display: block
+        }
+
+        .ap-min-label {
+            display: none;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            padding: 12px 0;
+            align-self: center
+        }
+
+        #audit-log-panel.minimized .ap-header {
+            justify-content: center;
+            padding: 4px 0;
+            flex-direction: column;
+            border-bottom: none
+        }
+
+        #audit-log-panel.minimized .ap-header-btns {
+            flex-direction: column
+        }
+
+        #audit-log-panel.minimized #ap-close {
+            display: none
+        }
+
+        .panel-resize-handle {
+            position: absolute;
+            top: 0;
+            width: 8px;
+            height: 100%;
+            cursor: ew-resize;
+            z-index: 2;
+            background: transparent;
+            transition: background .15s
+        }
+
+        .panel-resize-handle:hover,
+        .panel-resize-handle.active {
+            background: var(--accent)
+        }
+
+        .panel-resize-handle.left {
+            right: -4px
+        }
+
+        .panel-resize-handle.right {
+            left: -4px
+        }
+
+        .ap-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0
+        }
+
+        .ap-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0
+        }
+
+        .ap-header-btns {
+            display: flex;
+            gap: 4px
+        }
+
+        .ap-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: transparent;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: background .15s
+        }
+
+        .ap-btn:hover {
+            background: var(--hover-bg)
+        }
+
+        #audit-log-body {
+            flex: 1;
+            overflow: auto;
+            padding: 0
+        }
+
+        #audit-log-body::-webkit-scrollbar {
+            width: 5px;
+            height: 5px
+        }
+
+        #audit-log-body::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px
+        }
+
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px
+        }
+
+        .audit-table th {
+            position: sticky;
+            top: 0;
+            background: var(--surface);
+            text-align: left;
+            padding: 6px 10px;
+            border-bottom: 2px solid var(--border);
+            color: var(--text);
+            font-weight: 600;
+            white-space: nowrap
+        }
+
+        .audit-table td {
+            padding: 5px 10px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+            word-break: break-word
+        }
+
+        .audit-table tr:hover td {
+            background: var(--hover)
+        }
+
+        .audit-table td:first-child {
+            white-space: nowrap;
+            min-width: 130px
+        }
+
+        .audit-table td:nth-child(2) {
+            white-space: nowrap
         }
 
         .modal-overlay {
@@ -1326,8 +1505,9 @@
             position: fixed;
             top: 72px;
             right: 0;
-            bottom: 0;
-            width: 300px;
+            bottom: var(--gantt-h, 0px);
+            width: 360px;
+            bottom: var(--gantt-h, 0px);
             background: var(--surface);
             border-left: 1px solid var(--border);
             box-shadow: var(--shadow);
@@ -1344,7 +1524,7 @@
         }
 
         #side-panel.minimized {
-            width: 36px;
+            width: 36px !important;
             min-width: 36px
         }
 
@@ -1354,6 +1534,22 @@
 
         #side-panel.minimized .sp-header h3 {
             display: none
+        }
+
+        #side-panel.minimized .sp-min-label {
+            display: block
+        }
+
+        .sp-min-label {
+            display: none;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            letter-spacing: 1px;
+            padding: 12px 0;
+            align-self: center
         }
 
         #side-panel.minimized .sp-header {
@@ -1375,7 +1571,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 14px 16px;
+            padding: 8px 16px;
             border-bottom: 1px solid var(--border);
             flex-shrink: 0
         }
@@ -1597,44 +1793,67 @@
             background: var(--surface);
             border-top: 1px solid var(--border);
             z-index: 95;
-            display: none;
+            display: flex;
             flex-direction: column;
-            transition: right .2s ease
+            transform: translateY(100%);
+            transition: transform .2s ease
         }
 
         #gantt-panel.visible {
-            display: flex
+            transform: translateY(0)
         }
 
-        #gantt-panel.minimized #gantt-body,
-        #gantt-panel.minimized #gantt-handle,
-        #gantt-panel.minimized #gantt-dates {
-            display: none
+        #gantt-panel.minimized .gantt-dates-row,
+        #gantt-panel.minimized .gantt-content-row,
+        #gantt-panel.minimized #gantt-handle {
+            display: none !important
         }
 
         #gantt-panel.minimized {
-            height: auto !important
+            height: auto !important;
+            max-height: none
+        }
+
+        #gantt-panel.minimized #gantt-header {
+            padding: 6px 16px;
+            border-bottom: none
         }
 
         #gantt-handle {
-            height: 12px;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
+            position: absolute;
+            top: -4px;
+            left: 0;
+            right: 0;
+            height: 8px;
             cursor: ns-resize;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            color: var(--text-secondary);
+            z-index: 2;
+            background: transparent;
+            transition: background .15s;
             user-select: none
         }
 
+        #gantt-handle:hover,
+        #gantt-handle.active {
+            background: var(--accent)
+        }
+
         #gantt-header {
-            padding: 6px 14px;
+            padding: 8px 16px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 12px
+            justify-content: space-between;
+            flex-shrink: 0
+        }
+
+        #gantt-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0
         }
 
         #gantt-body {
@@ -1663,12 +1882,22 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             flex-shrink: 0;
-            border-right: 1px solid var(--border);
-            cursor: pointer
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .gantt-label:hover {
             background: var(--hover-bg)
+        }
+
+        .gantt-label-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0
         }
 
         .gantt-track {
@@ -1683,7 +1912,7 @@
             height: 20px;
             border-radius: 4px;
             min-width: 4px;
-            cursor: pointer;
+            cursor: grab;
             opacity: .85;
             transition: opacity .15s
         }
@@ -1709,6 +1938,10 @@
             text-align: center;
             color: var(--text-secondary);
             font-size: 13px
+        }
+
+        .gantt-undated:hover {
+            background: rgba(127, 127, 127, 0.08) !important
         }
 
         /* ─── MULTI-SELECT ─── */
@@ -2106,7 +2339,7 @@
                     <button class="menu-entry" id="btn-import"><span class="menu-icon">📂</span> Import<span
                             class="menu-shortcut"></span></button>
                     <button class="menu-entry" id="btn-export"><span class="menu-icon">💾</span> Export</button>
-                    <div class="menu-sep"></div>
+                    <div class="menu-sep" id="cloud-menu-sep" style="display:none"></div>
                     <button class="menu-entry" id="btn-save-cloud" style="display:none"><span class="menu-icon">☁</span>
                         Save to Cloud</button>
                     <button class="menu-entry" id="btn-my-projects" style="display:none"><span
@@ -2161,6 +2394,9 @@
                         Gantt Timeline</button>
                     <button class="menu-entry" id="btn-toggle-undated"><span class="menu-check" id="chk-undated"></span>
                         Highlight Undated Nodes</button>
+                    <div class="menu-sep"></div>
+                    <button class="menu-entry" id="btn-toggle-audit"><span class="menu-check" id="chk-audit"></span>
+                        Audit Log</button>
                 </div>
             </div>
             <div class="menu-item" data-menu="tools">
@@ -2243,17 +2479,27 @@
 
     <!-- GANTT PANEL -->
     <div id="gantt-panel">
-        <div id="gantt-handle" title="Drag to resize">⋯</div>
-        <div id="gantt-header"><span style="font-weight:600;font-size:13px">Gantt Timeline</span><button
-                id="gantt-minimize"
-                style="margin-left:auto;border:none;background:transparent;color:var(--text-secondary);font-size:13px;cursor:pointer;padding:2px 6px"
-                title="Minimize">▼</button></div>
-        <div id="gantt-dates"
-            style="overflow:hidden;position:relative;height:20px;flex-shrink:0;border-bottom:1px solid var(--border)">
+        <div id="gantt-handle" title="Drag to resize"></div>
+        <div id="gantt-header">
+            <h3>Gantt Timeline</h3>
+            <div class="ap-header-btns">
+                <button class="ap-btn" id="gantt-minimize" title="Minimize">▼</button>
+                <button class="ap-btn" id="gantt-close" title="Close">✕</button>
+            </div>
         </div>
-        <div id="gantt-body">
-            <div id="gantt-grid"
-                style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:0">
+        <div class="gantt-dates-row" style="display:flex;border-bottom:1px solid var(--border)">
+            <div style="width:140px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface)"></div>
+            <div id="gantt-dates" style="overflow:hidden;position:relative;height:20px;flex:1;flex-shrink:0">
+            </div>
+        </div>
+        <div class="gantt-content-row" style="flex:1;display:flex;overflow:hidden;position:relative">
+            <div id="gantt-labels"
+                style="width:140px;flex-shrink:0;overflow:hidden;border-right:1px solid var(--border);position:relative;z-index:2;background:var(--surface)">
+            </div>
+            <div id="gantt-body">
+                <div id="gantt-grid"
+                    style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:hidden;z-index:0">
+                </div>
             </div>
         </div>
     </div>
@@ -2275,6 +2521,7 @@
 
     <!-- SIDE PANEL -->
     <div id="side-panel">
+        <div class="panel-resize-handle right" id="sp-resize"></div>
         <div class="sp-header">
             <h3 id="sp-title">Node Details</h3>
             <div class="sp-header-btns">
@@ -2282,6 +2529,7 @@
                 <button class="sp-btn" id="sp-close" title="Close">✕</button>
             </div>
         </div>
+        <div class="sp-min-label">Details</div>
         <div class="sp-body" id="sp-body"></div>
     </div>
 
@@ -2313,6 +2561,20 @@
             <code>\`\`\`</code> fenced code block <code>\`\`\`</code><br>
             <code>---</code> horizontal rule
         </div>
+    </div>
+
+    <!-- AUDIT LOG PANEL -->
+    <div id="audit-log-panel">
+        <div class="panel-resize-handle left" id="ap-resize"></div>
+        <div class="ap-header">
+            <h3>Audit Log</h3>
+            <div class="ap-header-btns">
+                <button class="ap-btn" id="ap-minimize" title="Minimize">◀</button>
+                <button class="ap-btn" id="ap-close" title="Close">✕</button>
+            </div>
+        </div>
+        <div class="ap-min-label">Audit Log</div>
+        <div id="audit-log-body"></div>
     </div>
 
     <!-- TOAST -->
@@ -2669,12 +2931,24 @@
                 _updateAuthUI();
                 _updateCloudMenuVisibility();
                 if (user && wasLoggedOut) {
+                    _backfillAuthorship(user.email);
                     _offerLocalMigration();
                     // Attach real-time listeners if a cloud project is already open
                     if (_activeWsCloudId) _attachRealtime(_activeWsCloudId);
                 }
                 if (!user) _detachRealtime();
             });
+        }
+
+        // Backfill null createdBy/lastEditedBy on all nodes in the current workspace
+        function _backfillAuthorship(email) {
+            let changed = false;
+            for (const [, node] of nodes) {
+                if (!node.createdBy) { node.createdBy = email; changed = true; }
+                if (!node.lastEditedBy) { node.lastEditedBy = email; changed = true; }
+                if (!node.createdDate) { node.createdDate = node.lastEditedDate || Date.now(); changed = true; }
+            }
+            if (changed) saveState();
         }
 
         /* ═══════════════════════════════════════════
@@ -2786,6 +3060,47 @@
         }
 
         /* ═══════════════════════════════════════════
+           AUDIT LOG
+           ═══════════════════════════════════════════ */
+        let _auditEntries = [];
+        let _rtAuditRef = null;
+        let _showAuditLog = false;
+        let _auditLoading = false;
+        const _AUDIT_MAX = 100;
+
+        function _auditLog(action, detail) {
+            if (!_activeWsCloudId || !_firebaseUser || !_fbConfigured) return;
+            const entry = {
+                action,
+                detail: (detail || '').substring(0, 500),
+                user: _firebaseUser.email || 'unknown',
+                ts: firebase.database.ServerValue.TIMESTAMP
+            };
+            _firebaseDb.ref('projects/' + _activeWsCloudId + '/auditLog').push(entry)
+                .catch(err => console.error('Audit log write failed:', err.message));
+        }
+
+        function _renderAuditLog() {
+            const body = document.getElementById('audit-log-body');
+            if (!body) return;
+            if (_auditLoading) {
+                body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-secondary);font-size:12px">Loading audits...</div>';
+                return;
+            }
+            if (_auditEntries.length === 0) {
+                body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text-secondary);font-size:12px">No audit entries yet</div>';
+                return;
+            }
+            const rows = _auditEntries.slice().reverse().map(e => {
+                const time = _formatMetaDate(e.ts);
+                const user = e.user || 'unknown';
+                return `<tr><td>${esc(time)}</td><td>${esc(user)}</td><td><strong>${esc(e.action)}</strong></td><td>${esc(e.detail)}</td></tr>`;
+            }).join('');
+            const note = _auditEntries.length >= _AUDIT_MAX ? `<div style="padding:6px 10px;font-size:10px;color:var(--text-secondary);text-align:center;border-top:1px solid var(--border)">Showing latest ${_AUDIT_MAX} entries</div>` : '';
+            body.innerHTML = `<table class="audit-table"><thead><tr><th>Time</th><th>User</th><th>Action</th><th>Detail</th></tr></thead><tbody>${rows}</tbody></table>${note}`;
+        }
+
+        /* ═══════════════════════════════════════════
            REAL-TIME COLLABORATION
            ═══════════════════════════════════════════ */
 
@@ -2794,9 +3109,11 @@
             if (_rtPresenceRef) { _rtPresenceRef.off(); _rtPresenceRef = null; }
             if (_rtLocksRef) { _rtLocksRef.off(); _rtLocksRef = null; }
             if (_rtShareRef) { _rtShareRef.off(); _rtShareRef = null; }
+            if (_rtAuditRef) { _rtAuditRef.off(); _rtAuditRef = null; }
             if (_rtMyPresRef) { _rtMyPresRef.onDisconnect().cancel(); _rtMyPresRef.remove(); _rtMyPresRef = null; }
             _remoteCursors = {};
             _remoteLocks = {};
+            _auditEntries = [];
             _renderRemoteCursors();
         }
 
@@ -2888,6 +3205,23 @@
                     toast(isReadonly ? 'Your role has been changed to Read Only' : 'Your role has been changed to Contributor');
                 }
             });
+
+            // 5. Audit log listener — tail last N entries
+            _rtAuditRef = _firebaseDb.ref('projects/' + projectId + '/auditLog').orderByChild('ts').limitToLast(_AUDIT_MAX);
+            _auditLoading = true;
+            if (_showAuditLog) _renderAuditLog();
+            _rtAuditRef.on('value', snap => {
+                _auditLoading = false;
+                _auditEntries = [];
+                const data = snap.val();
+                if (data) {
+                    for (const entry of Object.values(data)) {
+                        _auditEntries.push(entry);
+                    }
+                    _auditEntries.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+                }
+                if (_showAuditLog) _renderAuditLog();
+            });
         }
 
         // Normalize a Firebase node object (handles object→array conversions and defaults)
@@ -2902,6 +3236,10 @@
             if (node.startDate === undefined) node.startDate = null;
             if (node.endDate === undefined) node.endDate = null;
             if (node.estimatedHours === undefined) node.estimatedHours = null;
+            if (node.lastEditedDate === undefined) node.lastEditedDate = 0;
+            if (node.createdDate === undefined) node.createdDate = 0;
+            if (node.createdBy === undefined) node.createdBy = null;
+            if (node.lastEditedBy === undefined) node.lastEditedBy = null;
             return node;
         }
 
@@ -3303,6 +3641,7 @@
                 toast('Sign in to save to cloud');
                 return;
             }
+            _backfillAuthorship(_firebaseUser.email);
             const ws = captureWorkspace();
             const cloudId = ws.wsCloudId || _activeWsCloudId;
 
@@ -3718,6 +4057,10 @@
                 ganttScale: _ganttScale,
                 ganttPanX: _ganttPanX, ganttPanY: _ganttPanY,
                 spMinimized: spMinimized || false,
+                spWidth: _spWidth || 360,
+                apWidth: _apWidth || 580,
+                showAuditLog: _showAuditLog || false,
+                auditMinimized: _auditMinimized || false,
                 legendCollapsed: legendCollapsed || false,
                 undoStack: undoStack.slice(),
                 redoStack: redoStack.slice(),
@@ -3748,6 +4091,10 @@
             _ganttPanX = ws.ganttPanX ?? 0;
             _ganttPanY = ws.ganttPanY ?? 0;
             spMinimized = ws.spMinimized ?? false;
+            _spWidth = ws.spWidth ?? 360;
+            _apWidth = ws.apWidth ?? 580;
+            _showAuditLog = ws.showAuditLog ?? false;
+            _auditMinimized = ws.auditMinimized ?? false;
             legendCollapsed = ws.legendCollapsed ?? false;
             undoStack.length = 0;
             redoStack.length = 0;
@@ -3886,6 +4233,7 @@
             saveWorkspaces();
             selectedId = null;
             render();
+            _auditLog('Undo', 'Undo');
             _scheduleCloudSave();
         }
 
@@ -3907,6 +4255,7 @@
             saveWorkspaces();
             selectedId = null;
             render();
+            _auditLog('Redo', 'Redo');
             _scheduleCloudSave();
         }
 
@@ -3939,9 +4288,22 @@
             return false;
         }
 
+        function _currentUserEmail() { return _firebaseUser ? _firebaseUser.email : null; }
+
+        function _formatMetaDate(ts) {
+            if (!ts) return '—';
+            const d = new Date(ts);
+            const h = d.getUTCHours() % 12 || 12;
+            const ampm = d.getUTCHours() < 12 ? 'AM' : 'PM';
+            return d.getUTCDate() + ' ' + _gMonths[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + ', ' + h + ':' + String(d.getUTCMinutes()).padStart(2, '0') + ' ' + ampm + ' UTC';
+        }
+
+        function _metaAuthor(email) { return email || 'Unknown'; }
+
         function createNode(name, status = 'not-started', extras = {}) {
             const id = 'node-' + (nextId++);
-            nodes.set(id, { id, name, status, parentIds: [], children: [], notes: extras.notes || '', startDate: extras.startDate || null, endDate: extras.endDate || null, estimatedHours: extras.estimatedHours || null });
+            const email = _currentUserEmail();
+            nodes.set(id, { id, name, status, parentIds: [], children: [], notes: extras.notes || '', startDate: extras.startDate || null, endDate: extras.endDate || null, estimatedHours: extras.estimatedHours || null, lastEditedDate: Date.now(), createdDate: Date.now(), createdBy: email, lastEditedBy: email });
             _markLayoutDirty();
             saveState();
             return id;
@@ -4766,6 +5128,12 @@
             const x2 = e.cPos.x;
             const y2 = e.cPos.y + NODE_H / 2;
 
+            // Pre-filter nodeRects to exclude edge endpoints
+            const rects = [];
+            for (const r of nodeRects) {
+                if (r.id !== e.parentId && r.id !== e.childId) rects.push(r);
+            }
+
             if (y1 === y2) return `M${x1},${y1} H${x2}`;
 
             const colStep = NODE_W + H_GAP;
@@ -4777,12 +5145,6 @@
                 const gapLeft = c * colStep + NODE_W;
                 const gapRight = (c + 1) * colStep;
                 gaps.push({ left: gapLeft, right: gapRight, mid: (gapLeft + gapRight) / 2 });
-            }
-
-            // Pre-filter nodeRects to exclude edge endpoints (done once per edge)
-            const rects = [];
-            for (const r of nodeRects) {
-                if (r.id !== e.parentId && r.id !== e.childId) rects.push(r);
             }
 
             function hitsNodeAt(vx, yA, yB) {
@@ -4857,25 +5219,31 @@
                         }
                     }
                     if (colNodes.length > 0) {
-                        colNodes.sort((a, b) => a.y - b.y);
-                        // Build gaps between adjacent nodes (and above/below extremes)
-                        const nodeGaps = [];
-                        nodeGaps.push({ mid: colNodes[0].y - NODE_H * 0.5 });
-                        for (let ni = 0; ni < colNodes.length - 1; ni++) {
-                            nodeGaps.push({ mid: (colNodes[ni].y + colNodes[ni].h + colNodes[ni + 1].y) / 2 });
+                        // Check if curY actually passes through any node in this column
+                        let blocked = false;
+                        for (const r of colNodes) {
+                            if (curY >= r.y && curY <= r.y + r.h) { blocked = true; break; }
                         }
-                        nodeGaps.push({ mid: colNodes[colNodes.length - 1].y + colNodes[colNodes.length - 1].h + NODE_H * 0.5 });
-                        // Pick gap closest to the midpoint of curY and destination y2
-                        const targetY = (curY + y2) / 2;
-                        let bestMid = curY, bestDist = Infinity;
-                        for (const g of nodeGaps) {
-                            const d = Math.abs(g.mid - targetY);
-                            if (d < bestDist) { bestDist = d; bestMid = g.mid; }
-                        }
-                        if (Math.abs(bestMid - curY) > 1) {
-                            points.push({ x: gx, y: curY });
-                            points.push({ x: gx, y: bestMid });
-                            curY = bestMid;
+                        if (blocked) {
+                            colNodes.sort((a, b) => a.y - b.y);
+                            // Build gaps between adjacent nodes (and above/below extremes)
+                            const nodeGaps = [];
+                            nodeGaps.push({ mid: colNodes[0].y - NODE_H * 0.5 });
+                            for (let ni = 0; ni < colNodes.length - 1; ni++) {
+                                nodeGaps.push({ mid: (colNodes[ni].y + colNodes[ni].h + colNodes[ni + 1].y) / 2 });
+                            }
+                            nodeGaps.push({ mid: colNodes[colNodes.length - 1].y + colNodes[colNodes.length - 1].h + NODE_H * 0.5 });
+                            // Pick gap closest to curY to minimise detour
+                            let bestMid = curY, bestDist = Infinity;
+                            for (const g of nodeGaps) {
+                                const d = Math.abs(g.mid - curY);
+                                if (d < bestDist) { bestDist = d; bestMid = g.mid; }
+                            }
+                            if (Math.abs(bestMid - curY) > 1) {
+                                points.push({ x: gx, y: curY });
+                                points.push({ x: gx, y: bestMid });
+                                curY = bestMid;
+                            }
                         }
                     }
                 }
@@ -4894,6 +5262,12 @@
             const x2 = e.cPos.x + NODE_W / 2; // top-center of child
             const y2 = e.cPos.y;
 
+            // Pre-filter nodeRects to exclude edge endpoints
+            const rects = [];
+            for (const r of nodeRects) {
+                if (r.id !== e.parentId && r.id !== e.childId) rects.push(r);
+            }
+
             if (x1 === x2) return `M${x1},${y1} V${y2}`;
 
             const parentRow = Math.round(e.pPos.y / rowStep);
@@ -4904,12 +5278,6 @@
                 const gapTop = r * rowStep + NODE_H;
                 const gapBot = (r + 1) * rowStep;
                 gaps.push({ top: gapTop, bot: gapBot, mid: (gapTop + gapBot) / 2 });
-            }
-
-            // Pre-filter nodeRects to exclude edge endpoints (done once per edge)
-            const rects = [];
-            for (const r of nodeRects) {
-                if (r.id !== e.parentId && r.id !== e.childId) rects.push(r);
             }
 
             // Check if a horizontal segment at hy from xA to xB hits any node
@@ -4985,25 +5353,31 @@
                         }
                     }
                     if (rowNodes.length > 0) {
-                        rowNodes.sort((a, b) => a.x - b.x);
-                        // Build gaps between adjacent nodes (and left/right extremes)
-                        const nodeGaps = [];
-                        nodeGaps.push({ mid: rowNodes[0].x - NODE_W * 0.5 });
-                        for (let ni = 0; ni < rowNodes.length - 1; ni++) {
-                            nodeGaps.push({ mid: (rowNodes[ni].x + rowNodes[ni].w + rowNodes[ni + 1].x) / 2 });
+                        // Check if curX actually passes through any node in this row
+                        let blocked = false;
+                        for (const r of rowNodes) {
+                            if (curX >= r.x && curX <= r.x + r.w) { blocked = true; break; }
                         }
-                        nodeGaps.push({ mid: rowNodes[rowNodes.length - 1].x + rowNodes[rowNodes.length - 1].w + NODE_W * 0.5 });
-                        // Pick gap closest to the midpoint of curX and destination x2
-                        const targetX = (curX + x2) / 2;
-                        let bestMid = curX, bestDist = Infinity;
-                        for (const g of nodeGaps) {
-                            const d = Math.abs(g.mid - targetX);
-                            if (d < bestDist) { bestDist = d; bestMid = g.mid; }
-                        }
-                        if (Math.abs(bestMid - curX) > 1) {
-                            points.push({ x: curX, y: gy });
-                            points.push({ x: bestMid, y: gy });
-                            curX = bestMid;
+                        if (blocked) {
+                            rowNodes.sort((a, b) => a.x - b.x);
+                            // Build gaps between adjacent nodes (and left/right extremes)
+                            const nodeGaps = [];
+                            nodeGaps.push({ mid: rowNodes[0].x - NODE_W * 0.5 });
+                            for (let ni = 0; ni < rowNodes.length - 1; ni++) {
+                                nodeGaps.push({ mid: (rowNodes[ni].x + rowNodes[ni].w + rowNodes[ni + 1].x) / 2 });
+                            }
+                            nodeGaps.push({ mid: rowNodes[rowNodes.length - 1].x + rowNodes[rowNodes.length - 1].w + NODE_W * 0.5 });
+                            // Pick gap closest to curX to minimise detour
+                            let bestMid = curX, bestDist = Infinity;
+                            for (const g of nodeGaps) {
+                                const d = Math.abs(g.mid - curX);
+                                if (d < bestDist) { bestDist = d; bestMid = g.mid; }
+                            }
+                            if (Math.abs(bestMid - curX) > 1) {
+                                points.push({ x: curX, y: gy });
+                                points.push({ x: bestMid, y: gy });
+                                curX = bestMid;
+                            }
                         }
                     }
                 }
@@ -5187,24 +5561,64 @@
         const _legendEl = document.getElementById('legend');
         const _ganttPanelEl = document.getElementById('gantt-panel');
         let spMinimized = false;
+        let _spWidth = 360;
+
+        function _getSpWidth() { return spMinimized ? 36 : _spWidth; }
 
         function _syncSpMinState() {
             sidePanel.classList.toggle('minimized', spMinimized);
             document.getElementById('sp-minimize').textContent = spMinimized ? '\u25c0' : '\u25b6';
-            _syncGanttRight();
+            if (!spMinimized) sidePanel.style.width = _spWidth + 'px';
             _legendEl.classList.toggle('panel-open', !spMinimized && sidePanel.classList.contains('open'));
             _legendEl.classList.toggle('panel-minimized', spMinimized && sidePanel.classList.contains('open'));
+            _syncLegendRight();
         }
 
-        function _syncGanttRight() {
+        function _syncLegendRight() {
             const isOpen = sidePanel.classList.contains('open');
-            if (!isOpen) { _ganttPanelEl.style.right = '0'; return; }
-            _ganttPanelEl.style.right = spMinimized ? '36px' : '300px';
+            const r = isOpen ? (_getSpWidth() + 16) : 16;
+            document.documentElement.style.setProperty('--sp-r', r + 'px');
         }
+
+        /* ── Side panel resize handle ── */
+        (function () {
+            const handle = document.getElementById('sp-resize');
+            let dragging = false, startX, startW;
+            handle.addEventListener('mousedown', e => {
+                if (spMinimized) return;
+                e.preventDefault();
+                dragging = true;
+                startX = e.clientX;
+                startW = _spWidth;
+                handle.classList.add('active');
+                document.body.style.cursor = 'ew-resize';
+                document.body.style.userSelect = 'none';
+            });
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const maxW = Math.floor(window.innerWidth * 0.5);
+                _spWidth = Math.max(360, Math.min(maxW, startW + (startX - e.clientX)));
+                sidePanel.style.width = _spWidth + 'px';
+                _syncLegendRight();
+            });
+            document.addEventListener('mouseup', () => {
+                if (!dragging) return;
+                dragging = false;
+                handle.classList.remove('active');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                saveWorkspaces();
+            });
+        })();
 
         function _syncLegendBottom() {
-            if (!showGantt) { _legendEl.style.bottom = '16px'; return; }
-            const gpH = ganttMinimized ? 32 : (ganttHeight || 200);
+            if (!showGantt) {
+                _legendEl.style.bottom = '16px';
+                document.documentElement.style.setProperty('--gantt-h', '0px');
+                return;
+            }
+            const gpH = ganttMinimized ? 34 : (ganttHeight || 200);
+            document.documentElement.style.setProperty('--gantt-h', gpH + 'px');
             _legendEl.style.bottom = (gpH + 16) + 'px';
         }
 
@@ -5212,17 +5626,17 @@
             if (!selectedId) {
                 sidePanel.classList.remove('open');
                 _legendEl.classList.remove('panel-open', 'panel-minimized');
-                _syncGanttRight();
+                _syncLegendRight();
                 return;
             }
 
             const node = nodes.get(selectedId);
-            if (!node) { sidePanel.classList.remove('open'); _legendEl.classList.remove('panel-open', 'panel-minimized'); _syncGanttRight(); return; }
+            if (!node) { sidePanel.classList.remove('open'); _legendEl.classList.remove('panel-open', 'panel-minimized'); _syncLegendRight(); return; }
 
             sidePanel.classList.add('open');
             _legendEl.classList.toggle('panel-open', !spMinimized);
             _legendEl.classList.toggle('panel-minimized', spMinimized);
-            _syncGanttRight();
+            _syncLegendRight();
             const st = statusMap.get(node.status) || STATUSES[0];
             spTitle.textContent = node.name;
 
@@ -5253,6 +5667,15 @@
             let notesHtml = '';
             if (node.notes) {
                 notesHtml = `<div class="sp-section"><div class="sp-section-title">Notes</div><div class="sp-notes">${renderMarkdown(node.notes)}</div></div>`;
+            }
+
+            // Build activity/metadata section
+            let metaHtml = '';
+            if (node.createdDate || node.lastEditedDate) {
+                metaHtml = `<div class="sp-section"><div class="sp-section-title">Activity</div>`;
+                if (node.createdDate) metaHtml += `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px">Created: ${_formatMetaDate(node.createdDate)}${node.createdBy ? ' by <strong>' + esc(node.createdBy) + '</strong>' : ''}</div>`;
+                if (node.lastEditedDate) metaHtml += `<div style="font-size:11px;color:var(--text-secondary);margin-bottom:3px">Edited: ${_formatMetaDate(node.lastEditedDate)}${node.lastEditedBy ? ' by <strong>' + esc(node.lastEditedBy) + '</strong>' : ''}</div>`;
+                metaHtml += '</div>';
             }
 
             // Build warnings section
@@ -5292,6 +5715,8 @@
     </div>
 
     ${notesHtml}
+
+    ${metaHtml}
   `;
 
             // Click to navigate to a node
@@ -5308,7 +5733,7 @@
             selectedId = null;
             sidePanel.classList.remove('open');
             _legendEl.classList.remove('panel-open', 'panel-minimized');
-            _syncGanttRight();
+            _syncLegendRight();
             scheduleRender();
         });
 
@@ -5363,6 +5788,71 @@
         })();
 
         function _showMdHelpModal() { _mdHelpModal.classList.add('visible'); }
+
+        /* ── Audit Log Panel (left side, mirrors side-panel) ── */
+        const _auditLogPanel = document.getElementById('audit-log-panel');
+        let _auditMinimized = false;
+        let _apWidth = 580;
+
+        function _getApWidth() { return _auditMinimized ? 36 : _apWidth; }
+
+        function _syncAuditPanelState() {
+            _auditLogPanel.classList.toggle('minimized', _auditMinimized);
+            document.getElementById('ap-minimize').textContent = _auditMinimized ? '\u25b6' : '\u25c0';
+            if (!_auditMinimized) _auditLogPanel.style.width = _apWidth + 'px';
+        }
+
+        /* ── Audit panel resize handle ── */
+        (function () {
+            const handle = document.getElementById('ap-resize');
+            let dragging = false, startX, startW;
+            handle.addEventListener('mousedown', e => {
+                if (_auditMinimized) return;
+                e.preventDefault();
+                dragging = true;
+                startX = e.clientX;
+                startW = _apWidth;
+                handle.classList.add('active');
+                document.body.style.cursor = 'ew-resize';
+                document.body.style.userSelect = 'none';
+            });
+            document.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const maxW = Math.floor(window.innerWidth * 0.5);
+                _apWidth = Math.max(580, Math.min(maxW, startW + (e.clientX - startX)));
+                _auditLogPanel.style.width = _apWidth + 'px';
+            });
+            document.addEventListener('mouseup', () => {
+                if (!dragging) return;
+                dragging = false;
+                handle.classList.remove('active');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                saveWorkspaces();
+            });
+        })();
+
+        document.getElementById('ap-close').addEventListener('click', () => {
+            _showAuditLog = false;
+            _auditLogPanel.classList.remove('open');
+            updateViewChecks();
+            saveWorkspaces();
+        });
+        document.getElementById('ap-minimize').addEventListener('click', () => {
+            _auditMinimized = !_auditMinimized;
+            _syncAuditPanelState();
+            saveWorkspaces();
+        });
+
+        function _toggleAuditLog() {
+            if (!_activeWsCloudId) { toast('Audit log is only available for cloud projects'); return; }
+            _showAuditLog = !_showAuditLog;
+            _auditLogPanel.classList.toggle('open', _showAuditLog);
+            if (_showAuditLog) _auditLogPanel.style.width = _apWidth + 'px';
+            updateViewChecks();
+            saveWorkspaces();
+            if (_showAuditLog) _renderAuditLog();
+        }
 
         modalOverlay.addEventListener('mousedown', e => { if (e.target === modalOverlay) closeModal(); });
         document.addEventListener('keydown', e => {
@@ -5425,6 +5915,10 @@
       <label>Est. Hours</label>
       <input type="number" id="m-hours" value="${estimatedHours}" min="0" step="0.5" style="width:100px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;background:var(--bg);color:var(--text)" placeholder="0">
     </div>
+    ${existingNode ? `<div style="border-top:1px solid var(--border);margin:12px 0 4px;padding-top:10px;font-size:11px;color:var(--text-secondary);line-height:1.7">
+      <div>Created: ${_formatMetaDate(existingNode.createdDate)}${existingNode.createdBy ? ' by <strong>' + esc(existingNode.createdBy) + '</strong>' : ''}</div>
+      <div>Last edited: ${_formatMetaDate(existingNode.lastEditedDate)}${existingNode.lastEditedBy ? ' by <strong>' + esc(existingNode.lastEditedBy) + '</strong>' : ''}</div>
+    </div>` : ''}
     <div class="actions">
       <button onclick="closeModal()">Cancel</button>
       <button class="primary" id="m-save">Save</button>
@@ -5458,7 +5952,7 @@
                     const day = d.getDay();
                     if (day === 6) d.setDate(d.getDate() + 2);
                     else if (day === 0) d.setDate(d.getDate() + 1);
-                    inp.value = d.toISOString().slice(0, 10);
+                    inp.value = _localDateStr(d);
                 });
             });
 
@@ -5473,6 +5967,22 @@
                 const savedStart = document.getElementById('m-start').value || null;
                 const savedEnd = document.getElementById('m-end').value || null;
                 const savedHours = parseFloat(document.getElementById('m-hours').value) || null;
+
+                // Audit edit changes
+                if (editId && existingNode) {
+                    const changes = [];
+                    if (n !== existingNode.name) changes.push(`Renamed '${existingNode.name}' to '${n}'`);
+                    if (selStatus !== existingNode.status) {
+                        const newSt = statusMap.get(selStatus);
+                        changes.push(`Changed status to '${newSt ? newSt.label : selStatus}'`);
+                    }
+                    if (savedStart !== (existingNode.startDate || null) || savedEnd !== (existingNode.endDate || null))
+                        changes.push(`Changed dates: ${savedStart || '—'} → ${savedEnd || '—'}`);
+                    if (savedNotes !== (existingNode.notes || '')) changes.push('Updated notes');
+                    if (savedHours !== (existingNode.estimatedHours || null)) changes.push(`Changed est. hours to ${savedHours || 0}h`);
+                    if (changes.length > 0) _auditLog('Edit', `${existingNode.name}: ${changes.join('; ')}`);
+                }
+
                 onSave(n, selStatus, { notes: savedNotes, startDate: savedStart, endDate: savedEnd, estimatedHours: savedHours });
                 closeModal();
             }
@@ -5503,9 +6013,10 @@
         function showDeleteModal(id) {
             const node = nodes.get(id);
             if (!node) return;
+            const nodeName = node.name;
 
             if (node.children.length === 0) {
-                showConfirm(`Delete <strong>${esc(node.name)}</strong>?`, () => { deleteNode(id); render(); });
+                showConfirm(`Delete <strong>${esc(node.name)}</strong>?`, () => { deleteNode(id); _auditLog('Delete', `Deleted '${nodeName}'`); render(); });
                 return;
             }
 
@@ -5518,8 +6029,8 @@
       <button onclick="closeModal()" style="width:100%;justify-content:center">Cancel</button>
     </div>
   `);
-            document.getElementById('m-recon').addEventListener('click', () => { deleteNode(id); closeModal(); render(); });
-            document.getElementById('m-subtree').addEventListener('click', () => { deleteSubtree(id); closeModal(); render(); });
+            document.getElementById('m-recon').addEventListener('click', () => { deleteNode(id); _auditLog('Delete', `Deleted '${nodeName}' (reconnected dependents)`); closeModal(); render(); });
+            document.getElementById('m-subtree').addEventListener('click', () => { deleteSubtree(id); _auditLog('Delete Subtree', `Deleted subtree starting from '${nodeName}'`); closeModal(); render(); });
         }
 
         /* ═══════════════════════════════════════════
@@ -5640,7 +6151,10 @@
             dd.querySelectorAll('.sd-item').forEach(el => {
                 el.addEventListener('click', (ev) => {
                     ev.stopPropagation();
+                    const nodeName = nodes.get(nodeId)?.name || nodeId;
+                    const newSt = statusMap.get(el.dataset.status);
                     setNodeStatus(nodeId, el.dataset.status);
+                    _auditLog('Status', `Changed status of '${nodeName}' to '${newSt ? newSt.label : el.dataset.status}'`);
                     saveState();
                     closeStatusDropdown();
                     render();
@@ -5761,7 +6275,12 @@
             if (linkMode) {
                 if (id === linkSourceId) { toast('Cannot link a node to itself'); return; }
                 const ok = linkReverse ? addLink(id, linkSourceId) : addLink(linkSourceId, id);
-                if (ok) toast('Link created');
+                if (ok) {
+                    const srcName = nodes.get(linkReverse ? id : linkSourceId)?.name || '';
+                    const tgtName = nodes.get(linkReverse ? linkSourceId : id)?.name || '';
+                    _auditLog('Link', `Linked '${srcName}' → '${tgtName}'`);
+                    toast('Link created');
+                }
                 exitLinkMode();
                 render();
                 return;
@@ -5811,7 +6330,7 @@
                 name: node.name,
                 status: node.status,
                 editId: id,
-                onSave(name, status, extras) { renameNode(id, name); setNodeStatus(id, status); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; saveState(); render(); }
+                onSave(name, status, extras) { renameNode(id, name); setNodeStatus(id, status); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; nd.lastEditedDate = Date.now(); nd.lastEditedBy = _currentUserEmail(); saveState(); render(); }
             });
         });
 
@@ -5841,12 +6360,12 @@
             const items = [
                 {
                     label: 'Add Child', icon: '＋', action: 'add-child', handler() {
-                        showNodeModal({ title: 'Add Child Node', onSave(n, s, extras) { addChild(id, n, s, extras); render(); } });
+                        showNodeModal({ title: 'Add Child Node', onSave(n, s, extras) { addChild(id, n, s, extras); _auditLog('Add Child', `Added child '${n}' to '${node.name}'`); render(); } });
                     }
                 },
                 {
                     label: 'Add Parent', icon: '＋', action: 'insert', handler() {
-                        showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(id, n, s, extras); render(); } });
+                        showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(id, n, s, extras); _auditLog('Add Parent', `Added parent '${n}' before '${node.name}'`); render(); } });
                     }
                 },
                 {
@@ -5859,14 +6378,14 @@
                         addAdditionalParent(id);
                     }
                 },
-                { label: 'Detach', icon: '⛓️‍💥', action: 'detach', disabled: node.parentIds.length === 0, handler() { detachNode(id); render(); toast('Node detached — now a root node'); } },
+                { label: 'Detach', icon: '⛓️‍💥', action: 'detach', disabled: node.parentIds.length === 0, handler() { const nn = node.name; detachNode(id); _auditLog('Detach', `Detached '${nn}' from parents`); render(); toast('Node detached — now a root node'); } },
                 { divider: true },
                 {
                     label: 'Edit', icon: '✎', action: 'edit', handler() {
                         showNodeModal({
                             title: 'Edit Node', name: node.name, status: node.status,
                             editId: id,
-                            onSave(n, s, extras) { renameNode(id, n); setNodeStatus(id, s); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; saveState(); render(); }
+                            onSave(n, s, extras) { renameNode(id, n); setNodeStatus(id, s); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; nd.lastEditedDate = Date.now(); nd.lastEditedBy = _currentUserEmail(); saveState(); render(); }
                         });
                     }
                 },
@@ -5941,6 +6460,7 @@
                                 removeLink(parentId, childId);
                                 addLink(parentId, newId);
                                 addLink(newId, childId);
+                                _auditLog('Insert on Edge', `Inserted '${n}' between '${parentNode.name}' and '${childNode.name}'`);
                                 render();
                             }
                         });
@@ -5949,6 +6469,7 @@
                 {
                     label: `Remove Link (${esc(parentNode.name)} → ${esc(childNode.name)})`, icon: '✕', action: 'rm-link', danger: true, handler() {
                         removeLink(parentId, childId);
+                        _auditLog('Remove Link', `Removed link '${parentNode.name}' → '${childNode.name}'`);
                         toast('Link removed');
                         render();
                     }
@@ -6072,6 +6593,7 @@
                 title: 'Create Node', onSave(n, s, extras) {
                     const isFirst = nodes.size === 0;
                     createNode(n, s, extras);
+                    _auditLog('Create', `Created node '${n}'`);
                     render();
                     if (isFirst) fitView();
                 }
@@ -6083,7 +6605,8 @@
 
         document.getElementById('btn-add-child').addEventListener('click', () => {
             if (!selectedId) return;
-            showNodeModal({ title: 'Add Child Node', onSave(n, s, extras) { addChild(selectedId, n, s, extras); render(); } });
+            const parentName = nodes.get(selectedId)?.name || selectedId;
+            showNodeModal({ title: 'Add Child Node', onSave(n, s, extras) { addChild(selectedId, n, s, extras); _auditLog('Add Child', `Added child '${n}' to '${parentName}'`); render(); } });
         });
 
         document.getElementById('btn-link').addEventListener('click', () => {
@@ -6098,12 +6621,15 @@
 
         document.getElementById('btn-insert-before').addEventListener('click', () => {
             if (!selectedId) return;
-            showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(selectedId, n, s, extras); render(); } });
+            const childName = nodes.get(selectedId)?.name || selectedId;
+            showNodeModal({ title: 'Add Parent Node', onSave(n, s, extras) { insertBefore(selectedId, n, s, extras); _auditLog('Insert Parent', `Inserted '${n}' before '${childName}'`); render(); } });
         });
 
         document.getElementById('btn-detach').addEventListener('click', () => {
             if (!selectedId) return;
+            const nodeName = nodes.get(selectedId)?.name || selectedId;
             detachNode(selectedId);
+            _auditLog('Detach', `Detached '${nodeName}' from parents`);
             render();
             toast('Node detached — now a root node');
         });
@@ -6114,7 +6640,7 @@
             showNodeModal({
                 title: 'Edit Node', name: node.name, status: node.status,
                 editId: selectedId,
-                onSave(n, s, extras) { renameNode(selectedId, n); setNodeStatus(selectedId, s); const nd = nodes.get(selectedId); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; saveState(); render(); }
+                onSave(n, s, extras) { renameNode(selectedId, n); setNodeStatus(selectedId, s); const nd = nodes.get(selectedId); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; nd.lastEditedDate = Date.now(); nd.lastEditedBy = _currentUserEmail(); saveState(); render(); }
             });
         });
 
@@ -6295,7 +6821,7 @@
                 showNodeModal({
                     title: 'Edit Node', name: node.name, status: node.status,
                     editId: selectedId,
-                    onSave(n, s, extras) { renameNode(selectedId, n); setNodeStatus(selectedId, s); const nd = nodes.get(selectedId); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; saveState(); render(); }
+                    onSave(n, s, extras) { renameNode(selectedId, n); setNodeStatus(selectedId, s); const nd = nodes.get(selectedId); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; nd.lastEditedDate = Date.now(); nd.lastEditedBy = _currentUserEmail(); saveState(); render(); }
                 });
             }
             if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) { e.preventDefault(); if (!_wsReadonly) undo(); }
@@ -6546,9 +7072,15 @@
             updateViewChecks();
             updateOrientBtn();
             ganttPanel.style.height = ganttHeight + 'px';
+            sidePanel.style.width = _spWidth + 'px';
             _syncGanttMinBtn();
             _syncSpMinState();
             _syncLegendCollapsed();
+            // Restore audit panel state from workspace
+            _auditLogPanel.classList.toggle('open', _showAuditLog && !!ws.wsCloudId);
+            _auditLogPanel.style.width = _apWidth + 'px';
+            _syncAuditPanelState();
+            if (_showAuditLog && ws.wsCloudId) _renderAuditLog();
             render();
             applyTransform();
             _syncLegendBottom();
@@ -6780,6 +7312,7 @@
             document.getElementById('chk-animate').textContent = animateEdges ? '✓' : '';
             document.getElementById('chk-dep-warn').textContent = showDepWarnings ? '✓' : '';
             document.getElementById('chk-undated').textContent = showUndated ? '✓' : '';
+            document.getElementById('chk-audit').textContent = _showAuditLog ? '✓' : '';
             ganttPanel.classList.toggle('visible', showGantt);
             svgEl.classList.toggle('animate-edges', animateEdges);
         }
@@ -6811,6 +7344,9 @@
             updateViewChecks();
             scheduleRender();
         });
+        document.getElementById('btn-toggle-audit').addEventListener('click', () => {
+            _toggleAuditLog();
+        });
 
         /* ═══════════════════════════════════════════
            GANTT PANEL
@@ -6819,6 +7355,7 @@
         const ganttBody = document.getElementById('gantt-body');
         const ganttDatesEl = document.getElementById('gantt-dates');
         const ganttGridEl = document.getElementById('gantt-grid');
+        const ganttLabelsEl = document.getElementById('gantt-labels');
         let ganttMinimized = false;
         let _ganttScale = 0;
         let _ganttPanX = 0, _ganttPanY = 0;
@@ -6827,6 +7364,7 @@
 
         function _syncGanttMinBtn() {
             ganttPanel.classList.toggle('minimized', ganttMinimized);
+            ganttPanel.style.height = ganttMinimized ? 'auto' : ganttHeight + 'px';
             document.getElementById('gantt-minimize').textContent = ganttMinimized ? '\u25b2' : '\u25bc';
         }
 
@@ -6835,6 +7373,13 @@
             _syncGanttMinBtn();
             _syncLegendBottom();
             saveWorkspaces();
+        });
+
+        document.getElementById('gantt-close').addEventListener('click', () => {
+            showGantt = false;
+            saveWorkspaces();
+            updateViewChecks();
+            _syncLegendBottom();
         });
 
         ganttHandle.addEventListener('mousedown', e => {
@@ -6846,7 +7391,7 @@
                 ganttPanel.style.height = ganttHeight + 'px';
                 _syncLegendBottom();
             }
-            function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+            function onUp() { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); saveWorkspaces(); }
             document.addEventListener('mousemove', onMove);
             document.addEventListener('mouseup', onUp);
         });
@@ -6889,10 +7434,21 @@
             for (const ln of lines) {
                 ln.style.left = (+ln.dataset.col * +ln.dataset.baseW * _ganttScale + _ganttPanX) + 'px';
             }
+            // Sync Y-axis labels with vertical pan + scale
+            if (ganttLabelsEl._inner) {
+                ganttLabelsEl._inner.style.transform = `translateY(${_ganttPanY}px)`;
+                const lbls = ganttLabelsEl._inner.querySelectorAll('.gantt-label');
+                for (const lbl of lbls) {
+                    const r = +lbl.dataset.row;
+                    lbl.style.top = (r * 28 * _ganttScale) + 'px';
+                    lbl.style.height = (22 * _ganttScale) + 'px';
+                    lbl.style.lineHeight = (22 * _ganttScale) + 'px';
+                }
+            }
         }
 
         ganttBody.addEventListener('mousedown', e => {
-            if (e.target.closest('.gantt-handle-l, .gantt-handle-r') || e.target.closest('[data-gantt-id]') || e.button !== 0) return;
+            if (e.target.closest('.gantt-handle-l, .gantt-handle-r') || e.target.closest('[data-gantt-id]') || e.button !== 0 || _ganttDragCreating) return;
             _ganttPanning = true;
             _ganttPanStartX = e.clientX - _ganttPanX;
             _ganttPanStartY = e.clientY - _ganttPanY;
@@ -6954,21 +7510,63 @@
         ganttBody.addEventListener('touchend', () => { _ganttTouches = null; });
 
         function _isWeekend(d) { const day = d.getDay(); return day === 0 || day === 6; }
+        function _localDateStr(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
         const _gMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
         function renderGantt() {
             if (!showGantt) return;
+            if (nodes.size === 0) { const oldTl2 = ganttBody.querySelector('.gantt-timeline'); if (oldTl2) oldTl2.remove(); ganttGridEl.innerHTML = ''; ganttDatesEl.innerHTML = ''; if (!ganttBody.querySelector('.gantt-no-dates')) ganttGridEl.insertAdjacentHTML('beforebegin', '<div class="gantt-no-dates">No nodes yet.</div>'); return; }
+
+            // Collect all nodes, split into dated and undated
             const dated = [];
+            const undated = [];
             for (const [id, node] of nodes) {
                 if (node.startDate || node.endDate) dated.push({ id, node });
+                else undated.push({ id, node });
             }
-            if (dated.length === 0) { const oldTl2 = ganttBody.querySelector('.gantt-timeline'); if (oldTl2) oldTl2.remove(); ganttGridEl.innerHTML = ''; ganttDatesEl.innerHTML = ''; if (!ganttBody.querySelector('.gantt-no-dates')) ganttGridEl.insertAdjacentHTML('beforebegin', '<div class="gantt-no-dates">No nodes have dates set. Edit a node to add start/end dates.</div>'); return; }
-            dated.sort((a, b) => _nodeCmp(a.id, b.id));
+            // Compute topological depth for consistent ordering
+            const _ganttDepth = new Map();
+            const _inDeg = new Map();
+            for (const [id, node] of nodes) {
+                _inDeg.set(id, node.parentIds.length);
+                _ganttDepth.set(id, 0);
+            }
+            const _q = [];
+            for (const [id, deg] of _inDeg) { if (deg === 0) _q.push(id); }
+            let _qi = 0;
+            while (_qi < _q.length) {
+                const cur = _q[_qi++];
+                const nd = nodes.get(cur);
+                if (!nd) continue;
+                for (const cid of nd.children) {
+                    const d = _ganttDepth.get(cur) + 1;
+                    if (d > _ganttDepth.get(cid)) _ganttDepth.set(cid, d);
+                    _inDeg.set(cid, _inDeg.get(cid) - 1);
+                    if (_inDeg.get(cid) === 0) _q.push(cid);
+                }
+            }
+            // Sort: depth first, then date, then node order
+            function _ganttSort(a, b) {
+                const da = _ganttDepth.get(a.id) || 0;
+                const db = _ganttDepth.get(b.id) || 0;
+                if (da !== db) return da - db;
+                const aTime = a.node.startDate ? new Date(a.node.startDate + 'T00:00:00').getTime() : (a.node.endDate ? new Date(a.node.endDate + 'T00:00:00').getTime() : Infinity);
+                const bTime = b.node.startDate ? new Date(b.node.startDate + 'T00:00:00').getTime() : (b.node.endDate ? new Date(b.node.endDate + 'T00:00:00').getTime() : Infinity);
+                if (aTime !== bTime) return aTime - bTime;
+                const aEd = a.node.lastEditedDate || 0;
+                const bEd = b.node.lastEditedDate || 0;
+                if (aEd !== bEd) return bEd - aEd;
+                return _nodeCmp(a.id, b.id);
+            }
+            dated.sort(_ganttSort);
+            undated.sort(_ganttSort);
+            // All nodes: dated first, then undated
+            const allEntries = [...dated, ...undated];
 
             let minD = Infinity, maxD = -Infinity;
             for (const { node } of dated) {
-                const s = node.startDate ? new Date(node.startDate).getTime() : null;
-                const e = node.endDate ? new Date(node.endDate).getTime() : null;
+                const s = node.startDate ? new Date(node.startDate + 'T00:00:00').getTime() : null;
+                const e = node.endDate ? new Date(node.endDate + 'T00:00:00').getTime() : null;
                 if (s && s < minD) minD = s;
                 if (e && e > maxD) maxD = e;
                 if (s && !e && s > maxD) maxD = s;
@@ -7018,9 +7616,19 @@
 
             // Reverse helper: map a column position back to a weekday date string (YYYY-MM-DD)
             function colToDate(col) {
-                const idx = Math.floor(Math.max(0, Math.min(col, colCount - 1)));
-                const d = new Date(weekdayCols[idx].time);
-                return d.toISOString().slice(0, 10);
+                const idx = Math.floor(col);
+                if (idx >= 0 && idx < colCount) return _localDateStr(new Date(weekdayCols[idx].time));
+                // Extrapolate beyond visible range, skipping weekends
+                if (idx < 0) {
+                    const d = new Date(weekdayCols[0].time);
+                    let steps = -idx;
+                    while (steps > 0) { d.setDate(d.getDate() - 1); if (!_isWeekend(d)) steps--; }
+                    return _localDateStr(d);
+                }
+                const d = new Date(weekdayCols[colCount - 1].time);
+                let steps = idx - (colCount - 1);
+                while (steps > 0) { d.setDate(d.getDate() + 1); if (!_isWeekend(d)) steps--; }
+                return _localDateStr(d);
             }
 
             const noDatesMsg = ganttBody.querySelector('.gantt-no-dates'); if (noDatesMsg) noDatesMsg.remove();
@@ -7041,18 +7649,34 @@
             ganttGridEl.innerHTML = gridParts.join('');
 
             let row = 0;
-            for (const { id, node } of dated) {
+            const labelParts = [];
+            for (const { id, node } of allEntries) {
                 const st = statusMap.get(node.status) || STATUSES[0];
-                const s = node.startDate ? new Date(node.startDate).getTime() : (node.endDate ? new Date(node.endDate).getTime() : minD);
-                const e = (node.endDate ? new Date(node.endDate).getTime() : s) + 86400000;
-                const leftCol = Math.floor(timeToCol(s));
-                const rightCol = Math.ceil(timeToCol(e));
-                const left = leftCol * colW;
-                const width = Math.max((rightCol - leftCol) * colW, colW);
-                parts.push(`<div class="gantt-row" data-gantt-id="${id}" style="position:absolute;top:${row * 28}px;left:${left}px;width:${width}px;height:22px;background:${st.color};border-radius:4px;cursor:pointer;display:flex;align-items:center;padding:0 6px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden" title="${esc(node.name)}"><div class="gantt-handle-l" style="position:absolute;left:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:4px 0 0 4px"></div><span style="pointer-events:none;overflow:hidden;text-overflow:ellipsis;flex:1">${esc(node.name)}</span><div class="gantt-handle-r" style="position:absolute;right:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:0 4px 4px 0"></div></div>`);
+                const hasDates = !!(node.startDate || node.endDate);
+                // Y-axis label
+                labelParts.push(`<div class="gantt-label" data-gantt-label-id="${id}" data-row="${row}" style="position:absolute;top:${row * 28 * _ganttScale}px;height:${22 * _ganttScale}px;line-height:${22 * _ganttScale}px" title="${esc(node.name)}"><span class="gantt-label-dot" style="background:${st.color}"></span><span style="overflow:hidden;text-overflow:ellipsis;flex:1;color:${hasDates ? 'var(--text)' : 'var(--text-secondary)'}">${esc(node.name)}</span></div>`);
+                if (hasDates) {
+                    const s = node.startDate ? new Date(node.startDate + 'T00:00:00').getTime() : (node.endDate ? new Date(node.endDate + 'T00:00:00').getTime() : minD);
+                    const e = (node.endDate ? new Date(node.endDate + 'T00:00:00').getTime() : s) + 86400000;
+                    const leftCol = Math.floor(timeToCol(s));
+                    const rightCol = Math.ceil(timeToCol(e));
+                    const left = leftCol * colW;
+                    const width = Math.max((rightCol - leftCol) * colW, colW);
+                    parts.push(`<div class="gantt-row" data-gantt-id="${id}" style="position:absolute;top:${row * 28}px;left:${left}px;width:${width}px;height:22px;background:${st.color};border-radius:4px;cursor:grab;display:flex;align-items:center;padding:0 6px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden" title="${esc(node.name)}"><div class="gantt-handle-l" style="position:absolute;left:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:4px 0 0 4px"></div><span style="pointer-events:none;overflow:hidden;text-overflow:ellipsis;flex:1">${esc(node.name)}</span><div class="gantt-handle-r" style="position:absolute;right:0;top:0;width:6px;height:100%;cursor:ew-resize;border-radius:0 4px 4px 0"></div></div>`);
+                } else {
+                    // Undated node — invisible full-width drop zone for drag-to-create
+                    parts.push(`<div class="gantt-row gantt-undated" data-gantt-id="${id}" style="position:absolute;top:${row * 28}px;left:0;width:${colCount * colW}px;height:22px;border-radius:4px;cursor:crosshair;background:transparent" title="Drag to set dates for ${esc(node.name)}"></div>`);
+                }
                 row++;
             }
             parts.push('</div>');
+            // Build Y-axis labels
+            const labelsInner = document.createElement('div');
+            labelsInner.style.cssText = 'position:relative;transform:translateY(' + _ganttPanY + 'px)';
+            labelsInner.innerHTML = labelParts.join('');
+            ganttLabelsEl.innerHTML = '';
+            ganttLabelsEl.appendChild(labelsInner);
+            ganttLabelsEl._inner = labelsInner;
             // Preserve #gantt-grid overlay — remove old timeline, insert new one before grid
             const oldTl = ganttBody.querySelector('.gantt-timeline');
             if (oldTl) oldTl.remove();
@@ -7077,22 +7701,189 @@
             // Store render context for delegated event handlers
             _ganttColW = colW;
             _ganttColToDate = colToDate;
+            _ganttEntries = allEntries;
         }
 
         // --- Gantt delegated event handlers (attached once, not per-render) ---
         let _ganttColW = 36;
         let _ganttColToDate = null;
         let _ganttClickTimer = null;
+        let _ganttEntries = []; // allEntries from last renderGantt
+        let _ganttDragCreating = false; // true during drag-to-create
+
+        // Y-axis label click → select & focus node on canvas
+        let _ganttLabelClickTimer = null;
+        ganttLabelsEl.addEventListener('click', e => {
+            const lbl = e.target.closest('[data-gantt-label-id]');
+            if (!lbl) return;
+            clearTimeout(_ganttLabelClickTimer);
+            _ganttLabelClickTimer = setTimeout(() => {
+                selectedId = lbl.dataset.ganttLabelId;
+                scheduleRender();
+                focusNode(selectedId);
+            }, 500);
+        });
+
+        // Y-axis label dblclick → open edit modal
+        ganttLabelsEl.addEventListener('dblclick', e => {
+            const lbl = e.target.closest('[data-gantt-label-id]');
+            if (!lbl) return;
+            clearTimeout(_ganttLabelClickTimer);
+            if (_wsReadonly) return;
+            const id = lbl.dataset.ganttLabelId;
+            if (_remoteLocks[id]) { toast('🔒 Locked by ' + (_remoteLocks[id].email || 'another user')); return; }
+            const node = nodes.get(id);
+            if (!node) return;
+            selectedId = id;
+            showNodeModal({
+                title: 'Edit Node',
+                name: node.name,
+                status: node.status,
+                editId: id,
+                onSave(name, status, extras) { renameNode(id, name); setNodeStatus(id, status); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; nd.lastEditedDate = Date.now(); nd.lastEditedBy = _currentUserEmail(); saveState(); render(); }
+            });
+        });
 
         ganttBody.addEventListener('click', e => {
             const el = e.target.closest('[data-gantt-id]');
-            if (!el) return;
+            if (!el || el.classList.contains('gantt-undated')) return;
             clearTimeout(_ganttClickTimer);
             _ganttClickTimer = setTimeout(() => {
                 selectedId = el.dataset.ganttId;
                 scheduleRender();
                 focusNode(selectedId);
             }, 500);
+        });
+
+        // Whole-bar drag to shift dates left/right
+        ganttBody.addEventListener('mousedown', e => {
+            if (e.target.closest('.gantt-handle-l, .gantt-handle-r')) return;
+            const el = e.target.closest('[data-gantt-id]:not(.gantt-undated)');
+            if (!el || e.button !== 0 || _wsReadonly) return;
+            const id = el.dataset.ganttId;
+            if (_remoteLocks[id]) { toast('🔒 Locked by ' + (_remoteLocks[id].email || 'another user')); return; }
+            const node = nodes.get(id);
+            if (!node || !node.startDate || !node.endDate) return;
+            const colW = _ganttColW;
+            const colToDate = _ganttColToDate;
+            if (!colToDate) return;
+            const initLeft = parseFloat(el.style.left);
+            const initWidth = parseFloat(el.style.width);
+            const startX = e.clientX;
+            let dragged = false;
+            e.preventDefault();
+            e.stopPropagation();
+
+            function onMove(me) {
+                const dx = (me.clientX - startX) / _ganttScale;
+                if (!dragged && Math.abs(dx) < 4) return;
+                dragged = true;
+                const snappedLeft = Math.round((initLeft + dx) / colW) * colW;
+                el.style.left = snappedLeft + 'px';
+            }
+            function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                if (!dragged) return; // let click handler fire
+                clearTimeout(_ganttClickTimer);
+                const finalLeft = parseFloat(el.style.left);
+                const colDelta = Math.round((finalLeft - initLeft) / colW);
+                if (colDelta === 0) { el.style.left = initLeft + 'px'; return; }
+                const startCol = Math.round(initLeft / colW) + colDelta;
+                const endCol = Math.round((initLeft + initWidth) / colW) - 1 + colDelta;
+                let sd = colToDate(startCol);
+                let ed = colToDate(Math.max(startCol, endCol));
+                const sdDate = new Date(sd + 'T00:00:00');
+                if (sdDate.getDay() === 6) sdDate.setDate(sdDate.getDate() + 2);
+                else if (sdDate.getDay() === 0) sdDate.setDate(sdDate.getDate() + 1);
+                sd = _localDateStr(sdDate);
+                const edDate = new Date(ed + 'T00:00:00');
+                if (edDate.getDay() === 6) edDate.setDate(edDate.getDate() + 2);
+                else if (edDate.getDay() === 0) edDate.setDate(edDate.getDate() + 1);
+                ed = _localDateStr(edDate);
+                node.startDate = sd;
+                node.endDate = ed;
+                node.lastEditedDate = Date.now();
+                node.lastEditedBy = _currentUserEmail();
+                _ganttDirty = true;
+                _auditLog('Move Dates', `Moved dates on '${node.name}': ${sd} → ${ed}`);
+                saveState();
+                render();
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        });
+
+        // Drag-to-create dates on undated gantt rows
+        ganttBody.addEventListener('mousedown', e => {
+            // Only handle clicks on empty space or undated rows (not on dated bars or handles)
+            if (e.target.closest('.gantt-handle-l, .gantt-handle-r')) return;
+            if (e.target.closest('[data-gantt-id]:not(.gantt-undated)')) return;
+            if (e.button !== 0 || _wsReadonly) return;
+            const colW = _ganttColW;
+            const colToDate = _ganttColToDate;
+            if (!colToDate || _ganttEntries.length === 0) return;
+            // Determine which row was clicked based on Y position
+            const bodyRect = ganttBody.getBoundingClientRect();
+            const localY = (e.clientY - bodyRect.top - _ganttPanY) / _ganttScale;
+            const rowIdx = Math.floor(localY / 28);
+            if (rowIdx < 0 || rowIdx >= _ganttEntries.length) return;
+            const entry = _ganttEntries[rowIdx];
+            const node = nodes.get(entry.id);
+            if (!node || node.startDate || node.endDate) return; // only for undated nodes
+            if (_remoteLocks[entry.id]) { toast('🔒 Locked by ' + (_remoteLocks[entry.id].email || 'another user')); return; }
+            e.preventDefault();
+            e.stopPropagation();
+            _ganttDragCreating = true;
+            const st = statusMap.get(node.status) || STATUSES[0];
+            // Calculate initial column from click position
+            const clickLocalX = (e.clientX - bodyRect.left - _ganttPanX) / _ganttScale;
+            const startCol = Math.floor(clickLocalX / colW);
+            // Create preview bar
+            const preview = document.createElement('div');
+            preview.style.cssText = `position:absolute;top:${rowIdx * 28}px;left:${startCol * colW}px;width:${colW}px;height:22px;background:${st.color};opacity:.6;border-radius:4px;pointer-events:none;z-index:5`;
+            const tl = ganttBody.querySelector('.gantt-timeline');
+            if (tl) tl.appendChild(preview);
+            let curEndCol = startCol;
+
+            function onMove(me) {
+                const localX = (me.clientX - bodyRect.left - _ganttPanX) / _ganttScale;
+                const col = Math.floor(localX / colW);
+                const lo = Math.min(startCol, col);
+                const hi = Math.max(startCol, col);
+                preview.style.left = lo * colW + 'px';
+                preview.style.width = (hi - lo + 1) * colW + 'px';
+                curEndCol = col;
+            }
+            function onUp() {
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+                _ganttDragCreating = false;
+                if (preview.parentNode) preview.remove();
+                const lo = Math.min(startCol, curEndCol);
+                const hi = Math.max(startCol, curEndCol);
+                let sd = colToDate(lo);
+                let ed = colToDate(hi);
+                // Skip weekends
+                const sdDate = new Date(sd + 'T00:00:00');
+                if (sdDate.getDay() === 6) sdDate.setDate(sdDate.getDate() + 2);
+                else if (sdDate.getDay() === 0) sdDate.setDate(sdDate.getDate() + 1);
+                sd = _localDateStr(sdDate);
+                const edDate = new Date(ed + 'T00:00:00');
+                if (edDate.getDay() === 6) edDate.setDate(edDate.getDate() + 2);
+                else if (edDate.getDay() === 0) edDate.setDate(edDate.getDate() + 1);
+                ed = _localDateStr(edDate);
+                node.startDate = sd;
+                node.endDate = ed;
+                node.lastEditedDate = Date.now();
+                node.lastEditedBy = _currentUserEmail();
+                _ganttDirty = true;
+                _auditLog('Set Dates', `Set dates on '${node.name}': ${sd} → ${ed}`);
+                saveState();
+                render();
+            }
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
         });
 
         ganttBody.addEventListener('dblclick', e => {
@@ -7110,7 +7901,7 @@
                 name: node.name,
                 status: node.status,
                 editId: id,
-                onSave(name, status, extras) { renameNode(id, name); setNodeStatus(id, status); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; saveState(); render(); }
+                onSave(name, status, extras) { renameNode(id, name); setNodeStatus(id, status); const nd = nodes.get(id); nd.notes = extras.notes; nd.startDate = extras.startDate; nd.endDate = extras.endDate; nd.estimatedHours = extras.estimatedHours; nd.lastEditedDate = Date.now(); nd.lastEditedBy = _currentUserEmail(); saveState(); render(); }
             });
         });
 
@@ -7132,6 +7923,10 @@
             menu.querySelector('button').addEventListener('click', () => {
                 node.startDate = null;
                 node.endDate = null;
+                node.lastEditedDate = Date.now();
+                node.lastEditedBy = _currentUserEmail();
+                _ganttDirty = true;
+                _auditLog('Clear Dates', `Cleared dates on '${node.name}'`);
                 saveState();
                 render();
                 document.body.removeChild(menu);
@@ -7188,14 +7983,18 @@
                     const sd = new Date(node.startDate + 'T00:00:00');
                     if (sd.getDay() === 6) sd.setDate(sd.getDate() + 2);
                     else if (sd.getDay() === 0) sd.setDate(sd.getDate() + 1);
-                    node.startDate = sd.toISOString().slice(0, 10);
+                    node.startDate = _localDateStr(sd);
                 }
                 if (node.endDate) {
                     const ed = new Date(node.endDate + 'T00:00:00');
                     if (ed.getDay() === 6) ed.setDate(ed.getDate() + 2);
                     else if (ed.getDay() === 0) ed.setDate(ed.getDate() + 1);
-                    node.endDate = ed.toISOString().slice(0, 10);
+                    node.endDate = _localDateStr(ed);
                 }
+                node.lastEditedDate = Date.now();
+                node.lastEditedBy = _currentUserEmail();
+                _ganttDirty = true;
+                _auditLog('Update dates', `Updated dates on '${node.name}': ${node.startDate} → ${node.endDate}`);
                 saveState();
                 render();
             }
@@ -7434,8 +8233,9 @@
 <div class="help-section"><h3>📊 Gantt Timeline</h3>
 <p>Enable the Gantt chart from <em>View → Gantt Timeline</em> to see a time-based view of your work.</p>
 <ul>
-<li><strong>Resize the panel</strong> — Drag the top edge of the Gantt panel up or down to adjust its height.</li>
-<li><strong>Minimise</strong> — Click the <strong>▼</strong> button to collapse the Gantt panel; click <strong>▲</strong> to expand it again.</li>
+<li><strong>Resize the panel</strong> — Hover over the top edge of the Gantt panel until the accent-coloured resize bar appears, then drag up or down to adjust its height.</li>
+<li><strong>Minimise</strong> — Click the <strong>▼</strong> button to collapse the Gantt panel to a compact header bar; click <strong>▲</strong> to expand it again.</li>
+<li><strong>Close</strong> — Click the <strong>✕</strong> button to hide the Gantt panel entirely. Re-enable it from <em>View → Gantt Timeline</em>.</li>
 <li><strong>Pan</strong> — Click and drag on empty space within the Gantt body to pan the timeline. Works just like the main canvas.</li>
 <li><strong>Zoom</strong> — Use the mouse wheel to zoom in and out of the timeline. The zoom centres on your cursor position. On first open, the chart auto-fits to show all your data.</li>
 <li><strong>Touch</strong> — Pinch with two fingers to zoom in/out on touch devices.</li>
@@ -7444,6 +8244,34 @@
 <li><strong>Double-click a bar</strong> — Opens the node's edit dialog directly.</li>
 </ul>
 <div class="help-tip">💡 To add dates to a node, edit it (double-click or <span class="help-kbd">F2</span>) and fill in the Start Date and End Date fields. Use <em>View → Highlight Undated Nodes</em> to spot nodes without dates.</div>
+</div>
+
+<div class="help-section"><h3>📝 Detail Panel</h3>
+<p>Click any node to open the detail panel on the right side of the screen. It provides a comprehensive view of the selected node.</p>
+<ul>
+<li><strong>Status</strong> — Shows the node's current status with its icon and colour.</li>
+<li><strong>Time Tracking</strong> — Displays start date, end date, and estimated hours when set.</li>
+<li><strong>Blockers / Dependencies</strong> — Lists all parent nodes that must complete before this node can begin. Click any dependency to navigate to it.</li>
+<li><strong>Dependents / Children</strong> — Lists all child nodes that depend on this node. Click any child to navigate to it.</li>
+<li><strong>Activity</strong> — Shows when the node was created and last edited, including the user who made each change (for cloud projects).</li>
+<li><strong>Notes</strong> — Displays Markdown-rendered notes attached to the node.</li>
+<li><strong>Resize</strong> — Hover over the left edge of the panel until the accent-coloured resize bar appears, then drag to adjust the panel width.</li>
+<li><strong>Minimise</strong> — Click the <strong>▼</strong> button to collapse the panel to a narrow vertical label. Click <strong>▲</strong> to expand it again.</li>
+</ul>
+</div>
+
+<div class="help-section"><h3>📋 Audit Log</h3>
+<p>The audit log records all changes made to a cloud project, providing a timestamped history of who did what.</p>
+<ul>
+<li><strong>Open</strong> — Enable from <em>View → Audit Log</em>. Only available for cloud-saved projects.</li>
+<li><strong>Entries</strong> — Each row shows the time, user, action (e.g. "Node Created", "Status Changed"), and detail of the change.</li>
+<li><strong>Latest entries</strong> — The log displays the most recent 100 entries, sorted newest first.</li>
+<li><strong>Loading state</strong> — While audit entries are being fetched from the cloud, a "Loading audits…" placeholder is shown.</li>
+<li><strong>Resize</strong> — Hover over the right edge of the panel until the accent-coloured resize bar appears, then drag to adjust the panel width.</li>
+<li><strong>Minimise</strong> — Click the <strong>▼</strong> button to collapse the panel to a narrow vertical label. Click <strong>▲</strong> to expand it again.</li>
+<li><strong>Close</strong> — Click the <strong>✕</strong> button to hide the audit panel.</li>
+</ul>
+<div class="help-tip">💡 Audit log state (open, minimised, width) is saved per workspace and restored when you switch tabs or reload the page.</div>
 </div>
 
 <div class="help-section"><h3>📋 Status Panel</h3>
@@ -7586,15 +8414,17 @@
 <ul>
 <li><strong>Dependency-first planning</strong> — The graph layout automatically arranges work by depth. Root nodes sit at the top (or left), and dependent work flows downward. This visual structure naturally suggests the order in which work should be tackled.</li>
 <li><strong>Effortless restructuring</strong> — Add, remove, or remap dependencies without worrying about manual layout. The graph re-arranges itself automatically, so you can focus on <em>what</em> needs doing, not <em>where</em> to place it on screen.</li>
-<li><strong>Estimation &amp; scheduling</strong> — The built-in Gantt timeline lets you assign dates to tasks and visualise overlaps, gaps, and scheduling conflicts across the project's timeline.</li>
+<li><strong>Estimation &amp; scheduling</strong> — The built-in Gantt timeline lets you assign dates to tasks and visualise overlaps, gaps, and scheduling conflicts across the project's timeline. Minimise or close the Gantt panel when you don't need it.</li>
 <li><strong>Progress tracking</strong> — The status panel provides at-a-glance completion metrics. Filter the graph by status, multi-select nodes for bulk updates, and customise statuses to match your workflow.</li>
+<li><strong>Detail at a glance</strong> — Click any node to open the detail panel showing its status, dates, dependencies, children, activity history, and notes — all without leaving the canvas.</li>
+<li><strong>Audit trail</strong> — Every change in a cloud project is recorded in the audit log with timestamps and user attribution, giving full visibility into who changed what and when.</li>
 <li><strong>Real-time collaboration</strong> — Save projects to the cloud and invite collaborators by email. See live cursors, online avatars, and node-level locks — everyone stays in sync with changes merging automatically.</li>
 <li><strong>Multiple projects</strong> — Workspace tabs keep separate projects independent. Each tab has its own nodes, statuses, and settings — export, import, or save them to the cloud individually.</li>
 </ul>
 </div>
 <div class="help-section">
 <h3>Ideal For</h3>
-<p>Project planning, project forecasting and estimations, Sprint planning, feature breakdowns, onboarding task trees, migration roadmaps, or any scenario where understanding <em>what depends on what</em> is more valuable than a flat to-do list.</p>
+<p>Project planning, project forecasting and estimations, Sprint planning, feature breakdowns, onboarding task trees, migration roadmaps, audit-sensitive workflows, or any scenario where understanding <em>what depends on what</em> is more valuable than a flat to-do list.</p>
 </div>`;
 
             const tabs = [
@@ -7635,9 +8465,17 @@
         updateViewChecks();
         updateOrientBtn();
         ganttPanel.style.height = ganttHeight + 'px';
+        sidePanel.style.width = _spWidth + 'px';
+        _auditLogPanel.style.width = _apWidth + 'px';
         _syncGanttMinBtn();
         _syncSpMinState();
         _syncLegendCollapsed();
+        // Restore audit panel state
+        if (_showAuditLog && workspaces.get(activeWsId).wsCloudId) {
+            _auditLogPanel.classList.add('open');
+            _syncAuditPanelState();
+        }
+        updateViewChecks();
         renderTabs();
         render();
         _syncLegendBottom();

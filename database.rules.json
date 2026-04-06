@@ -36,6 +36,16 @@
                     "createdAt": {
                         ".write": "auth != null && !data.exists()"
                     }
+                },
+                "auditLog": {
+                    ".read": "auth != null && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid).exists())",
+                    ".indexOn": [
+                        "ts"
+                    ],
+                    "$entryId": {
+                        ".write": "auth != null && !data.exists() && (root.child('projects/' + $projectId + '/meta/ownerId').val() === auth.uid || root.child('sharing/' + $projectId + '/' + auth.uid + '/role').val() === 'contributor')",
+                        ".validate": "newData.hasChildren(['action', 'user', 'ts'])"
+                    }
                 }
             }
         },

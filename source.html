@@ -1520,7 +1520,6 @@
             right: 0;
             bottom: var(--gantt-h, 0px);
             width: 360px;
-            bottom: var(--gantt-h, 0px);
             background: var(--surface);
             border-left: 1px solid var(--border);
             box-shadow: var(--shadow);
@@ -2378,8 +2377,8 @@
                     <button class="menu-entry" id="btn-link-parent" disabled><span class="menu-icon">🔗</span> Link
                         Existing
                         Parent</button>
-                    <button class="menu-entry" id="btn-detach" disabled><span class="menu-icon">⛓️‍💥</span> Detach
-                    </button>
+                    <button class="menu-entry" id="btn-detach" disabled><span
+                            class="menu-icon">⛓️‍💥</span>Detach</button>
                     <div class="menu-sep"></div>
                     <button class="menu-entry" id="btn-edit" disabled><span class="menu-icon">✎</span> Edit Node<span
                             class="menu-shortcut">F2</span></button>
@@ -2653,7 +2652,7 @@
             if (_firebaseUser) {
                 _authMenu.innerHTML = `
                     <div class="auth-menu-header">
-                        <div class="auth-menu-email">${_esc(_firebaseUser.email)}</div>
+                        <div class="auth-menu-email">${esc(_firebaseUser.email)}</div>
                         <div class="auth-menu-sub">Signed in</div>
                     </div>
                     <button class="auth-menu-entry" id="am-my-projects">📁 My Projects</button>
@@ -2687,9 +2686,6 @@
                 });
             }
         }
-
-        // Helper: escape HTML (reuse pattern from main code)
-        function _esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
         _authBtn.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -3415,7 +3411,7 @@
                 el.className = 'online-avatar';
                 el.style.background = info.color || '#e74c3c';
                 el.title = info.email || 'user';
-                el.innerHTML = `${initial}<div class="online-avatar-tip">${_esc(name)}</div>`;
+                el.innerHTML = `${initial}<div class="online-avatar-tip">${esc(name)}</div>`;
                 container.appendChild(el);
             }
         }
@@ -3518,12 +3514,12 @@
                 function _renderProjectItem(p) {
                     const date = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '';
                     const alreadyOpen = _isCloudProjectOpen(p.id);
-                    const roleBadge = !p.isOwned ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;margin-left:6px">${_esc(p.role)}</span>` : '';
-                    const ownerInfo = !p.isOwned && p.ownerEmail ? ` · ${_esc(p.ownerEmail)}` : '';
+                    const roleBadge = !p.isOwned ? `<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--accent);color:#fff;margin-left:6px">${esc(p.role)}</span>` : '';
+                    const ownerInfo = !p.isOwned && p.ownerEmail ? ` · ${esc(p.ownerEmail)}` : '';
                     return `
                         <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px;transition:background .1s;cursor:pointer" class="mp-item" data-pid="${p.id}">
                             <div style="flex:1;min-width:0">
-                                <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(p.name)}${roleBadge}</div>
+                                <div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}${roleBadge}</div>
                                 <div style="font-size:11px;color:var(--text-secondary)">${date}${ownerInfo}${alreadyOpen ? ' · Already open' : ''}</div>
                             </div>
                             <button class="tb-btn mp-open" data-pid="${p.id}" ${alreadyOpen ? 'disabled style="opacity:.5"' : ''}>Open</button>
@@ -3589,7 +3585,7 @@
                     });
                 });
             } catch (err) {
-                document.getElementById('mp-loading').innerHTML = '<span style="color:var(--danger)">Failed to load projects: ' + _esc(err.message) + '</span>';
+                document.getElementById('mp-loading').innerHTML = '<span style="color:var(--danger)">Failed to load projects: ' + esc(err.message) + '</span>';
             }
         }
 
@@ -3861,7 +3857,7 @@
                     <div class="share-collab-row">
                         <div class="share-collab-avatar">${(r.email[0] || '?').toUpperCase()}</div>
                         <div class="share-collab-info">
-                            <div class="share-collab-email">${_esc(r.email)}${isSelf ? ' <span style="font-size:10px;color:var(--text-secondary)">(you)</span>' : ''}</div>
+                            <div class="share-collab-email">${esc(r.email)}${isSelf ? ' <span style="font-size:10px;color:var(--text-secondary)">(you)</span>' : ''}</div>
                             <div class="share-collab-role">${r.role === 'readonly' ? 'Read Only' : 'Contributor'}</div>
                         </div>
                         ${isSelf ? '' : '<div class="share-collab-actions">' +
@@ -3869,7 +3865,7 @@
                             '<option value="contributor" ' + (r.role === 'contributor' ? 'selected' : '') + '>Contributor</option>' +
                             '<option value="readonly" ' + (r.role === 'readonly' ? 'selected' : '') + '>Read Only</option>' +
                             '</select>' +
-                            (isOwner ? '<button class="tb-btn share-transfer" data-uid="' + r.uid + '" data-email="' + _esc(r.email) + '" style="font-size:11px;height:32px;padding:0 10px;border-radius:8px" title="Transfer ownership">\ud83d\udc51</button>' : '') +
+                            (isOwner ? '<button class="tb-btn share-transfer" data-uid="' + r.uid + '" data-email="' + esc(r.email) + '" style="font-size:11px;height:32px;padding:0 10px;border-radius:8px" title="Transfer ownership">\ud83d\udc51</button>' : '') +
                             '<button class="tb-btn share-revoke" data-uid="' + r.uid + '" style="color:var(--danger);border-color:var(--danger);font-size:11px;height:32px;padding:0 12px;border-radius:8px">Revoke</button>' +
                             '</div>'}
                     </div>`;
@@ -3975,8 +3971,6 @@
 
         let STATUSES = JSON.parse(JSON.stringify(DEFAULT_STATUSES));
 
-        function saveStatuses() { /* now handled by saveWorkspaces */ }
-
         let statusMap = new Map();
         function rebuildStatusMap() {
             statusMap.clear();
@@ -4025,14 +4019,6 @@
         /* ═══════════════════════════════════════════
            HELPERS
            ═══════════════════════════════════════════ */
-        function getRoots() {
-            const roots = [];
-            for (const [id, n] of nodes) {
-                if (n.parentIds.length === 0) roots.push(id);
-            }
-            return roots;
-        }
-
         const _escDiv = document.createElement('div');
         function esc(s) {
             _escDiv.textContent = s;
@@ -4873,7 +4859,7 @@
             const depWarnings = showDepWarnings ? getDepWarnings(id) : [];
             const warnBadge = depWarnings.length > 0 ? `<span class="warn-badge" title="${depWarnings.join('\\n')}">⚠</span>` : '';
             const lockInfo = _remoteLocks[id];
-            const lockBadge = lockInfo ? `<span class="lock-badge" title="Editing: ${_esc(lockInfo.email || 'user')}" style="border-color:${lockInfo.color || 'var(--accent)'}">🔒 ${_esc((lockInfo.email || 'user').split('@')[0])}</span>` : '';
+            const lockBadge = lockInfo ? `<span class="lock-badge" title="Editing: ${esc(lockInfo.email || 'user')}" style="border-color:${lockInfo.color || 'var(--accent)'}">🔒 ${esc((lockInfo.email || 'user').split('@')[0])}</span>` : '';
             return `${badge}${warnBadge}${lockBadge}<div class="node-name" title="${esc(node.name)}">${esc(node.name)}</div><div class="node-status"><span class="node-status-dot" style="background:${st.color}">${st.icon || ''}</span><span class="node-status-label">${st.label}</span></div><button class="node-status-btn" title="Change status">▾</button>`;
         }
 
@@ -6217,7 +6203,6 @@
                         if (!newMap.has(s.id)) _auditLog('Remove Status', `Removed status '${s.label}'`);
                     }
                     STATUSES = draft;
-                    saveStatuses();
                     rebuildStatusMap();
                     // Remap any node statuses that no longer exist
                     const validIds = new Set(STATUSES.map(s => s.id));
@@ -6509,47 +6494,6 @@
             enterLinkMode(childId, true);
         }
 
-        /* ── Pick-node modal (for Add Dependency) ── */
-        function showPickNodeModal(title, description, excludeId, onPick) {
-            const eligible = [...nodes.values()].filter(n => {
-                if (n.id === excludeId) return false;
-                // already a parent
-                if (nodes.get(excludeId).parentIds.includes(n.id)) return false;
-                // would create a cycle
-                if (wouldCycle(n.id, excludeId)) return false;
-                return true;
-            });
-
-            if (eligible.length === 0) {
-                toast('No eligible nodes to link');
-                return;
-            }
-
-            const listHtml = eligible.map(n => {
-                const st = statusMap.get(n.status);
-                return `<div class="item" data-pick="${n.id}" style="padding:8px 12px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background .1s">
-      <span class="node-status-dot ${n.status}" style="background:${st.color};width:10px;height:10px;border-radius:50%;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:6px;color:#fff">${st.icon}</span>
-      ${esc(n.name)}
-    </div>`;
-            }).join('');
-
-            openModal(`
-    <h2>${title}</h2>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${description}</p>
-    <div style="max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:4px" id="m-pick-list">${listHtml}</div>
-    <div class="actions"><button onclick="closeModal()">Cancel</button></div>
-  `);
-
-            modalEl.querySelectorAll('#m-pick-list .item').forEach(el => {
-                el.addEventListener('mouseenter', () => el.style.background = '#f0f1f3');
-                el.addEventListener('mouseleave', () => el.style.background = '');
-                el.addEventListener('click', () => {
-                    closeModal();
-                    onPick(el.dataset.pick);
-                });
-            });
-        }
-
         /* ── Connector context menu (remove link / insert node on edge) ── */
         svgEl.addEventListener('contextmenu', e => {
             const hit = e.target.closest('.connector-hit');
@@ -6680,10 +6624,6 @@
             panX = padL + (availW - treeW * scale) / 2 - minX * scale;
             panY = (availH - treeH * scale) / 2 - minY * scale;
             applyTransform();
-        }
-
-        function fitViewIfNeeded() {
-            setTimeout(fitView, 50);
         }
 
         function focusNode(id) {
@@ -8142,48 +8082,6 @@
         }
 
         /* ═══════════════════════════════════════════
-           SHAREABLE LINKS (URL HASH)
-           ═══════════════════════════════════════════ */
-
-        function loadFromHash() {
-            const hash = window.location.hash.slice(1);
-            if (!hash) return false;
-            try {
-                const json = decodeURIComponent(escape(atob(hash)));
-                const data = JSON.parse(json);
-                if (!data.nodes || !Array.isArray(data.nodes)) return false;
-                const importName = data.name || 'Shared Project';
-                const wsId = _genWsId();
-                const importedNodes = [];
-                for (const [id, node] of data.nodes) {
-                    if (!node.parentIds) node.parentIds = node.parentId != null ? [node.parentId] : [];
-                    delete node.parentId;
-                    if (node.notes === undefined) node.notes = '';
-                    if (node.startDate === undefined) node.startDate = null;
-                    if (node.endDate === undefined) node.endDate = null;
-                    if (node.estimatedHours === undefined) node.estimatedHours = null;
-                    importedNodes.push([id, node]);
-                }
-                workspaces.set(wsId, {
-                    id: wsId, name: importName,
-                    nodes: importedNodes,
-                    nextId: data.nextId || 1,
-                    statuses: data.statuses ? JSON.parse(JSON.stringify(data.statuses)) : JSON.parse(JSON.stringify(DEFAULT_STATUSES)),
-                    panX: 60, panY: 0, scale: 1,
-                    isVertical: false,
-                    showGantt: false, animateEdges: false, showDepWarnings: true, showUndated: false,
-                    ganttHeight: 200, ganttMinimized: false, spMinimized: false, legendCollapsed: false,
-                    undoStack: [], redoStack: [], lastSnapshot: null,
-                    wsCloudId: null
-                });
-                wsOrder.push(wsId);
-                activeWsId = wsId;
-                toast('Loaded from shared link: ' + importName);
-                return true;
-            } catch { return false; }
-        }
-
-        /* ═══════════════════════════════════════════
            MARKDOWN RENDERER
            ═══════════════════════════════════════════ */
         // Pre-compiled regex patterns for markdown renderer
@@ -8576,9 +8474,8 @@
         /* ═══════════════════════════════════════════
            INIT
            ═══════════════════════════════════════════ */
-        const _isFirstVisit = !localStorage.getItem(WS_STORAGE_KEY) && !window.location.hash.slice(1);
+        const _isFirstVisit = !localStorage.getItem(WS_STORAGE_KEY);
         loadWorkspaces();
-        loadFromHash();
         ensureWorkspace();
         restoreWorkspace(workspaces.get(activeWsId));
         updateViewChecks();
@@ -8598,9 +8495,9 @@
         renderTabs();
         render();
         _syncLegendBottom();
+        saveWorkspaces();
         if (nodes.size > 0) fitView();
         wrapEl.style.opacity = '1';
-        window.location.hash = '';
         if (_isFirstVisit) setTimeout(() => showHelpModal('about'), 300);
 
         /* ═══════════════════════════════════════════

@@ -7099,6 +7099,9 @@
             } else {
                 _setReadonly(false, null);
             }
+            // Suppress panel slide animations during tab switch to avoid "flicker" effect from panels resizing after render
+            const _panels = [ganttPanel, sidePanel, _auditLogPanel];
+            _panels.forEach(p => p.style.transition = 'none');
             // Update UI
             updateViewChecks();
             updateOrientBtn();
@@ -7117,6 +7120,8 @@
             _syncLegendBottom();
             renderTabs();
             saveWorkspaces();
+            // Re-enable transitions after layout settles
+            requestAnimationFrame(() => _panels.forEach(p => p.style.transition = ''));
         }
 
         function createWorkspace(name) {

@@ -6083,7 +6083,7 @@
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;position:relative" data-idx="${i}">
         <span style="cursor:grab;font-size:14px;color:var(--text-secondary);user-select:none;padding:0 2px" data-action="drag" title="Drag to reorder" draggable="true">⠿</span>
         <input type="color" value="${s.color}" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer" data-field="color">
-        <button style="width:36px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0;font-size:14px;text-align:center;background:var(--bg);color:var(--text);cursor:pointer;line-height:32px" data-field="icon-btn" title="Pick icon">${esc(s.icon || '') || '<span style="color:var(--text-secondary);font-size:11px">icon</span>'}</button>
+        <button style="width:36px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0;font-size:14px;text-align:center;background:var(--bg);color:var(--text);cursor:pointer;line-height:32px" data-field="icon-btn" title="Pick icon">${(s.icon || '').trim() ? esc(s.icon) : '<span style="color:var(--text-secondary);font-size:11px">icon</span>'}</button>
         <input type="text" value="${esc(s.label)}" style="flex:1;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;background:var(--bg);color:var(--text)" data-field="label" placeholder="Status name">
         <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer" title="Counts toward completion">
           <input type="checkbox" ${s.complete ? 'checked' : ''} data-field="complete"> Done

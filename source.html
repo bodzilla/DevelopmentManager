@@ -6172,8 +6172,11 @@
                 });
 
                 document.getElementById('sc-add').addEventListener('click', () => {
-                    draft.push({ id: 'status-' + Date.now(), label: 'New Status', color: '#94a3b8', icon: '', complete: false });
+                    draft.push({ id: 'status-' + Date.now(), label: '', color: '#94a3b8', icon: '', complete: false });
                     renderEditor();
+                    const rows = modalEl.querySelectorAll('[data-idx]');
+                    const lastRow = rows[rows.length - 1];
+                    if (lastRow) { const inp = lastRow.querySelector('[data-field="label"]'); if (inp) { inp.focus(); inp.select(); } }
                 });
 
                 document.getElementById('sc-save').addEventListener('click', () => {
@@ -8080,6 +8083,7 @@
             }
             return warnings;
         }
+
 
         /* ═══════════════════════════════════════════
            MARKDOWN RENDERER

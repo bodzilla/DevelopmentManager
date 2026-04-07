@@ -750,7 +750,19 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            flex-shrink: 0
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6px;
+            line-height: 1;
+            color: #fff
+        }
+
+        .node-status-dot:not(:empty) {
+            width: 14px;
+            height: 14px;
+            font-size: 9px
         }
 
         .node-status-label {
@@ -4862,7 +4874,7 @@
             const warnBadge = depWarnings.length > 0 ? `<span class="warn-badge" title="${depWarnings.join('\\n')}">⚠</span>` : '';
             const lockInfo = _remoteLocks[id];
             const lockBadge = lockInfo ? `<span class="lock-badge" title="Editing: ${_esc(lockInfo.email || 'user')}" style="border-color:${lockInfo.color || 'var(--accent)'}">🔒 ${_esc((lockInfo.email || 'user').split('@')[0])}</span>` : '';
-            return `${badge}${warnBadge}${lockBadge}<div class="node-name" title="${esc(node.name)}">${esc(node.name)}</div><div class="node-status"><span class="node-status-dot" style="background:${st.color}"></span><span class="node-status-label">${st.label}</span></div><button class="node-status-btn" title="Change status">▾</button>`;
+            return `${badge}${warnBadge}${lockBadge}<div class="node-name" title="${esc(node.name)}">${esc(node.name)}</div><div class="node-status"><span class="node-status-dot" style="background:${st.color}">${st.icon || ''}</span><span class="node-status-label">${st.label}</span></div><button class="node-status-btn" title="Change status">▾</button>`;
         }
 
         function renderNodes() {
@@ -6064,11 +6076,14 @@
             }
             let draft = JSON.parse(JSON.stringify(STATUSES));
 
+            const _iconChoices = [' ', '✓', '✕', '★', '⬤', '◆', '▲', '▼', '⏹', '⚑'];
+
             function renderEditor() {
                 const rows = draft.map((s, i) => `
-      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px" data-idx="${i}">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;position:relative" data-idx="${i}">
+        <span style="cursor:grab;font-size:14px;color:var(--text-secondary);user-select:none;padding:0 2px" data-action="drag" title="Drag to reorder" draggable="true">⠿</span>
         <input type="color" value="${s.color}" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;padding:2px;cursor:pointer" data-field="color">
-        <input type="text" value="${esc(s.icon || '')}" style="width:36px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0;font-size:14px;text-align:center;background:var(--bg);color:var(--text)" data-field="icon" placeholder="🔵" title="Icon (emoji)">
+        <button style="width:36px;height:32px;border:1px solid var(--border);border-radius:6px;padding:0;font-size:14px;text-align:center;background:var(--bg);color:var(--text);cursor:pointer;line-height:32px" data-field="icon-btn" title="Pick icon">${esc(s.icon || '') || '<span style="color:var(--text-secondary);font-size:11px">icon</span>'}</button>
         <input type="text" value="${esc(s.label)}" style="flex:1;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px;background:var(--bg);color:var(--text)" data-field="label" placeholder="Status name">
         <label style="font-size:11px;display:flex;align-items:center;gap:3px;white-space:nowrap;cursor:pointer" title="Counts toward completion">
           <input type="checkbox" ${s.complete ? 'checked' : ''} data-field="complete"> Done
@@ -6088,16 +6103,84 @@
       </div>
     `);
 
+                // Icon picker popup helper
+                function showIconPicker(btnEl, idx) {
+                    document.querySelector('.sc-icon-picker')?.remove();
+                    const pop = document.createElement('div');
+                    pop.className = 'sc-icon-picker';
+                    pop.style.cssText = 'position:absolute;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;display:grid;grid-template-columns:repeat(8,1fr);gap:2px;box-shadow:var(--shadow-lg);max-width:260px';
+                    _iconChoices.forEach(ic => {
+                        const cell = document.createElement('button');
+                        cell.style.cssText = 'width:30px;height:30px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text)';
+                        cell.textContent = ic || '∅';
+                        if (ic === (draft[idx].icon || '')) cell.style.borderColor = 'var(--accent)';
+                        cell.addEventListener('click', () => {
+                            draft[idx].icon = ic;
+                            pop.remove();
+                            renderEditor();
+                        });
+                        cell.addEventListener('mouseenter', () => { cell.style.background = 'var(--bg)'; });
+                        cell.addEventListener('mouseleave', () => { cell.style.background = 'transparent'; });
+                        pop.appendChild(cell);
+                    });
+                    const rect = btnEl.getBoundingClientRect();
+                    const modalRect = modalEl.getBoundingClientRect();
+                    pop.style.left = (rect.left - modalRect.left) + 'px';
+                    pop.style.top = (rect.bottom - modalRect.top + 4) + 'px';
+                    modalEl.appendChild(pop);
+                    const dismiss = e => { if (!pop.contains(e.target) && e.target !== btnEl) { pop.remove(); document.removeEventListener('pointerdown', dismiss, true); } };
+                    setTimeout(() => document.addEventListener('pointerdown', dismiss, true), 0);
+                }
+
+                // Drag reorder state
+                let _dragIdx = null;
+                const editorEl = document.getElementById('status-editor');
+
                 // Bind events
                 modalEl.querySelectorAll('[data-idx]').forEach(row => {
                     const idx = parseInt(row.dataset.idx);
                     row.querySelector('[data-field="color"]').addEventListener('input', e => { draft[idx].color = e.target.value; });
-                    row.querySelector('[data-field="icon"]').addEventListener('input', e => { draft[idx].icon = e.target.value.trim(); });
+                    row.querySelector('[data-field="icon-btn"]').addEventListener('click', e => { showIconPicker(e.currentTarget, idx); });
                     row.querySelector('[data-field="label"]').addEventListener('input', e => { draft[idx].label = e.target.value.trim(); });
                     row.querySelector('[data-field="complete"]').addEventListener('change', e => { draft[idx].complete = e.target.checked; });
                     row.querySelector('[data-action="remove"]')?.addEventListener('click', () => {
                         if (draft.length <= 1) return;
                         draft.splice(idx, 1);
+                        renderEditor();
+                    });
+                    // Drag events — only handle initiates drag
+                    const handle = row.querySelector('[data-action="drag"]');
+                    handle.addEventListener('dragstart', e => {
+                        _dragIdx = idx;
+                        row.style.opacity = '0.4';
+                        e.dataTransfer.effectAllowed = 'move';
+                    });
+                    handle.addEventListener('dragend', () => {
+                        row.style.opacity = '';
+                        _dragIdx = null;
+                        editorEl.querySelectorAll('[data-idx]').forEach(r => { r.style.borderTop = ''; r.style.borderBottom = ''; });
+                    });
+                    row.addEventListener('dragover', e => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        editorEl.querySelectorAll('[data-idx]').forEach(r => { r.style.borderTop = ''; r.style.borderBottom = ''; });
+                        if (_dragIdx === null || _dragIdx === idx) return;
+                        const rect = row.getBoundingClientRect();
+                        const mid = rect.top + rect.height / 2;
+                        if (e.clientY < mid) row.style.borderTop = '2px solid var(--accent)';
+                        else row.style.borderBottom = '2px solid var(--accent)';
+                    });
+                    row.addEventListener('drop', e => {
+                        e.preventDefault();
+                        if (_dragIdx === null || _dragIdx === idx) return;
+                        const rect = row.getBoundingClientRect();
+                        const mid = rect.top + rect.height / 2;
+                        const dropAfter = e.clientY >= mid;
+                        const item = draft.splice(_dragIdx, 1)[0];
+                        let targetIdx = dropAfter ? idx + 1 : idx;
+                        if (_dragIdx < idx) targetIdx--;
+                        draft.splice(targetIdx, 0, item);
+                        _dragIdx = null;
                         renderEditor();
                     });
                 });

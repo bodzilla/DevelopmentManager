@@ -6588,10 +6588,14 @@
                 if (pos.y + NODE_H > maxY) maxY = pos.y + NODE_H;
             }
             const treeW = maxX - minX, treeH = maxY - minY;
-            const viewW = wrapEl.clientWidth - 80, viewH = wrapEl.clientHeight - 80;
-            scale = Math.min(1.2, Math.min(viewW / Math.max(treeW, 1), viewH / Math.max(treeH, 1)));
-            panX = (wrapEl.clientWidth - treeW * scale) / 2 - minX * scale;
-            panY = (wrapEl.clientHeight - treeH * scale) / 2 - minY * scale;
+            const padL = _showAuditLog ? _getApWidth() : 0;
+            const padR = selectedId ? _getSpWidth() : 0;
+            const padB = showGantt ? (ganttMinimized ? 34 : (ganttHeight || 200)) : 0;
+            const availW = wrapEl.clientWidth - padL - padR;
+            const availH = wrapEl.clientHeight - padB;
+            scale = Math.min(1.2, Math.min((availW - 80) / Math.max(treeW, 1), (availH - 80) / Math.max(treeH, 1)));
+            panX = padL + (availW - treeW * scale) / 2 - minX * scale;
+            panY = (availH - treeH * scale) / 2 - minY * scale;
             applyTransform();
         }
 

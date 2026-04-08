@@ -3964,9 +3964,11 @@
            DATA MODEL  (DAG — nodes can have multiple parents)
            ═══════════════════════════════════════════ */
         const DEFAULT_STATUSES = [
-            { id: 'not-started', label: 'Dev Not Started', color: '#94a3b8', icon: '', complete: false },
-            { id: 'in-flight', label: 'Dev In-flight', color: '#f59e0b', icon: '', complete: false },
-            { id: 'qa', label: 'Dev Complete / QA', color: '#22c55e', icon: '✓', complete: true }
+            { id: 'not-started', label: 'Not Started', color: '#94a3b8', icon: '', complete: false },
+            { id: 'dev-in-flight', label: 'Dev In-flight', color: '#f59e0b', icon: '', complete: false },
+            { id: 'qa-in-flight', label: 'QA In-flight', color: '#d946ef', icon: '', complete: false },
+            { id: 'complete', label: 'Complete', color: '#22c55e', icon: '✓', complete: true },
+            { id: 'canceled', label: 'Canceled', color: '#ef4444', icon: '✕', complete: true }
         ];
 
         let STATUSES = JSON.parse(JSON.stringify(DEFAULT_STATUSES));

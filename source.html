@@ -1179,45 +1179,43 @@
             margin-bottom: 14px
         }
 
-        .modal .status-picker {
+        .modal .m-status-btn {
             display: flex;
-            gap: 8px
-        }
-
-        .modal .status-option {
-            flex: 1;
-            padding: 10px 8px;
-            border: 1.5px solid var(--border);
-            border-radius: 8px;
-            text-align: center;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-            transition: all .15s;
-            display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 4px
+            gap: 8px;
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            position: relative
         }
 
-        .modal .status-option:hover {
+        .modal .m-status-btn:hover {
             border-color: #b0b8c4
         }
 
-        .modal .status-option.active {
-            border-color: var(--accent);
-            background: var(--accent-light)
-        }
-
-        .modal .status-option .dot {
-            width: 14px;
-            height: 14px;
+        .modal .m-status-btn .sd-dot {
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
+            flex-shrink: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 8px;
+            font-size: 7px;
             color: #fff
+        }
+
+        .modal .m-status-btn::after {
+            content: '\25BE';
+            margin-left: auto;
+            color: var(--text-secondary);
+            font-size: 14px
         }
 
         .modal .actions {
@@ -5886,11 +5884,7 @@
             const endDate = opts.endDate || (existingNode ? existingNode.endDate : '') || '';
             const estimatedHours = opts.estimatedHours || (existingNode ? existingNode.estimatedHours : '') || '';
 
-            const statusHtml = STATUSES.map(s => `
-    <div class="status-option${s.id === status ? ' active' : ''}" data-status="${s.id}">
-      <span class="dot" style="background:${s.color}">${s.icon}</span>
-      ${s.label}
-    </div>`).join('');
+            const initStatus = STATUSES.find(s => s.id === status) || STATUSES[0];
 
             openModal(`
     <h2>${title}</h2>
@@ -5900,7 +5894,10 @@
     </div>
     <div class="field">
       <label>Status</label>
-      <div class="status-picker" id="m-status">${statusHtml}</div>
+      <button type="button" class="m-status-btn" id="m-status-btn" data-status="${initStatus.id}">
+        <span class="sd-dot" style="background:${initStatus.color}">${initStatus.icon}</span>
+        <span class="m-status-label">${initStatus.label}</span>
+      </button>
     </div>
     <div class="field">
       <label>Notes (Markdown) <button type="button" id="m-md-help-toggle" style="border:none;background:transparent;color:var(--accent);font-size:11px;cursor:pointer;text-decoration:underline;padding:0">syntax help</button></label>
@@ -5937,12 +5934,45 @@
   `);
 
             let selStatus = status;
-            modalEl.querySelectorAll('.status-option').forEach(el => {
-                el.addEventListener('click', () => {
-                    modalEl.querySelectorAll('.status-option').forEach(o => o.classList.remove('active'));
-                    el.classList.add('active');
-                    selStatus = el.dataset.status;
+            const statusBtn = document.getElementById('m-status-btn');
+            statusBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                // Close any existing dropdown
+                const existing = modalEl.querySelector('.status-dropdown');
+                if (existing) { existing.remove(); return; }
+                const dd = document.createElement('div');
+                dd.className = 'status-dropdown open';
+                dd.style.position = 'absolute';
+                dd.style.left = '0';
+                dd.style.top = '100%';
+                dd.style.marginTop = '4px';
+                dd.style.width = '100%';
+                dd.innerHTML = STATUSES.map(s => `
+                  <div class="sd-item${s.id === selStatus ? ' active' : ''}" data-status="${s.id}">
+                    <span class="sd-dot" style="background:${s.color}">${s.icon}</span>
+                    ${s.label}
+                  </div>`).join('');
+                dd.querySelectorAll('.sd-item').forEach(el => {
+                    el.addEventListener('click', (ev) => {
+                        ev.stopPropagation();
+                        selStatus = el.dataset.status;
+                        const st = STATUSES.find(s => s.id === selStatus);
+                        statusBtn.dataset.status = selStatus;
+                        statusBtn.querySelector('.sd-dot').style.background = st.color;
+                        statusBtn.querySelector('.sd-dot').textContent = st.icon;
+                        statusBtn.querySelector('.m-status-label').textContent = st.label;
+                        dd.remove();
+                    });
                 });
+                statusBtn.parentElement.style.position = 'relative';
+                statusBtn.parentElement.appendChild(dd);
+                const closeDd = (ev) => {
+                    if (!dd.contains(ev.target) && ev.target !== statusBtn) {
+                        dd.remove();
+                        document.removeEventListener('click', closeDd);
+                    }
+                };
+                setTimeout(() => document.addEventListener('click', closeDd), 0);
             });
 
             document.getElementById('m-md-help-toggle').addEventListener('click', () => {
